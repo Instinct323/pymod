@@ -7,6 +7,7 @@ __test__.py
 
 # Environments
 .idea
+*.exe
 
 # datasets and projects
 data/
