@@ -1,0 +1,10 @@
+fixed_layers: [ ]
+depth_multiple: 1.0
+width_multiple: 1.0
+img_size: 608
+drop_pos: [ ]
+
+architecture:
+  # [from, number, module, args]
+  [ [ -1, 1, nn.Linear, [ 6 ] ],
+  ]

@@ -1,0 +1,17 @@
+fixed_layers: [ -1 ]
+depth_multiple: 1.0
+width_multiple: 1.0
+img_size: 512
+
+architecture:
+  # [from, number, module, args]
+  [ [ -1, 1, PatchEmbedding, [ 768, 16, 16, fourier ] ],    # Encoder
+    [ -1, 12, TranEncoder, [ 4, 12 ] ],
+    [ -1, 1, AvgPool, [ 1 ] ],
+    [ -1, 1, Mlp, [ 7, 4, 0.1 ] ],
+
+    [ -1, 1, MaskEmbedding, [ 768, fourier ] ],    # MAE Decoder
+    [ -1, 3, TranEncoder, [ 4, 12 ] ],
+    [ -1, 1, nn.Linear, [ 7 ] ],     # H×W×3
+    [ -1, 1, nn.Sigmoid, [ ] ]
+  ]

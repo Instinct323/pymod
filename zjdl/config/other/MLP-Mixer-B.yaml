@@ -1,0 +1,13 @@
+fixed_layers: [ -1 ]
+depth_multiple: 1.0
+width_multiple: 1.0
+img_size: 512
+
+architecture:
+  # [from, number, module, args]
+  [ [ -1, 1, PatchEmbedding, [ 768, 32, 32, fourier ] ],    # Encoder
+    [ -1, 12, MixerLayer, [ 256, 2, 4, 0.1 ] ],
+    [ -1, 1, AvgPool, [ 1 ] ],
+    [ -1, 1, Mlp, [ 7, 4, 0.1 ] ],
+  ]
+

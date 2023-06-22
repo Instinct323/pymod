@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+__test__.py
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environments
+.idea
+
+# datasets and projects
+data/
+runs/
+.DS_Store
+
+# Neural Network weights 
+*.pt
+*.onnx
+*.pkf

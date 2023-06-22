@@ -1,0 +1,14 @@
+fixed_layers: [ -1 ]
+depth_multiple: 1.0
+width_multiple: 1.0
+img_size: 512
+
+architecture:
+  # [from, number, module, args]
+  [ [ -1, 1, PatchEmbedding, [ 384, 16, 16 ] ],
+    [ -1, 6, GroupingLayer, [ 64, 4, 8 ] ],
+    [ -1, 3, GroupingLayer, [ 8, 4, 8 ] ],
+    [ -1, 3, TranEncoder, [ 4, 4 ] ],
+    [ -1, 1, AvgPool, [ 1 ] ],
+    [ -1, 1, nn.Linear, [ 7 ] ]
+  ]
