@@ -8,6 +8,7 @@ __test__.py
 # Environments
 .idea
 *.exe
+desktop.ini
 
 # datasets and projects
 data/
