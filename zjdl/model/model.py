@@ -89,7 +89,7 @@ class YamlModel(nn.Module):
                 nn.init.constant_(m.bias, 0)
             # Activation
             elif isinstance(m, (nn.ReLU, nn.LeakyReLU)):
-                m.inplace = False
+                m.inplace = True
 
     def example_input(self, b=1):
         return torch.rand([b, self.cfg['in_channels'], *self.cfg['img_size']])

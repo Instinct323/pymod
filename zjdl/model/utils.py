@@ -6,7 +6,6 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-to_2tuple = lambda x: x if x is None or isinstance(x, (list, tuple)) else (x,) * 2
 # 重新封装 sum 函数, 以减少加 0 时产生的计算
 sum_ = lambda x: sum(x[1:], x[0])
 # 重新封装插值函数

@@ -1,0 +1,52 @@
+grad-cam
+jupyter
+matplotlib
+netron
+numpy
+opencv-python
+openpyxl
+optuna
+pandas
+pillow
+python-docx
+pyyaml
+requests
+scikit-learn
+scipy
+thop
+timm
+tqdm
+xlrd
+
+# --- deploy ---
+onnx
+onnxruntime-gpu
+onnx-simplifier
+openvino-dev[onnx]
+
+# --- OpenMMLab ---
+openmim
+mmengine
+mmcv-full
+mmeval
+mmcls
+mmdet
+mmyolo
+mmsegmentation
+
+# --- useless ---
+# mediapipe
+seaborn
+tensorboard
+
+# ffmpeg-python
+# moviepy
+# pdfminer
+# pdfminer3k
+# pdfminer.six
+# pyside2
+# pydotplus
+# pyinstaller
+# pymupdf
+# pywavelets
+# conda install pytorch==1.8.1 torchvision==0.9.1 torchaudio==0.8.1 cudatoolkit=10.2 -c pytorch

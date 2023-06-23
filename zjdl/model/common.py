@@ -2,6 +2,8 @@ import math
 from collections import OrderedDict
 from typing import Optional
 
+from timm.models.layers import to_2tuple, DropPath
+
 from .fourier import FourierFeatures
 from .utils import *
 
@@ -353,33 +355,11 @@ class DropBlock(nn.Module):
         if self.training and self.drop > 0:
             # Select the center point of the masking area in the active area
             dmask = torch.bernoulli((x > 0) * (self.drop / self.k ** 2))
-            kmask = 1 - (torch.max_pool2d(
+            kmask = 1 - (F.max_pool2d(
                 dmask, kernel_size=self.k, stride=1, padding=self.k // 2
             ) if self.k > 1 else dmask)
             # Standardization in the channel dimension
             x *= np.prod(x.shape[-2:]) / kmask.sum(dim=(2, 3), keepdims=True) * kmask
-        return x
-
-
-class DropPath(nn.Module):
-    ''' Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).'''
-
-    def __init__(self, drop: float = 0., scale_by_keep: bool = True):
-        super(DropPath, self).__init__()
-        self.drop = drop
-        self.scale_by_keep = scale_by_keep
-
-    def extra_repr(self):
-        return f'drop={self.drop:.3f}'
-
-    def forward(self, x):
-        if self.drop != 0. and self.training:
-            keep_prob = 1 - self.drop
-            shape = (x.size(0),) + (1,) * (x.ndim - 1)
-            random_tensor = x.new_empty(shape).bernoulli_(keep_prob)
-            if keep_prob > 0.0 and self.scale_by_keep:
-                random_tensor.div_(keep_prob)
-            x *= random_tensor
         return x
 
 
@@ -609,7 +589,7 @@ class MultiheadAttn(nn.Module):
 @register_module('c1')
 class TranEncoder(nn.Module):
 
-    def __init__(self, c1, e=4., nhead=8, k=0, s=0, drop=0.1, droppath=0.):
+    def __init__(self, c1, e=4., nhead=8, k=0, s=0, drop=0.1, droppath=0.1):
         super().__init__()
         self.attn = MultiheadAttn(c1, s=s, nhead=nhead, drop=drop, qk_norm=True, bias=True)
         self.norm1 = nn.LayerNorm(c1)
