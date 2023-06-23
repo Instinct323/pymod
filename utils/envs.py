@@ -1,25 +1,6 @@
 import os
 import re
 import sys
-from pathlib import Path
-
-
-def get_requirements(path=Path()):
-    ''' 获取依赖包'''
-    modules = {}
-    for m in sys.modules.values():
-        # 根据文件路径筛选
-        f = m.__dict__.get('__file__', None)
-        if f and 'site-packages' in f:
-            # 根据导入方式筛选
-            if 'SourceFileLoader' in str(m.__loader__):
-                # 根据隐藏模块前缀筛选
-                n = m.__name__.split('.', maxsplit=1)[0]
-                if n[0] != '_': modules[n] = m
-    # 写入 txt 文本
-    with open(path / 'requirements.txt', 'w') as f:
-        f.writelines(map(lambda s: s + '\n', modules.keys()))
-    return modules
 
 
 class CondaEnv:
@@ -55,8 +36,8 @@ class CondaEnv:
             os.system(f'pip config set global.{k} {v}')
         # 配置 conda
         for p in ('--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/',
-                      '--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/',
-                      '--set show_channel_urls yes'):
+                  '--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/',
+                  '--set show_channel_urls yes'):
             os.system(f'conda config {p}')
 
     def __repr__(self):
