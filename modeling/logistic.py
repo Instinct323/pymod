@@ -1,11 +1,9 @@
-import logging
 import pickle
 
 import numpy as np
 from tqdm import tqdm
 
-logging.basicConfig(format='%(message)s', level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
+from utils import LOGGER
 
 
 class FocalLoss:

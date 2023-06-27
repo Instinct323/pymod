@@ -1,20 +1,11 @@
 import time
 
 import matplotlib.patches as pch
-import matplotlib.pyplot as plt
 import numpy as np
 
 # coord.py 详见: https://blog.csdn.net/qq_55745968/article/details/129912954
-from coord import CoordSys_2d, CoordSys_3d
-
-red = 'orangered'
-orange = 'orange'
-yellow = 'yellow'
-green = 'greenyellow'
-cyan = 'aqua'
-blue = 'deepskyblue'
-purple = 'mediumpurple'
-pink = 'violet'
+from .coord import CoordSys_2d, CoordSys_3d
+from .utils import *
 
 ROUND_EDGE = 30  # 圆等效多边形边数
 DTYPE = np.float16  # 矩阵使用的数据类型
@@ -80,13 +71,6 @@ class Spot:
         self.produce(alpha > 0)
 
 
-def figure3d():
-    ''' 创建3d工作站'''
-    figure = plt.subplot(projection='3d')
-    tuple(getattr(figure, f'set_{i}label')(i) for i in 'xyz')
-    return figure
-
-
 def cylinder(figure, csys: CoordSys_3d,
              R: float, h: float, r: float = 0,
              smooth: int = 2, **plot_kwd):
@@ -126,8 +110,8 @@ def ball(figure, csys: CoordSys_3d, r: float, **plot_kwd):
     theta, phi = np.meshgrid(theta, phi)
     sin_phi = np.sin(phi) * r
     figure.plot_surface(*csys.apply(np.cos(theta) * sin_phi,
-                                     np.sin(theta) * sin_phi,
-                                     np.cos(phi) * r), **plot_kwd)
+                                    np.sin(theta) * sin_phi,
+                                    np.cos(phi) * r), **plot_kwd)
 
 
 def rubik_cube(figure, csys: CoordSys_3d,

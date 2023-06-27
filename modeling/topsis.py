@@ -1,6 +1,6 @@
 import numpy as np
 
-from .basic import num, comentropy
+from .utils import NUMBER, comentropy
 
 
 def positive(data, flags):
@@ -14,23 +14,22 @@ def positive(data, flags):
             [num, num]: 区间型
         return: 正向化, 标准化矩阵'''
     data = data.copy()
-    # 拷贝张量
-    for idx, flag in enumerate(flags):
-        col = data[:, idx]
+    for i, flag in enumerate(flags):
+        col = data[:, i]
+        # 成本型指标
         if isinstance(flag, bool):
             if not flag:
-                data[:, idx] = col.max() - col
-                # 成本型指标
-        elif isinstance(flag, num):
+                data[:, i] = col.max() - col
+        # 中间型指标
+        elif isinstance(flag, NUMBER):
             col = np.abs(col - flag)
-            data[:, idx] = 1 - col / col.max()
-            # 中间型指标
+            data[:, i] = 1 - col / col.max()
+        # 区间型指标
         elif len(flag) == 2:
-            left, right = sorted(flag)
-            if isinstance(left, num) and isinstance(right, num):
-                col = (left - col) * (col < left) + (col - right) * (col > right)
-                data[:, idx] = 1 - col / col.max()
-                # 区间型指标
+            l, r = sorted(flag)
+            if isinstance(l, NUMBER) and isinstance(r, NUMBER):
+                col = (l - col) * (col < l) + (col - r) * (col > r)
+                data[:, i] = 1 - col / col.max()
             else:
                 raise AssertionError('区间型指标数据类型出错')
         else:
@@ -43,21 +42,15 @@ def cal_score(pos, weight=None):
     ''' pos: 正向化, 标准化矩阵
         weight: 权重向量
         return: 样本得分'''
+    # 当无权值要求，则各个指标权值相等
     if np.all(weight is None):
         length = pos.shape[1]
         weight = np.ones([1, length])
-        # 当无权值要求，则各个指标权值相等
+    # 使用指定的权值
     else:
         weight = np.array(weight).reshape([1, -1])
-        # 使用指定的权值
     weight /= weight.sum()
-    # 令权值和为1
-    worst = pos.min(axis=0)
-    best = pos.max(axis=0)
-    # 劣样本、优样本
-    dis_p = ((weight * (pos - best)) ** 2).sum(axis=1) ** 0.5
-    dis_n = ((weight * (pos - worst)) ** 2).sum(axis=1) ** 0.5
     # 样本到劣样本、优样本的距离
-    score = dis_n / (dis_p + dis_n)
-    # 计算得分
-    return score.reshape(-1, 1)
+    dis_p = ((weight * (pos - pos.max(axis=0))) ** 2).sum(axis=1) ** 0.5
+    dis_n = ((weight * (pos - pos.min(axis=0))) ** 2).sum(axis=1) ** 0.5
+    return (dis_n / (dis_p + dis_n)).reshape(-1, 1)

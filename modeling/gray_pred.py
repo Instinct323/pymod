@@ -1,13 +1,12 @@
-import logging
 import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from utils import LOGGER
+
 warnings.filterwarnings('ignore')
-logging.basicConfig(format='%(message)s', level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
 
 
 def gray_correlation(refer, data, rho=0.5):
@@ -42,23 +41,22 @@ def gray_model(seq, alpha=0.5, decimals=4, show=False):
         decimals: 数值精度
         show: 绘制真实值和预测值的对比图
         return: 灰色预测模型, 模型信息'''
-    seq = seq.reshape(-1)
-    length = len(seq)
-    index = np.arange(1, length + 1, 1)
+    seq, n = seq.flatten(), seq.size
+    index = np.arange(1, n + 1)
     # 创建数据存储表单
     model_info = pd.DataFrame(index=index, columns=['真实值', '模型值', '相对误差', '级比偏差'])
     model_info['真实值'] = seq
     # 级比: x(k-1) / x(k)
     mag_ratio = seq[:-1] / seq[1:]
-    mr_right = round(mag_ratio.max(), decimals)
-    mr_left = round(mag_ratio.min(), decimals)
+    mr_r = round(mag_ratio.max(), decimals)
+    mr_l = round(mag_ratio.min(), decimals)
     # 级比检验的区间边界
-    left = round(np.exp(- 2 / (length + 1)), decimals)
-    right = round(np.exp(2 / (length + 1)), decimals)
+    l = round(np.exp(- 2 / (n + 1)), decimals)
+    r = round(np.exp(2 / (n + 1)), decimals)
     # 级比检验: 检验数列级比是否都落在可容覆盖区间
-    LOGGER.info('\n'.join(['级比检验:', f'MR ∈ [{mr_left}, {mr_right}]',
-                           f'Border ∈ [{left}, {right}]', '']))
-    assert mr_left >= left and mr_right <= right, '序列未通过级比检验, 可通过平移变换改善'
+    LOGGER.info('\n'.join(['级比检验:', f'MR ∈ [{mr_l}, {mr_r}]',
+                           f'Border ∈ [{l}, {r}]', '']))
+    assert mr_l >= l and mr_r <= r, '序列未通过级比检验, 可通过平移变换改善'
     # 灰积分: 累加数列
     integrade = np.cumsum(seq)
     # 灰微分: 差分数列

@@ -1,6 +1,6 @@
 import numpy as np
 
-from .basic import cal_RI, solve_weight, LOGGER
+from .utils import cal_RI, solve_weight, LOGGER
 
 
 def pair_comp_array(tril):

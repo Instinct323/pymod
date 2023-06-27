@@ -7,8 +7,7 @@ def eval_weight(R):
     mean = R.mean(axis=0, keepdims=True)
     variance = np.sqrt(((R - mean) ** 2).sum(axis=0, keepdims=True) / (R.shape[0] - 1))
     weight = variance / mean
-    weight /= weight.sum()
-    return weight
+    return weight / weight.sum()
 
 
 def rela_dev_fun(data, is_benefit):
@@ -17,17 +16,9 @@ def rela_dev_fun(data, is_benefit):
             行索引: 各方案
             列索引: 各指标
         return: 模糊综合评价矩阵R'''
-    plan = []
-    for col, flag in zip(data.T, is_benefit):
-        if flag:
-            choose = col.max()
-        else:
-            choose = col.min()
-        plan.append(choose)
-    plan = np.array(plan)
+    plan = np.array([col.max() if flag else col.min() for col, flag in zip(data.T, is_benefit)])
     print(f'虚拟理想方案: {plan}')
-    array = np.abs(plan - data) / (data.max(axis=0) - data.min(axis=0))
-    return array
+    return np.abs(plan - data) / (data.max(axis=0) - data.min(axis=0))
 
 
 def rela_opti_fun(data, is_benefit):
@@ -36,12 +27,9 @@ def rela_opti_fun(data, is_benefit):
             行索引: 各方案
             列索引: 各指标
         return: 模糊综合评价矩阵R'''
-    for idx, flag in enumerate(is_benefit):
-        col = data[:, idx]
-        if flag:
-            data[:, idx] /= col.max()
-        else:
-            data[:, idx] = col.min() / col
+    for i, flag in enumerate(is_benefit):
+        col = data[:, i]
+        data[:, i] = col / col.max() if flag else col.min() / col
     return data
 
 
@@ -50,13 +38,6 @@ def fuzzy_oper(A, R, mode):
         {0: (&, |), 1: (*, |), 2: (&, +), 3: (*, +)}'''
     assert 0 <= mode <= 3
     A = A.reshape(-1, 1)
-    if mode % 2:
-        result = A * R
-    else:
-        result = np.fmin(A, R)
-    if mode < 2:
-        result = result.max(axis=0)
-    else:
-        result = result.sum(axis=0)
-    result /= result.sum()
-    return result
+    result = A * R if mode % 2 else np.fmin(A, R)
+    result = result.max(axis=0) if mode < 2 else result.sum(axis=0)
+    return result / result.sum()

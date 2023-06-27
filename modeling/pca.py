@@ -29,6 +29,5 @@ def principal(asso, thresh=0.80, dims=None):
         if sum_con >= thresh:
             info_contribute = cha_value[:idx + 1] / cha_value.sum()
             # 取前 m 个主成分, 计算信息贡献率
-            # print(f'主成分贡献率: {info_contribute}\n')
-            rota = rota[:, :idx + 1]
-            return rota
+            print(f'主成分贡献率: {info_contribute}\n')
+            return rota[:, :idx + 1]

@@ -3,7 +3,8 @@ import logging
 import os
 import pickle
 import re
-from pathlib import WindowsPath, PosixPath
+import sys
+from pathlib import WindowsPath, PosixPath, Path as _path
 
 import cv2
 import pandas as pd
@@ -57,33 +58,53 @@ def colorstr(*args):
     return ''.join(colors[x] for x in args) + f'{string}' + colors['end']
 
 
-def timer(repeat=1, avg=True):
-    import time
-    repeat = max(1, int(repeat) if isinstance(repeat, float) else repeat)
+class timer:
 
-    def decorator(func):
+    def __init__(self, repeat: int = 1, avg: bool = True):
+        self.repeat = max(1, int(repeat) if isinstance(repeat, float) else repeat)
+        self.avg = avg
+
+    def __call__(self, func):
         def handler(*args, **kwargs):
+            import time
             start = time.time()
-            result = tuple(func(*args, **kwargs) for i in range(repeat) if not i)[0]
+            result = tuple(func(*args, **kwargs) for i in range(self.repeat) if not i)[0]
             cost = (time.time() - start) * 1e3
-            print(f'{func.__name__}: {cost / repeat if avg else cost:.3f} ms')
+            print(f'{func.__name__}: {cost / self.repeat if self.avg else cost:.3f} ms')
             return result
 
         return handler
 
-    return decorator
+
+class run_once:
+
+    def __init__(self, interval: float = 20.):
+        self.interval = interval
+
+    def __call__(self, func):
+        def handler(*args, **kwargs):
+            import time
+            # Try to run it an infinite number of times until it succeeds
+            while True:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as error:
+                    LOGGER.warning(error)
+                    time.sleep(self.interval)
+
+        return handler
 
 
 def singleton(cls):
-    ''' 单例类装饰器'''
+    # Singleton class decorators
     _instance = {}
 
-    def _singleton(*args, **kwargs):
+    def handler(*args, **kwargs):
         if cls not in _instance:
             _instance[cls] = cls(*args, **kwargs)
         return _instance[cls]
 
-    return _singleton
+    return handler
 
 
 def try_except(func):
@@ -92,20 +113,47 @@ def try_except(func):
         try:
             return func(*args, **kwargs)
         except Exception as error:
-            LOGGER.error(f'{type(error).__name__}: {error}')
+            LOGGER.warning(error)
 
     return handler
 
 
-class Path(WindowsPath if os.name == 'nt' else PosixPath):
+def select_file(handler, glob_pats=('*.pdf',), wo_app=True):
+    from PyQt5.QtWidgets import QFileDialog, QApplication
+    # 请执行 sys.exit(0) 退出程序
+    if wo_app: app = QApplication(sys.argv)
+    dialog = QFileDialog()
+    file = dialog.getOpenFileName(caption='Select file',
+                                  filter=('; '.join(glob_pats).join('()') if glob_pats else None))[0]
+    if file: return handler(Path(file))
+
+
+def select_dir(handler, wo_app=True):
+    from PyQt5.QtWidgets import QFileDialog, QApplication
+    # 请执行 sys.exit(0) 退出程序
+    if wo_app: app = QApplication(sys.argv)
+    dialog = QFileDialog()
+    dire = dialog.getExistingDirectory(None, 'Select directory')
+    if dire: return handler(Path(dire))
+
+
+class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
+
+    def fsize(self, unit: str = 'B'):
+        return self.stat().st_size / 1024 ** ('B', 'KB', 'MB', 'GB').index(unit) if self.is_file() else 0.
 
     def lazy_obj(self, fget, *args, **kwargs):
+        f_load_dump = {
+            'json': self.json, 'yaml': self.yaml,
+            'csv': self.csv, 'xls': self.excel
+        }.get(self.suffix[1:], self.pickle)
+        # 根据 load/dump 方法载入数据
         if self.is_file():
-            data = self.pickle()
+            data = f_load_dump()
             LOGGER.info(f'Load <{type(data).__name__}> from {self}')
         else:
             data = fget(*args, **kwargs)
-            self.pickle(data)
+            f_load_dump(data)
         return data
 
     def pickle(self, data=None, **kwargs):
@@ -121,14 +169,15 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath):
             if data is None else self.write_text(yaml.dump(data, **kwargs))
 
     @try_except
-    def csv(self, data=None, **kwargs):
+    def csv(self, data: pd.DataFrame = None, **kwargs):
         return pd.read_csv(self, **kwargs) if data is None else data.to_csv(self, **kwargs)
 
     @try_except
-    def excel(self, data=None, **kwargs):
+    def excel(self, data: pd.DataFrame = None, **kwargs):
+        # Only excel in 'xls' format is supported
         if data is None: return pd.read_excel(self, **kwargs)
         writer = pd.ExcelWriter(self)
-        for df in [data] if isinstance(data, pd.DataFrame) else dataframe:
+        for df in [data] if isinstance(data, pd.DataFrame) else data:
             df.to_excel(writer, **kwargs)
         writer.save()
 
@@ -165,5 +214,5 @@ class Capture(cv2.VideoCapture):
 
 
 if __name__ == '__main__':
-    file = Path('../config/cnn') / 'ResNet-50.yaml'
-    print(file.yaml())
+    p = Path(r'D:\Information\Download\CCF.xls')
+    print(p.pickle.__name__)

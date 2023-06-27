@@ -3,6 +3,13 @@ import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 
+# 普通左对齐文本html设置: 12 号左对齐黑体
+common_l = lambda text: f'<html><head/><body><p><span style=" font-size:12pt; ' \
+                        f'font-weight:600;">{text}</span></p></body></html>'
+# 标题左对齐文本html设置: 12 号左对齐加粗蓝色
+head = lambda text: f'<html><head/><body><p><span style=" font-size:12pt; ' \
+                    f'font-weight:600; cor:#0da7ef;">{text}</span></p></body></html>'
+
 
 class Window(QMainWindow):
 

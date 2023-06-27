@@ -14,12 +14,14 @@ class CondaEnv:
         os.system(f'conda create -n {name} python=={version}')
 
     def install(self, pack, pip=True, uninstall=False, upgrade=False):
-        engine = 'pip' if pip else 'conda'
-        param = 'uninstall -y' if uninstall else ('install' + upgrade * ' --upgrade')
-        os.system(f'{engine} {param} {pack}')
+        p = ['pip' if pip else 'conda']
+        p.append('uninstall -y' if uninstall else ('install' + upgrade * ' --upgrade'))
+        p.append(pack)
+        if pip: p.append('--no-cache-dir')
+        os.system(' '.join(p))
 
     def load_requirements(self, file='requirements.txt'):
-        os.system(f'pip install -r {str(file)}')
+        os.system(f'pip install --no-cache-dir -r {str(file)}')
 
     def clean(self):
         return os.popen('conda clean -y -all')

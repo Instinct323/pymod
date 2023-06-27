@@ -5,9 +5,16 @@ from pathlib import Path
 import cv2
 import numpy as np
 import pyautogui
-
+import wmi
 from mod.machine_learn.utils import Capture
-from mod.utils.utils import set_brightness
+
+
+def set_brightness(value):
+    ''' 调节屏幕亮度: value ∈ [0, 100]'''
+    # import wmi
+    connect = wmi.WMI(namespace='root/WMI')
+    method = connect.WmiMonitorBrightnessMethods()[0]
+    method.WmiSetBrightness(value, Timeout=500)
 
 
 class Monitor:

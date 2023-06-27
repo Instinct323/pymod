@@ -8,7 +8,7 @@ def poisson_distribution(var, mean):
     ''' 泊松分布'''
     assert var.dtype == np.int, '变量需为 int'
     fact = np.array(list(map(factorial, var)))
-    return mean ** var / fact * np.exp(-mean)
+    return mean ** var / fact * np.exp(- mean)
 
 
 def update_state(basic, proba, time):
