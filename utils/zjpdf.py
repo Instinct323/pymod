@@ -1,4 +1,3 @@
-import pickle
 from pathlib import Path
 
 import fitz
@@ -9,19 +8,6 @@ from pdfminer.pdfpage import PDFPage
 from tqdm import tqdm
 
 STOP_WORDS = r'\/:*?"<>|'
-
-
-def seq_comp(seq1, seq2):
-    ''' 序列匹配度计算'''
-    n1, n2 = map(len, (seq1, seq2))
-    dp = [[int(e1 == e2) for e2 in seq2] for e1 in seq1]
-    for c in range(1, n2): dp[0][c] = max(dp[0][c], dp[0][c - 1])
-    for r in range(1, n1):
-        dp[r][0] = max(dp[r][0], dp[r - 1][0])
-        for c in range(1, n2):
-            dp[r][c] = dp[r - 1][c - 1] + 1 \
-                if dp[r][c] else max(dp[r - 1][c], dp[r][c - 1])
-    return dp[-1][-1] / max(n1, n2)
 
 
 def pdf_load(file: Path):
