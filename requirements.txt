@@ -39,6 +39,11 @@ openvino-dev[onnx]
 seaborn
 tensorboard
 
+# --- nlp ---
+# nltk
+# jieba
+
+# --- other ---
 # pdfminer
 # pdfminer3k
 # pdfminer.six
