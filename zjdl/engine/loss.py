@@ -10,13 +10,17 @@ def kl_divergence(p, q, eps=1e-6):
 
 class FocalLoss(nn.Module):
 
-    def __init__(self, gamma=1.5):
+    def __init__(self, nc, gamma: float = 1.5):
         super().__init__()
+        self.nc = nc
         self.gamma = gamma
+
+    def get_target(self, target):
+        return F.one_hot(target, nc)
 
     def forward(self, logits, target):
         # target: 转为 one_hot, 计算二元交叉熵
-        target = F.one_hot(target, logits.shape[-1]).float()
+        target = self.get_target(target).float()
         loss = F.binary_cross_entropy_with_logits(logits, target, reduction='none')
         # logits: 利用 sigmoid 计算 pred, 以及聚焦系数
         if self.gamma:
@@ -26,13 +30,19 @@ class FocalLoss(nn.Module):
         return loss
 
 
+class MultiFocalLoss(FocalLoss):
+
+    def get_target(self, target):
+        for x in self.nc:
+            pass
+
+
 class CrossEntropy(nn.Module):
 
-    def __init__(self, softw=.6, l2penalty=0.):
+    def __init__(self, softw=.6):
         super().__init__()
         assert 0 <= softw < 1
         self.softw = softw
-        self.l2penalty = l2penalty
 
     def forward(self, logits, hardlabel, softlabel=None):
         log_softmax = F.log_softmax(logits, dim=-1)
@@ -43,10 +53,6 @@ class CrossEntropy(nn.Module):
             item = - (log_softmax * softlabel).sum(dim=-1).mean()
             item = loss * (1 - self.softw) + item * self.softw
             loss = item - item.detach() + loss.detach()
-        # L2 范数惩罚
-        if self.l2penalty:
-            item = self.l2penalty * torch.square(logits).mean()
-            loss += item - item.detach()
         return loss
 
 
