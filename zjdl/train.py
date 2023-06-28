@@ -19,7 +19,7 @@ class CocoDetect:
     @staticmethod
     def make_index(imgdir: Path,
                    labeldir: Path):
-        img = collect_files(imgdir, formats=IMG_FORMAT)
+        img = imgdir.collect_file(formats=IMG_FORMAT)
         label = []
         for f in tqdm(img, 'Loading labels'):
             f = labeldir / f'{f.stem}.txt'

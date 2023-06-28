@@ -5,7 +5,6 @@ import sys
 from pathlib import WindowsPath, PosixPath, Path as _path
 
 import cv2
-import pandas as pd
 from tqdm import tqdm
 
 logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.INFO)
@@ -16,43 +15,21 @@ LOGGER = logging.getLogger(__name__)
 IMG_FORMAT = set(re.findall(r'\\\*\.(\w+)', cv2.imread.__doc__))
 
 
-def collect_files(folder, formats=IMG_FORMAT):
-    formats = [formats] if isinstance(formats, str) else formats
-    pools = [], []
-    # 收集该目录下的所有文件
-    qbar = tqdm(folder.glob('**/*.*'))
-    for f in qbar:
-        qbar.set_description(f'Collecting files')
-        pools[f.suffix[1:] in formats].append(f)
-    # 如果有文件不符合格式, 则警告
-    if pools[False]:
-        LOGGER.warning(f'Unsupported files: {", ".join(map(str, pools[False]))}')
-    return pools[True]
-
-
-def colorstr(*args):
-    # Colors a string https://en.wikipedia.org/wiki/ANSI_escape_code, i.e.  colorstr('blue', 'hello world')
-    *args, string = args if len(args) > 1 else ('blue', 'bold', args[0])  # color arguments, string
-    colors = {'black': '\033[30m',  # basic colors
-              'red': '\033[31m',
-              'green': '\033[32m',
-              'yellow': '\033[33m',
-              'blue': '\033[34m',
-              'magenta': '\033[35m',
-              'cyan': '\033[36m',
-              'white': '\033[37m',
-              'bright_black': '\033[90m',  # bright colors
-              'bright_red': '\033[91m',
-              'bright_green': '\033[92m',
-              'bright_yellow': '\033[93m',
-              'bright_blue': '\033[94m',
-              'bright_magenta': '\033[95m',
-              'bright_cyan': '\033[96m',
-              'bright_white': '\033[97m',
-              'end': '\033[0m',  # misc
-              'bold': '\033[1m',
-              'underline': '\033[4m'}
-    return ''.join(colors[x] for x in args) + f'{string}' + colors['end']
+def colorstr(msg, *setting):
+    setting = ('blue', 'bold') if not setting else ((setting,) if isinstance(setting, str) else setting)
+    # Colors a string https://en.wikipedia.org/wiki/ANSI_escape_code
+    colors = {
+        # basic colors
+        'black': '\033[30m', 'red': '\033[31m', 'green': '\033[32m', 'yellow': '\033[33m',
+        'blue': '\033[34m', 'magenta': '\033[35m', 'cyan': '\033[36m', 'white': '\033[37m',
+        # bright colors
+        'bright_black': '\033[90m', 'bright_red': '\033[91m', 'bright_green': '\033[92m',
+        'bright_yellow': '\033[93m', 'bright_blue': '\033[94m', 'bright_magenta': '\033[95m',
+        'bright_cyan': '\033[96m', 'bright_white': '\033[97m',
+        # misc
+        'end': '\033[0m', 'bold': '\033[1m', 'underline': '\033[4m',
+    }
+    return ''.join(colors[x] for x in setting) + str(msg) + colors['end']
 
 
 class timer:
@@ -154,6 +131,19 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
             f_load_dump(data, **fld_kwd)
         return data
 
+    def collect_file(self, formats=IMG_FORMAT):
+        formats = [formats] if isinstance(formats, str) else formats
+        pools = [], []
+        # 收集该目录下的所有文件
+        qbar = tqdm(self.glob('**/*.*'))
+        for f in qbar:
+            qbar.set_description(f'Collecting files')
+            pools[f.suffix[1:] in formats].append(f)
+        # 如果有文件不符合格式, 则警告
+        if pools[False]:
+            LOGGER.warning(f'Unsupported files: {", ".join(map(str, pools[False]))}')
+        return pools[True]
+
     def pickle(self, data=None, **kwargs):
         import pickle
         return pickle.load(self.open('rb'), **kwargs) \
@@ -227,4 +217,4 @@ class Capture(cv2.VideoCapture):
 
 if __name__ == '__main__':
     p = Path(r'D:\Information\Python\Completed\Shelf\TiaoZhanBei\onnx runner\yolov7.pt')
-    print(p.netron())
+    print('hello' + colorstr('hi', 'red', 'bold') + 'dddd')

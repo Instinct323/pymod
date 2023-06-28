@@ -7,24 +7,20 @@ from lxml.etree import HTML
 from tqdm import tqdm
 
 
-def math_paper(url, path=os.environ['TEMP']):
+def math_paper(url, path=Path(os.environ['TMP'])):
     html = HTML(requests.get(url).text)
-    title = html.xpath('/html/body/div/div[3]/div[1]/div[2]')[0].text
-    title = re.sub(r'\s', '', re.sub(r'[\\/:*?"<>|]', '_', title))
+    title = re.sub(r'\s', '', re.sub(r'[\\/:*?"<>|]', '_', html.xpath('/html/body/div/div[3]/div[1]/div[2]')[0].text))
     # 以文章标题作为路径名, 存放在系统的临时目录下
-    root = Path(path) / title
+    root = path / title
     root.mkdir(exist_ok=True)
     # 获取所有图片的源地址
     get_src = lambda node: node.attrib['src']
     nodes = map(lambda node: 'https://dxs.moe.gov.cn' * (not get_src(node).startswith('http')) + get_src(node),
                 html.xpath('/html/body/div[1]/div[3]/div[1]/div[4]/div/div[1]/div/div/img'))
     # 开始下载
-    pbar = tqdm(list(enumerate(nodes)))
-    pbar.set_description(str(root.parent))
+    pbar = tqdm(tuple(enumerate(nodes)), desc=str(root.parent))
     for i, src in pbar:
-        data = requests.get(src)
-        with open(root / f'{i + 1}.jpg', 'wb') as f:
-            f.write(data.content)
+        (root / f'{i + 1}.jpg').write_bytes(requests.get(src).content)
 
 
 if __name__ == '__main__':
