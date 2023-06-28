@@ -4,7 +4,7 @@ import openvino.runtime
 class OpenvinoModel(openvino.runtime.Core):
 
     def __init__(self, file=Path('yolov7.xml')):
-        super(OpenvinoModel, self).__init__()
+        super().__init__()
         self._file = file
         self._device = self.available_devices[-1]
         # 加载模型参数

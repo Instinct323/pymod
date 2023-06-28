@@ -2,7 +2,7 @@ import numpy as np
 import scipy.linalg
 
 
-class Kalmen_Filter:
+class KalmenFilter:
     ''' 卡尔曼滤波器 (单目标):
         _std_weight_position: 位置标准差权值
         _std_weight_velocity: 速度标准差权值
@@ -63,7 +63,7 @@ class Kalmen_Filter:
         return new_mean, new_cov
 
 
-class Single_Object_Track(Kalmen_Filter):
+class SingleObjTrack(KalmenFilter):
     ''' 单目标跟踪器
         init: 目标确认丢失, 重新初始化
         track: 目标未丢失则跟踪, 丢失则预测
@@ -72,7 +72,7 @@ class Single_Object_Track(Kalmen_Filter):
     confirm_time_thresh = 3
 
     def __init__(self):
-        super(Single_Object_Track, self).__init__()
+        super().__init__()
         self.init()
 
     def init(self):
@@ -106,7 +106,7 @@ class Single_Object_Track(Kalmen_Filter):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    sot = Single_Object_Track()
+    sot = SingleObjTrack()
 
     # 生成带扰动的 x 坐标的原始轨迹
     np.random.seed(0)
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     print(cnt_none(detect), cnt_none(predict))
 
     plt.plot(x, y, label='origin', color='orange')
-    first_none = range_[0] + Single_Object_Track.miss_time_thresh - 1
+    first_none = range_[0] + SingleObjTrack.miss_time_thresh - 1
     predict = np.array(filt_none(predict))[:, :2]
     plt.plot(*predict[:first_none].T, label='track', color='deepskyblue')
     plt.plot(*predict[first_none:].T, color='deepskyblue')

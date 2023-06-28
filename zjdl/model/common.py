@@ -424,7 +424,7 @@ class Mlp(MixFFN):
 class MixerLayer(nn.Module):
 
     def __init__(self, c1, p, ep=2., ec=4, drop=0.1):
-        super(MixerLayer, self).__init__()
+        super().__init__()
         self.ln1 = nn.LayerNorm(c1)
         self.mlp1 = Mlp(p, e=ep, drop=drop, act=QuickGELU)
         self.ln2 = nn.LayerNorm(c1)

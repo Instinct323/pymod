@@ -194,7 +194,7 @@ class Capture(cv2.VideoCapture):
                  file: str = 0,
                  show: int = 0,
                  dpi: list = [1280, 720]):
-        super(Capture, self).__init__(file)
+        super().__init__(file)
         if not self.isOpened():
             raise RuntimeError('Failed to initialize video capture')
         self.show = show

@@ -51,7 +51,7 @@ class CosineLR(torch.optim.lr_scheduler.LambdaLR):
 
     def __init__(self, optimizer, lrf, epochs, verbose=False):
         lr_lambda = lambda x: lrf + (1 + math.cos(math.pi * x / epochs)) / 2 * (1 - lrf)
-        super(CosineLR, self).__init__(optimizer, lr_lambda, verbose=verbose)
+        super().__init__(optimizer, lr_lambda, verbose=verbose)
 
 
 class Trainer:
@@ -248,7 +248,7 @@ class Trainer:
         # 损失累计
         loss_sum = 0
         cuda = self.device.type != 'cpu'
-        pbar = tqdm(enumerate(data_set))
+        pbar = tqdm(enumerate(data_set), total=len(data_set))
         if not self.training: pbar.set_description(fstring('', *self._m_title))
         for i, batch in pbar:
             if self.training:

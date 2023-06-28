@@ -9,6 +9,7 @@ def kl_divergence(p, q, eps=1e-6):
 
 
 class FocalLoss(nn.Module):
+    # nc (int): Number of classes
 
     def __init__(self, nc, gamma: float = 1.5):
         super().__init__()
@@ -31,10 +32,12 @@ class FocalLoss(nn.Module):
 
 
 class MultiFocalLoss(FocalLoss):
+    # nc (tuple): Number of classes for each family
+    c1 = property(fget=lambda self: sum(nc if nc > 2 else 1 for nc in self.nc))
 
     def get_target(self, target):
-        for x in self.nc:
-            pass
+        return torch.cat([F.one_hot(target[..., i], nc) if nc > 2 else target[..., i, None]
+                          for i, nc in enumerate(self.nc)], dim=-1)
 
 
 class CrossEntropy(nn.Module):
@@ -97,12 +100,7 @@ class ContrastiveLoss(nn.Module):
 
 if __name__ == '__main__':
     logits = torch.rand([9, 4], requires_grad=True)
-    target = torch.randint(0, 4, [9])
+    target = torch.randint(0, 2, [9, 2])
 
-    for g in (0, 1):
-        fl = CrossEntropy(l2penalty=g)
-
-        loss = fl(logits, target)
-        print(loss)
-    # print(F.log_softmax(logits))
-    # print(F.cross_entropy(logits, target, reduction='none'))
+    fl = MultiFocalLoss((3, 2))
+    print(fl.c1)
