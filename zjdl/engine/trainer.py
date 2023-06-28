@@ -22,7 +22,7 @@ def fstring(*args, length=9, decimals=4):
     lut = {'s': f'%{length}s', 'g': f'%{length}.{decimals}g'}
     # e.g., 'ssgg' -> '%9s %9s %9.4g %9.4g'
     fstr = ' '.join(lut['g' if isinstance(i, (int, float)) else 's'] for i in args)
-    return fstr % seq
+    return fstr % args
 
 
 def select_device(device='', batch_size=None, verbose=True):

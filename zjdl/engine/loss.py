@@ -16,7 +16,7 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
 
     def get_target(self, target):
-        return F.one_hot(target, nc)
+        return F.one_hot(target, self.nc)
 
     def forward(self, logits, target):
         # target: 转为 one_hot, 计算二元交叉熵
