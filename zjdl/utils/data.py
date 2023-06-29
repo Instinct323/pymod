@@ -186,6 +186,13 @@ class SimpleDataset(_BaseDataset):
         return to_tensor(img), label
 
 
+class PairDataset(SimpleDataset):
+
+    def __getitem__(self, item):
+        img, label = self.imgpool[self.indexes[item]]
+        return to_tensor(img), to_tensor(self.aug(img)), label
+
+
 class MosaicDataset(_BaseDataset):
     ''' loads images in a 4-mosaic (generating square images)'''
 

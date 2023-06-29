@@ -148,10 +148,10 @@ class GaussianBlur(_augment):
         return img
 
 
-class Transform(list):
+class Transform(list, _augment):
 
     def __init__(self, *tfs):
-        key, t = sum(map(lambda tf: Counter(tf.get_param().keys()), tfs), Counter()).most_common(1)[0]
+        key, t = sum((Counter(tf.get_param().keys()) for tf in tfs), Counter()).most_common(1)[0]
         assert t == 1, f'Duplicate keyword argument <{key}>'
         super().__init__(tfs)
 

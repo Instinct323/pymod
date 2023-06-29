@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch import nn
+from typing import Union
 
 
 def kl_divergence(p, q, eps=1e-6):
@@ -59,6 +60,29 @@ class CrossEntropy(nn.Module):
         return loss
 
 
+class MultiCrossEntropy(nn.Module):
+    # nc (tuple): Number of classes for each family
+    c1 = property(fget=lambda self: sum(nc if nc > 2 else 1 for nc in self.nc))
+
+    def __init__(self, nc: Union[tuple, list], w: torch.Tensor = None):
+        super().__init__()
+        self.nc = nc
+        self.w = nn.Parameter(torch.ones(len(self.nc)) if w is None else w, requires_grad=False)
+
+    def forward(self, logits, hardlabel):
+        loss = torch.zeros_like(self.w)
+        logits = logits.split([nc if nc > 2 else 1 for nc in self.nc], dim=-1)
+        for i, (nc, p) in enumerate(zip(self.nc, logits)):
+            # 大于两个类别: softmax + nll
+            if nc > 2:
+                loss[i] = F.cross_entropy(p, hardlabel[..., i])
+            # 两个类别: ce
+            else:
+                t = hardlabel[..., i].float()
+                loss[i] = - (t * torch.log(p) + (1 - t) * torch.log(1 - p)).mean()
+        return (loss * self.w).sum()
+
+
 class ContrastiveLoss(nn.Module):
     ''' 同数据类型的对比损失
         g: 增强数据相对于原数据的倍数'''
@@ -102,5 +126,5 @@ if __name__ == '__main__':
     logits = torch.rand([9, 4], requires_grad=True)
     target = torch.randint(0, 2, [9, 2])
 
-    fl = MultiFocalLoss((3, 2))
-    print(fl.c1)
+    fl = MultiCrossEntropy((3, 2))
+    print(fl(logits, target))

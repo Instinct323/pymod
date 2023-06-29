@@ -1,55 +1,53 @@
 import random
+from typing import Union
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from model.common import LOCAL
+from torch import nn
 
 from .crosstab import Crosstab
 from .loss import ContrastiveLoss
 from .trainer import Trainer
 
 
-def linear_probing(train_x, train_y, eval_x=None, eval_y=None,
-                   hlayer=tuple(), **mlp_kwd) -> Crosstab:
-    # x: 标准化后的数据
+def linear_probing(x, y, hlayer=tuple(), cv=5, seed=0, **mlp_kwd) -> Crosstab:
+    from sklearn.model_selection import cross_val_predict
     from sklearn.neural_network import MLPClassifier
+    from sklearn.preprocessing import StandardScaler
+    np.random.seed(seed)
+    # 对 x 进行标准化
+    x = StandardScaler().fit_transform(x)
     mlp = MLPClassifier(hidden_layer_sizes=hlayer, **mlp_kwd)
-    mlp.fit(train_x, train_y)
-    return Crosstab(mlp.predict(eval_x), eval_y) \
-        if isinstance(eval_y, np.ndarray) else Crosstab(mlp.predict(train_x), train_y)
+    return Crosstab(cross_val_predict(mlp, x, y, cv=cv), y)
 
 
-class Grader(Trainer):
-    ''' 分级训练器'''
+class SimSiam(Trainer):
+
+    def __init__(self, model, project, m_title, hyp,
+                 head: Union[nn.Conv2d, nn.Linear]):
+        self.head = model.head = head
+        super().__init__(model, project, m_title, hyp)
+
+    def loss(self, origin, aug, target) -> torch.Tensor:
+        proj = self.model(torch.cat([origin, aug], dim=0))
+        pred = self.head(proj).chunk(2, dim=0)
+        proj = proj.detach().chunk(2, dim=0)
+        return - F.cosine_similarity(pred[0], proj[1], dim=-1, eps=1e-6).mean() \
+               - F.cosine_similarity(pred[1], proj[0], dim=-1, eps=1e-6).mean()
 
 
-class ContrastiveLearn(Trainer):
-    ''' 对比学习
-        tf: 数据增强时使用的变换器'''
+class SimCLR(Trainer):
+    # tf: 数据增强时使用的变换器
 
-    def __init__(self, model, project, m_title, hyp, tf):
-        # 获取数据增强模块
-        self._tf = lambda x: torch.stack([tf(i) for i in x])
-        # 将对比损失的温度参数写入模型参数
+    def __init__(self, model, project, m_title, hyp):
         self.cl = ContrastiveLoss(g=1)
         model.t = self.cl.param_t
         super().__init__(model, project, m_title, hyp)
 
-    def forward(self, x):
-        x = torch.cat((x, self._tf(x)))
-        return self.model(x)
-
-    def loss(self, image, target):
-        pred = self.forward(image)
-        return self.cl(pred)
-
-    def metrics(self, generator) -> np.ndarray:
-        for batch in generator: pass
-        raise NotImplementedError
-
-    def fitness(self, metrics) -> float:
-        raise NotImplementedError
+    def loss(self, origin, aug, target) -> torch.Tensor:
+        return self.cl(self.model(torch.cat([origin, aug], dim=0)))
 
 
 class MaskedAutoEncoder(Trainer):
@@ -80,13 +78,6 @@ class MaskedAutoEncoder(Trainer):
         # img[B, C, H, W] -> img[B, L, C]
         image = self.downsample(image).flatten(start_dim=2).transpose(1, 2)
         return F.mse_loss(pred[:, mmask], image[:, mmask])
-
-    def metrics(self, generator) -> np.ndarray:
-        for batch in generator: pass
-        raise NotImplementedError
-
-    def fitness(self, metrics) -> float:
-        raise NotImplementedError
 
 
 if __name__ == '__main__':

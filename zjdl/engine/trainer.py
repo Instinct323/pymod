@@ -60,7 +60,6 @@ class Trainer:
             best.pt: 最优模型的字典
             last.pt: 最新模型的字典
             result.json: 训练过程信息
-            traced.pt: torchscript 格式模型
         m_title: 实例方法 <metrics> 中各个度量的名称
         hyp: 超参数字典
             epochs: 训练总轮次
