@@ -8,7 +8,7 @@
 - $~~~~~~~~~~~~~~$├── scaling：EfficientNet 论文中的模型复合缩放
 - $~~~~~~~~~~~~~~$├── result：训练过程信息的结构化存储方法
 - $~~~~~~~~~~~~~~$├── iou：Wise-IoU 的计算方法
-- $~~~~~~~~~~~~~~$└── self_supervision：自监督学习 (e.g., SimCLR, MAE)、线性探测
+- $~~~~~~~~~~~~~~$└── supervisor：自监督学习 (e.g., SimSiam, SimCLR, MAE)、线性探测
 - ├── model：计算机视觉模型
 - $~~~~~~~~~~~~~~$├── common：CNN、ViT 网络单元
 - $~~~~~~~~~~~~~~$├── model：yaml 文件配置的模型

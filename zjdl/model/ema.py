@@ -41,12 +41,3 @@ class EmaModel:
         self.update()
         loss = F.mse_loss(self(x), y)
         return loss - loss.detach()
-
-    @staticmethod
-    def switch_branch(state_dict, branch='ema'):
-        branch += '.'
-        # Switches to the weight of the specified branch
-        for k in tuple(state_dict.keys()):
-            if k.startswith(branch):
-                state_dict[k[len(branch):]] = state_dict.pop(k)
-        return state_dict

@@ -39,13 +39,13 @@ class timer:
         self.avg = avg
 
     def __call__(self, func):
+        import time
+
         def handler(*args, **kwargs):
-            import time
             start = time.time()
-            result = tuple(func(*args, **kwargs) for i in range(self.repeat) if not i)[0]
+            for i in range(self.repeat): func(*args, **kwargs)
             cost = (time.time() - start) * 1e3
-            print(f'{func.__name__}: {cost / self.repeat if self.avg else cost:.3f} ms')
-            return result
+            return cost / self.repeat if self.avg else cost
 
         return handler
 
@@ -56,8 +56,9 @@ class run_once:
         self.interval = interval
 
     def __call__(self, func):
+        import time
+
         def handler(*args, **kwargs):
-            import time
             # Try to run it an infinite number of times until it succeeds
             while True:
                 try:

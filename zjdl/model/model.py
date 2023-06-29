@@ -14,6 +14,15 @@ logging.basicConfig(format='%(message)s', level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 
+def switch_branch(state_dict, branch='ema'):
+    branch += '.'
+    # Switches to the weight of the specified branch
+    for k in tuple(state_dict.keys()):
+        if k.startswith(branch):
+            state_dict[k[len(branch):]] = state_dict.pop(k)
+    return state_dict
+
+
 def cfg_modify(yaml_cfg: dict, modify: Union[tuple, list]):
     yaml_cfg = copy.deepcopy(yaml_cfg)
     # 使用特定语法修改配置

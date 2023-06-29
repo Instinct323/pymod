@@ -1,22 +1,4 @@
 import numpy as np
-import torch
-
-BGR_COLOR = {'red': (58, 0, 255),
-             'orange': (49, 125, 237),
-             'yellow': (255, 255, 0),
-             'green': (71, 173, 112),
-             'cyan': (255, 255, 0),
-             'blue': (240, 176, 0),
-             'purple': (209, 0, 152),
-             'pink': (241, 130, 234),
-             'gray': (190, 190, 190),
-             'black': (0, 0, 0)}
-
-
-def make_grid(nx=20, ny=20):
-    yv, xv = torch.meshgrid([torch.linspace(0.5 / ny, 1 - 0.5 / ny, ny),
-                             torch.linspace(0.5 / nx, 1 - 0.5 / nx, nx)])
-    return torch.stack([xv, yv], -1)
 
 
 def plot_conv(fig, width, height, colors, alpha=0.7,
@@ -58,27 +40,3 @@ def plot_fc(fig, in_features, out_features, g=1, color='silver',
             plot_fc(fig, in_f, out_f, color=color,
                     size=size, marker=marker, alpha=alpha, **kwargs)
     return fig
-
-
-def kernel_select(img, k, s=1, d=1, pad_value=0, axis=0):
-    ''' img: OpenCV 格式的图像 [h, w, c]
-        k: kernel size
-        s: stride
-        d: dilation
-        pad_value: 边界填充常量
-        axis: 新维度的位置'''
-    assert k & 1, 'The size of the kernel should be odd'
-    # 获取膨胀操作核
-    coord = np.arange(- (k // 2), k // 2 + 1)
-    kernel = np.stack(tuple(map(lambda x: x.T, np.meshgrid(coord, coord)[::-1])), axis=-1)
-    kernel = kernel.reshape([-1, 2]) * d
-    pad_width = kernel[0]
-    # 填充图像的边界
-    h, w = img.shape[:2]
-    img_pad = np.pad(img, constant_values=pad_value,
-                     pad_width=np.append(-pad_width, 0)[:, None].repeat(2, -1))
-    return np.stack([img_pad[y:y + h:s, x:x + w:s] for x, y in kernel - pad_width], axis=axis)
-
-
-if __name__ == '__main__':
-    print(make_grid())

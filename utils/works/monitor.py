@@ -6,7 +6,8 @@ import cv2
 import numpy as np
 import pyautogui
 import wmi
-from mod.machine_learn.utils import Capture
+
+from mod.zjdl.utils.utils import Capture
 
 
 def set_brightness(value):

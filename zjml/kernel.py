@@ -4,6 +4,26 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def kernel_select(img, k, s=1, d=1, pad_value=0, axis=0):
+    ''' img: OpenCV 格式的图像 [h, w, c]
+        k: kernel size
+        s: stride
+        d: dilation
+        pad_value: 边界填充常量
+        axis: 新维度的位置'''
+    assert k & 1, 'The size of the kernel should be odd'
+    # 获取膨胀操作核
+    coord = np.arange(- (k // 2), k // 2 + 1)
+    kernel = np.stack(tuple(map(lambda x: x.T, np.meshgrid(coord, coord)[::-1])), axis=-1)
+    kernel = kernel.reshape([-1, 2]) * d
+    pad_width = kernel[0]
+    # 填充图像的边界
+    h, w = img.shape[:2]
+    img_pad = np.pad(img, constant_values=pad_value,
+                     pad_width=np.append(-pad_width, 0)[:, None].repeat(2, -1))
+    return np.stack([img_pad[y:y + h:s, x:x + w:s] for x, y in kernel - pad_width], axis=axis)
+
+
 def kernel_func(x1, x2=None, kernel='rbf', args=(1,)):
     # K(x, x') = Φ(x)^T Φ(x')
     x2 = x2 if isinstance(x2, np.ndarray) else x1
