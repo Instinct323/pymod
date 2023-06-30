@@ -42,9 +42,9 @@ class timer:
         import time
 
         def handler(*args, **kwargs):
-            start = time.time()
+            t0 = time.time()
             for i in range(self.repeat): func(*args, **kwargs)
-            cost = (time.time() - start) * 1e3
+            cost = (time.time() - t0) * 1e3
             return cost / self.repeat if self.avg else cost
 
         return handler

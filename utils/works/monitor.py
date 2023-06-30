@@ -41,7 +41,7 @@ class Monitor:
         print(('%10s' * 6) % ('Size (MB)', 'r_Mean', 'f_Mean', 'r_Var', 'f_Var', 'Stat'))
         # main
         for i, img in enumerate(self.video):
-            start = time.time()
+            t0 = time.time()
             # 保存监控图像
             float_mean, float_var, stat = self.guard(i + 1, img)
             # 其它信息管理
@@ -49,7 +49,7 @@ class Monitor:
             print(('\r' + '%10.3f' * 5 + '%10s') % (size, self._running_mean, float_mean,
                                                     self._running_var, float_var, stat), end='')
             # 短暂休眠
-            res_time = max([0, self.time_interval - (time.time() - start)])
+            res_time = max([0, self.time_interval - (time.time() - t0)])
             if res_time: time.sleep(res_time)
 
     def env(self):

@@ -9,6 +9,18 @@ def kl_divergence(p, q, eps=1e-6):
     return (p * torch.log(p / (q + eps))).sum()
 
 
+class EmaParam(nn.Parameter):
+
+    def __new__(cls, v, momentum=1e-2):
+        self = super().__new__(cls, torch.tensor(float(v)), requires_grad=False)
+        self.momentum = momentum
+        return self
+
+    def update(self, v):
+        self.mul_(1 - self.momentum)
+        self.add_(self.momentum * v)
+
+
 class FocalLoss(nn.Module):
     # nc (int): Number of classes
 
@@ -34,7 +46,7 @@ class FocalLoss(nn.Module):
 
 class MultiFocalLoss(FocalLoss):
     # nc (tuple): Number of classes for each family
-    c1 = property(fget=lambda self: sum(nc if nc > 2 else 1 for nc in self.nc))
+    c1 = property(fget=lambda self: sum(1 if nc == 2 else x for x in self.nc))
 
     def get_target(self, target):
         return torch.cat([F.one_hot(target[..., i], nc) if nc > 2 else target[..., i, None]
@@ -64,27 +76,44 @@ class MultiCrossEntropy(nn.Module):
     # nc (tuple): Number of classes for each family
     c1 = property(fget=lambda self: sum(self.nf))
 
-    def __init__(self, nc: Union[tuple, list], w: torch.Tensor = None):
+    def __init__(self,
+                 nc: Union[tuple, list],
+                 w: torch.Tensor = None,
+                 gamma: float = 0,
+                 momentum: float = 1e-2):
         super().__init__()
-        self.nf = [x if x > 2 else 1 for x in nc]
+        self.nf = [1 if x == 2 else x for x in nc]
         self.w = nn.Parameter(torch.ones(len(self.nf)) if w is None else w, requires_grad=False)
+        self.gamma = gamma
+        # 用于 FocalLoss 的概率均值
+        self.pmean = EmaParam(0, momentum=momentum) if gamma else None
 
     def forward(self, logits, hardlabel):
         loss = torch.zeros_like(self.w)
         logits = logits.split(self.nf, dim=-1)
-        for i, p in enumerate(logits):
+        for i, odd in enumerate(logits):
             # 两个类别: ce
-            if p.size(-1) == 1:
+            if odd.size(-1) == 1:
+                p = odd[..., 0].sigmoid()
                 t = hardlabel[..., i].float()
-                loss[i] = - (t * torch.log(p) + (1 - t) * torch.log(1 - p)).mean()
+                nll = - (t * torch.log(p) + (1 - t) * torch.log(1 - p))
             # 大于两个类别: softmax + nll
             else:
-                loss[i] = F.cross_entropy(p, hardlabel[..., i])
+                nll = - (F.log_softmax(odd, dim=-1) * F.one_hot(hardlabel[..., i], odd.size(-1))).sum(dim=-1)
+                p = torch.exp(- nll) if self.gamma else None
+            # FocalLoss
+            if self.gamma:
+                p = p.detach()
+                self.pmean.update(p.mean())
+                nll *= ((1 - p) / (1 - self.pmean)) ** self.gamma
+            loss[i] = nll.mean()
         return (loss * self.w).sum()
 
     def predict(self, logits):
         logits = logits.split(self.nf, dim=-1)
-        return torch.stack([(p.flatten() > .5).long() if p.size(-1) == 1 else p.argmax(-1) for p in logits], dim=-1)
+        # 两个类别: 根据 sigmoid 函数可知, logits > 0 等价于 p > .5
+        return torch.stack([(odd[..., 0] > 0).long() if odd.size(-1) == 1
+                            else odd.argmax(-1) for odd in logits], dim=-1)
 
 
 class ContrastiveLoss(nn.Module):
@@ -130,7 +159,8 @@ if __name__ == '__main__':
     logits = torch.rand([9, 5], requires_grad=True)
     target = torch.randint(0, 2, [9, 3])
 
-    fl = MultiCrossEntropy((3, 2, 2))
+    fl = MultiCrossEntropy((3, 2, 2), momentum=1.)
     print(logits)
     print(fl(logits, target))
+    print(fl.pmean)
     print(fl.predict(logits))

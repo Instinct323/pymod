@@ -177,9 +177,9 @@ if __name__ == '__main__':
 
         def __new__(cls, fun, *args, **kwargs):
             import time
-            start = time.time()
+            t0 = time.time()
             fun(*args, **kwargs)
-            cost = time.time() - start
+            cost = time.time() - t0
             return cost * 1e3  # ms
 
 

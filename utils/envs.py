@@ -52,4 +52,4 @@ class CondaEnv:
 if __name__ == '__main__':
     env = CondaEnv()
     # env.jupyter(r'D:\Information\Python\Work_Space')
-    env.install('nltk', pip=True)
+    env.install('fvcore', pip=True)

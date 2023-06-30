@@ -125,9 +125,9 @@ class YamlModel(nn.Module):
         LOGGER.info(f"\n    {'time (ms)':>10s} {'GFLOPS':>10s} {'params':>10s}  module")
         for x, m in self.forward_feature(x, profile=True):
             # 测试该模块的性能
-            start = time.time()
+            t0 = time.time()
             for _ in range(repeat): m(x)
-            cost = (time.time() - start) / repeat
+            cost = (time.time() - t0) / repeat
             # GFLOPs
             flops = thop.profile(m, (x,), verbose=False)[0] / 1e9
             LOGGER.info(f'{m.i:>3} {cost * 1e3:10.2f} {flops / cost:10.2f} {m.np:10.0f}  {m.t}')
@@ -165,9 +165,9 @@ class YamlModel(nn.Module):
         model = torch.jit.trace(self, (x,))
 
         def profile(x, repeat=5):
-            start = time.time()
+            t0 = time.time()
             for _ in range(repeat): model(x)
-            return (time.time() - start) / repeat * 1e3
+            return (time.time() - t0) / repeat * 1e3
 
         model.profile = profile
         LOGGER.info('The runtime can be obtained using TorchScript\'s function <profile>')
@@ -180,6 +180,7 @@ class YamlModel(nn.Module):
             except Exception as error:
                 LOGGER.warning(f'[WARNING] {error}')
                 LOGGER.info('[INFO] Try loading the state_dict loosely')
+        redundantp = []
         # 处理 shape 失配的参数
         local_sdict = self.state_dict()
         for key in copy.deepcopy(state_dict):
@@ -209,7 +210,8 @@ class YamlModel(nn.Module):
                     state_dict.pop(key)
             else:
                 state_dict.pop(key)
-                LOGGER.warning(f'Redundant parameter: {key}')
+                redundantp.append(key)
+        if redundantp: LOGGER.warning(f'Redundant parameter: {", ".join(redundantp)}')
         super().load_state_dict(state_dict, strict=False)
 
     def parse_architecture(self, ch_divisor=4):

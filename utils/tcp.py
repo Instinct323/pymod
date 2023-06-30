@@ -200,14 +200,14 @@ def transfer_async(dataio, addr=None, timeout=1e-4):
                 LOGGER.info(f'The data transmission channel is enabled')
                 dataio.ns.ready = True
                 while True:
-                    start = time.time()
+                    t0 = time.time()
                     # 发送数据
                     send = dataio.send()
                     if send is not None:
                         try:
                             tcp.upload(pickle.dumps(send))
-                            t_send = momentum * (time.time() - start) * 1e3 + (1 - momentum) * t_send
-                            start = time.time()
+                            t_send = momentum * (time.time() - t0) * 1e3 + (1 - momentum) * t_send
+                            t0 = time.time()
                         except socket.timeout:
                             pass
                         except pickle.PickleError as reason:
@@ -216,14 +216,14 @@ def transfer_async(dataio, addr=None, timeout=1e-4):
                     try:
                         recv = pickle.loads(tcp.download())
                         dataio.recv(recv)
-                        t_recv = momentum * (time.time() - start) * 1e3 + (1 - momentum) * t_recv
-                        start = time.time()
+                        t_recv = momentum * (time.time() - t0) * 1e3 + (1 - momentum) * t_recv
+                        t0 = time.time()
                     except socket.timeout:
                         pass
                     except pickle.PickleError as reason:
                         LOGGER.warning(f'{type(reason).__name__}: {reason}')
                     # 输出网络迟延
-                    t_wait = momentum * (time.time() - start) * 1e3 + (1 - momentum) * t_wait
+                    t_wait = momentum * (time.time() - t0) * 1e3 + (1 - momentum) * t_wait
                     print('\r' + (' ' * 4).join(map(lambda s, t: f'T-{s}: {t:.2f} ms',
                                                     ('recv', 'send', 'wait'), (t_recv, t_send, t_wait))), end='')
                 LOGGER.info(f'End of data transmission')
@@ -266,7 +266,7 @@ if __name__ == '__main__':
 
         for color in tqdm(rainbow[1: 5]):
             y = [0]
-            start = time.time()
+            t0 = time.time()
 
             # 发送状态量, 接收控制量
             for i in range(t):
@@ -274,7 +274,7 @@ if __name__ == '__main__':
                 y.append(dataio.i_data[0])
 
             # 得到运行时间
-            cost = time.time() - start
+            cost = time.time() - t0
             dataio.write((0,))
             time.sleep(1)
 
