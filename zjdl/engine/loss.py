@@ -62,25 +62,29 @@ class CrossEntropy(nn.Module):
 
 class MultiCrossEntropy(nn.Module):
     # nc (tuple): Number of classes for each family
-    c1 = property(fget=lambda self: sum(nc if nc > 2 else 1 for nc in self.nc))
+    c1 = property(fget=lambda self: sum(self.nf))
 
     def __init__(self, nc: Union[tuple, list], w: torch.Tensor = None):
         super().__init__()
-        self.nc = nc
-        self.w = nn.Parameter(torch.ones(len(self.nc)) if w is None else w, requires_grad=False)
+        self.nf = [x if x > 2 else 1 for x in nc]
+        self.w = nn.Parameter(torch.ones(len(self.nf)) if w is None else w, requires_grad=False)
 
     def forward(self, logits, hardlabel):
         loss = torch.zeros_like(self.w)
-        logits = logits.split([nc if nc > 2 else 1 for nc in self.nc], dim=-1)
-        for i, (nc, p) in enumerate(zip(self.nc, logits)):
-            # 大于两个类别: softmax + nll
-            if nc > 2:
-                loss[i] = F.cross_entropy(p, hardlabel[..., i])
+        logits = logits.split(self.nf, dim=-1)
+        for i, p in enumerate(logits):
             # 两个类别: ce
-            else:
+            if p.size(-1) == 1:
                 t = hardlabel[..., i].float()
                 loss[i] = - (t * torch.log(p) + (1 - t) * torch.log(1 - p)).mean()
+            # 大于两个类别: softmax + nll
+            else:
+                loss[i] = F.cross_entropy(p, hardlabel[..., i])
         return (loss * self.w).sum()
+
+    def predict(self, logits):
+        logits = logits.split(self.nf, dim=-1)
+        return torch.stack([(p.flatten() > .5).long() if p.size(-1) == 1 else p.argmax(-1) for p in logits], dim=-1)
 
 
 class ContrastiveLoss(nn.Module):
@@ -123,8 +127,10 @@ class ContrastiveLoss(nn.Module):
 
 
 if __name__ == '__main__':
-    logits = torch.rand([9, 4], requires_grad=True)
-    target = torch.randint(0, 2, [9, 2])
+    logits = torch.rand([9, 5], requires_grad=True)
+    target = torch.randint(0, 2, [9, 3])
 
-    fl = MultiCrossEntropy((3, 2))
+    fl = MultiCrossEntropy((3, 2, 2))
+    print(logits)
     print(fl(logits, target))
+    print(fl.predict(logits))

@@ -9,6 +9,7 @@ import torch
 import torch.nn.functional as F
 import yaml
 from torch.cuda import amp
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from .crosstab import Crosstab
@@ -265,34 +266,34 @@ class Trainer:
 
 
 class CifarDebug(Trainer):
+    # 利用 CIFAR10 进行 debug
 
     def __init__(self, model, project, hyp):
-        m_title = [f'Pr {i}' for i in range(10)]
+        m_title = ['Acc'] + [f'Pr {i}' for i in range(10)]
         super().__init__(model, project, m_title=m_title, hyp=hyp)
-        # 利用 CIFAR10 进行 debug
         import torchvision.transforms as tf
         from torchvision.datasets import CIFAR10
+        # 下载训练集, 验证集
         datasets = [CIFAR10(f'cifar/{i}', transform=tf.ToTensor(), download=True, train=not i) for i in range(2)]
-        Loader = torch.utils.data.DataLoader
         kwargs = dict(batch_size=self.hyp['batch_size'], shuffle=True)
-        self.train_set = Loader(datasets[0], drop_last=True, **kwargs)
-        self.eval_set = Loader(datasets[1], drop_last=False, **kwargs)
-        super().__call__(self.train_set, self.eval_set)
+        # 调用 __call__ 函数, 开始训练和验证
+        self(DataLoader(datasets[0], drop_last=True, **kwargs),
+             DataLoader(datasets[1], drop_last=False, **kwargs))
 
-    def loss(self, image, target):
-        pred = self.model(image.to(self.device))
-        return F.cross_entropy(pred, target.to(self.device))
+    def loss(self, image, target) -> torch.Tensor:
+        return F.cross_entropy(self.model(image.to(self.device)), target.to(self.device))
 
-    def metrics(self, generator):
+    def metrics(self, generator) -> np.ndarray:
         preds, targets = [], []
         for img, tar in generator:
             preds.append(self.model(img.to(self.device)).cpu().argmax(dim=-1))
             targets.append(tar)
         preds, targets = map(np.concatenate, (preds, targets))
-        return Crosstab(preds, targets, 10).precision
+        cr = Crosstab(preds, targets, 10)
+        return np.append(cr.accuracy, cr.precision)
 
-    def fitness(self, metrics):
-        return metrics.mean()
+    def fitness(self, metrics) -> float:
+        return metrics[0]
 
 
 if __name__ == '__main__':

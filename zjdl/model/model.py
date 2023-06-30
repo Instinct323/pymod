@@ -209,6 +209,7 @@ class YamlModel(nn.Module):
                     state_dict.pop(key)
             else:
                 state_dict.pop(key)
+                LOGGER.warning(f'Redundant parameter: {key}')
         super().load_state_dict(state_dict, strict=False)
 
     def parse_architecture(self, ch_divisor=4):
