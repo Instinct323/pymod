@@ -17,7 +17,7 @@ class EmaModel:
         self.__model = model
         # 冻结 ema 的所有参数, 并将参数加入 model
         model.ema = copy.deepcopy(model).eval()
-        tuple(setattr(p, 'requires_grad', False) for p in self.ema.parameters())
+        for p in self.ema.parameters(): setattr(p, 'requires_grad', False)
         # 记录 EMA 的次数
         self.ema.register_buffer('ema_t', torch.tensor([0], dtype=torch.int64))
         self.decay = lambda: decay * (1 - torch.exp(-self.ema.ema_t * 10 / bp_times).item())

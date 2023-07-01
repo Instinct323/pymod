@@ -8,10 +8,10 @@ def softmax(x, axis=-1):
     return x / x.sum(axis=axis, keepdims=True)
 
 
-def rbf_affinity(x, k=5):
-    k = min(k, x.shape[0])
+def rbf_affinity(x):
+    k = x.shape[0] // 2
     dist = np.linalg.norm(x - x[:, None], axis=-1)
-    sigma = np.sort(dist, axis=-1)[:, k - 1].mean()
+    sigma = np.sort(dist, axis=-1)[:, k].mean()
     return np.exp(- dist ** 2 / (2 * sigma ** 2))
 
 
@@ -46,11 +46,9 @@ class LAME:
             return self.laplacianOptim(logp, kernel)
         else:
             assert p.shape[-1] == self.nc[-1]
-            finalp = []
-            for x in np.split(logp, self.nc, axis=-1):
-                # 类别数大于 2 时才会求解
-                finalp.append(np.exp(x) if x.shape[-1] == 1 else self.laplacianOptim(x, kernel))
-            return np.concatenate(finalp, axis=-1)
+            # 类别数大于 2 时才会求解
+            return np.concatenate([np.exp(x) if x.shape[-1] == 1 else self.laplacianOptim(x, kernel)
+                                   for x in np.split(logp, self.nc, axis=-1)], axis=-1)
 
 
 if __name__ == '__main__':

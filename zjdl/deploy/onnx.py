@@ -3,12 +3,12 @@ import torch
 import torch.onnx
 
 
-def onnx_simplify(file, new=None):
+def onnx_simplify(src, new=None):
     ''' onnx 模型简化'''
     import onnxsim, onnx
-    model, check = onnxsim.simplify(onnx.load(file))
+    model, check = onnxsim.simplify(onnx.load(src))
     assert check, 'Failure to Simplify'
-    onnx.save(model, new if new else file)
+    onnx.save(model, new if new else src)
 
 
 class OnnxModel(ort.InferenceSession):
@@ -16,10 +16,10 @@ class OnnxModel(ort.InferenceSession):
         provider: 优先使用 GPU'''
     device = property(fget=lambda self: self.get_providers()[0][:-17])
 
-    def __init__(self, file):
+    def __init__(self, src):
         for pvd in ort.get_available_providers():
             try:
-                super().__init__(str(file), providers=[pvd])
+                super().__init__(str(src), providers=[pvd])
                 break
             except:
                 pass
@@ -29,15 +29,15 @@ class OnnxModel(ort.InferenceSession):
         self.io_name = [[n.name for n in nodes] for nodes in self.io_node]
         self.io_shape = [[n.shape for n in nodes] for nodes in self.io_node]
 
-    def __call__(self, *arrays):
-        input_feed = {name: x for name, x in zip(self.io_name[0], arrays)}
+    def __call__(self, *inputs):
+        input_feed = {name: x for name, x in zip(self.io_name[0], inputs)}
         return self.run(self.io_name[-1], input_feed)
 
     @classmethod
-    def from_torch(cls, model, args, file, **export_kwd):
+    def from_torch(cls, model, args, dst, **export_kwd):
         args = (args,) if isinstance(args, torch.Tensor) else args
-        torch.onnx.export(model, args, file, opset_version=11, **export_kwd)
-        return cls(file)
+        torch.onnx.export(model, args, dst, opset_version=11, **export_kwd)
+        return cls(dst)
 
 
 if __name__ == '__main__':

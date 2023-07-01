@@ -24,7 +24,7 @@ class CondaEnv:
         os.system(f'pip install --no-cache-dir -r {str(file)}')
 
     def clean(self):
-        return os.popen('conda clean -y -all')
+        return os.system('conda clean -ay')
 
     def jupyter(self, root='.', cfg=False):
         os.chdir(str(root))
@@ -50,6 +50,8 @@ class CondaEnv:
 
 
 if __name__ == '__main__':
+    os.chdir(os.getenv('dl'))
+
     env = CondaEnv()
     # env.jupyter(r'D:\Information\Python\Work_Space')
-    env.install('fvcore', pip=True)
+    os.system('pot -h')
