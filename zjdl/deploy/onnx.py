@@ -1,3 +1,5 @@
+# todo: onnxruntime.quantization
+
 import onnxruntime as ort
 import torch
 import torch.onnx
@@ -42,12 +44,10 @@ class OnnxModel(ort.InferenceSession):
 
 if __name__ == '__main__':
     from pathlib import Path
-    import os
-    from torch import nn
+    import numpy as np
 
-    model = nn.Conv2d(3, 8, 3)
-    file = Path(os.getenv('lab')) / 'data/exp.onnx'
-    onnxm = OnnxModel.from_torch(model, torch.rand([1, 3, 48, 48]), file)
+    file = Path(r'D:\Information\Python\mod\zjdl\config\weights\yolov7.onnx')
+    onnxm = OnnxModel(file)
 
-    print(onnxm.device)
-    print(onnxm)
+    inp = np.random.random(onnxm.io_shape[0][0])
+    print(onnxm.io_shape)
