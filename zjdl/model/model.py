@@ -1,5 +1,4 @@
 import copy
-import logging
 import time
 from pathlib import Path
 from typing import Union
@@ -10,8 +9,9 @@ import yaml
 
 from .common import *
 
-logging.basicConfig(format='%(message)s', level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
+
+def abs_idx(idx: Union[int, list], n: int):
+    return [i % n for i in ([idx] if isinstance(idx, int) else idx)]
 
 
 def switch_branch(state_dict, branch='ema'):
@@ -104,50 +104,52 @@ class YamlModel(nn.Module):
         return torch.rand([b, self.cfg['in_channels'], *self.cfg['img_size']])
 
     def forward_feature(self, x, tarlayer=-1, profile=False):
-        x_cache = []
+        output = []
         for i, m in zip(range(tarlayer % len(self.main) + 1), self.main):
-            if m.f != -1: x = x_cache[m.f] if isinstance(m.f, int) else [x_cache[f] for f in m.f]
-            # 提供给 profile 函数测试
-            if profile: yield x, m
+            if m.f != -1: x = output[m.f] if isinstance(m.f, int) else [output[f] for f in m.f]
+            if profile: yield m, x
             # forward propagation
             x = m(x)
-            x_cache.append(x if i in self.save else None)
-        if not profile: yield x
+            output.append(x)
+        if not profile: yield output
 
     def forward(self, x, tarlayer=-1):
         # imgae: uint8 -> float
         if x.dtype == torch.uint8: x = x.float() / 255
-        return next(self.forward_feature(x, tarlayer=tarlayer))
+        # 获取所有层的输出并筛选
+        tarlayer = abs_idx(tarlayer, n=len(self.main))
+        output = next(self.forward_feature(x, max(tarlayer), profile=False))
+        return output[-1] if len(tarlayer) == 1 else [output[i] for i in tarlayer]
 
     def profile(self, x=None, repeat=5):
         x = self.example_input() if x is None else x
         information = torch.zeros(3)
-        LOGGER.info(f"\n    {'time (ms)':>10s} {'GFLOPS':>10s} {'params':>10s}  module")
-        for x, m in self.forward_feature(x, profile=True):
+        print(f"\n    {'time (ms)':>10s} {'GFLOPS':>10s} {'params':>10s}  module")
+        for m, x in self.forward_feature(x, profile=True):
             # 测试该模块的性能
             t0 = time.time()
             for _ in range(repeat): m(x)
             cost = (time.time() - t0) / repeat
             # GFLOPs
             flops = thop.profile(m, (x,), verbose=False)[0] / 1e9
-            LOGGER.info(f'{m.i:>3} {cost * 1e3:10.2f} {flops / cost:10.2f} {m.np:10.0f}  {m.t}')
+            print(f'{m.i:>3} {cost * 1e3:10.2f} {flops / max(1e-9, cost):10.2f} {m.np:10.0f}  {m.t}')
             # 完成性能测试
             information += torch.tensor([cost, flops, m.np])
         # 输出模型的性能测试结果
         cost, flops, params = information
-        LOGGER.info(f'    {cost * 1e3:10.2f} {flops / cost:10.2f} {int(params):10}  Total')
+        print(f'    {cost * 1e3:10.2f} {flops / cost:10.2f} {int(params):10}  Total')
         return information
 
     def pop(self, index):
         self.main._modules.pop(str(index))
 
     def freeze(self, index):
-        LOGGER.info(f'freezing layer {index} <{self.main[index].t}>')
+        print(f'freezing layer {index} <{self.main[index].t}>')
         for k, v in self.main[index].named_parameters():
             v.requires_grad = False
 
     def unfreeze(self, index):
-        LOGGER.info(f'unfreezing layer {index} <{self.main[index].t}>')
+        print(f'unfreezing layer {index} <{self.main[index].t}>')
         for k, v in self.main[index].named_parameters():
             v.requires_grad = True
 
@@ -170,7 +172,7 @@ class YamlModel(nn.Module):
             return (time.time() - t0) / repeat * 1e3
 
         model.profile = profile
-        LOGGER.info('The runtime can be obtained using TorchScript\'s function <profile>')
+        print('The runtime can be obtained using TorchScript\'s function <profile>')
         return model
 
     def load_state_dict(self, state_dict, strict=True):
@@ -179,7 +181,7 @@ class YamlModel(nn.Module):
                 return super().load_state_dict(state_dict, strict=True)
             except Exception as error:
                 LOGGER.warning(f'[WARNING] {error}')
-                LOGGER.info('[INFO] Try loading the state_dict loosely')
+                print('[INFO] Try loading the state_dict loosely')
         redundantp = []
         # 处理 shape 失配的参数
         local_sdict = self.state_dict()
@@ -215,8 +217,8 @@ class YamlModel(nn.Module):
         super().load_state_dict(state_dict, strict=False)
 
     def parse_architecture(self, ch_divisor=4):
-        LOGGER.info('\n%3s %17s %2s %9s  %-15s %-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))
-        modules, channels, self.save = [], [self.cfg['in_channels']], set()
+        print('\n%3s %17s %2s %9s  %-15s %-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))
+        modules, channels = [], [self.cfg['in_channels']]
         for i, (from_, number, module, args) in enumerate(copy.deepcopy(self.cfg['architecture'])):
             kwargs = {}
             # 使用深度增益对 number 进行修改
@@ -265,14 +267,14 @@ class YamlModel(nn.Module):
             module.i, module.f, module.np, module.t = i, from_, params, type_
             modules.append(module)
             # 保存除 -1 之外的 from 参数到 save 列表 (同时对负数求余)
-            if from_ != -1: self.save |= {f % i for f in ([from_] if isinstance(from_, int) else from_)}
+            # if from_ != -1: self.save |= {f % i for f in ([from_] if isinstance(from_, int) else from_)}
             # 输出模块信息
             if kwargs: args.append(kwargs)
-            LOGGER.info('%3s %17s %2s %9.0f  %-15s %-30s' % (i, from_, number, params, type_, args))
+            print('%3s %17s %2s %9.0f  %-15s %-30s' % (i, from_, number, params, type_, args))
         # 输出模型的统计信息
         params = sum([m.np for m in modules])
         mbytes = params * 4 / 1e6
-        LOGGER.info(f'\nModel Summary: {len(modules)} layers, {params} parameters, {mbytes:.3f} MB')
+        print(f'\nModel Summary: {len(modules)} layers, {params} parameters, {mbytes:.3f} MB')
         return modules
 
 
