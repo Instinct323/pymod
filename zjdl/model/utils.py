@@ -12,6 +12,9 @@ sum_ = lambda x: sum(x[1:], x[0])
 BilinearResize = partial(F.interpolate, mode='bilinear', align_corners=False)
 # 配合 YamlModel 类使用, 使其可以自动填充参数
 module_required = {k: [] for k in ('c1,c2', 'c1', 'n')}
+# 等比数列
+logspace = lambda start, stop, n: np.logspace(np.log10(start), np.log10(stop), 4)
+make_divisible = lambda x, divisor=4: np.maximum(np.round_(x / divisor).astype(np.int64), 1) * divisor
 
 
 def register_module(*args):

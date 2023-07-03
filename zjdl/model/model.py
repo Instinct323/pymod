@@ -1,4 +1,3 @@
-import copy
 import time
 from pathlib import Path
 from typing import Union
@@ -69,14 +68,14 @@ class YamlModel(nn.Module):
         assert self.cfg.get('architecture', None), '\"architecture\" is not defined'
         self.cfg['fixed_layers'] = [i % len(self.cfg['architecture']) for i in self.cfg.get('fixed_layers', [])]
         # 解析架构信息
-        self.main = nn.ModuleList(self.parse_architecture(ch_divisor)).eval()
+        self.main = nn.ModuleList(self.parse_architecture(ch_divisor))
         # 冻结层信息
         self.cfg.setdefault('freeze', [])
         assert isinstance(self.cfg['freeze'], list), '\"freeze\" should be a list of slicing expressions'
         i = list(range(len(self.main)))
         for slc in self.cfg['freeze']:
             for i in eval(f'i[{slc}]'): self.freeze(i)
-        self.init_param()
+        self.init_param(), self.eval()
 
     def init_param(self):
         for m in self.modules():
@@ -105,7 +104,7 @@ class YamlModel(nn.Module):
 
     def forward_feature(self, x, tarlayer=-1, profile=False):
         output = []
-        for i, m in zip(range(tarlayer % len(self.main) + 1), self.main):
+        for i, m in enumerate(self.main[:tarlayer % len(self.main) + 1]):
             if m.f != -1: x = output[m.f] if isinstance(m.f, int) else [output[f] for f in m.f]
             if profile: yield m, x
             # forward propagation
@@ -239,7 +238,7 @@ class YamlModel(nn.Module):
                 if module in module_required['c1,c2']:
                     if i not in self.cfg['fixed_layers']:
                         # 将 c2 处理为 4 的倍数
-                        args[0] = max(1, round(args[0] * self.cfg['width_multiple'] / ch_divisor)) * ch_divisor
+                        args[0] = make_divisible(args[0] * self.cfg['width_multiple'], divisor=ch_divisor)
                     c1, c2 = channels[from_], args[0]
                     # 升维单元、降维单元不可堆叠
                     if c1 != c2 and number != 1:

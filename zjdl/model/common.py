@@ -1,3 +1,4 @@
+import copy
 import math
 from collections import OrderedDict
 from typing import Optional
@@ -122,6 +123,16 @@ class RepConv(nn.Module):
                 conv.bias.data += b
 
 
+@register_module('c1,c2')
+class MobileOne(nn.Sequential):
+
+    def __init__(self, c1, c2, k=(0, 1, 3), s=1, d=1):
+        super().__init__(
+            RepConv(c1, c1, k=k, s=s, g='dw', d=d),
+            Conv(c1, c2, 1)  # RepConv(c1, c1, k=(0, 1))
+        )
+
+
 @register_module('c1,c2', 'n')
 class ELA(nn.Module):
 
@@ -164,29 +175,54 @@ class CSP_OSA(nn.Module):
         return self.tail(torch.cat(y, 1))
 
 
+@register_module('c1,c2', 'n')
+class Hourglass(nn.Module):
+
+    def __init__(self, c1, c2, eb=.75, ec=1.25, upmode='nearest', n=3):
+        super().__init__()
+        c_ = int(c2 * eb)
+        self.conv = Conv(c1, c_, 1)
+        c1 = make_divisible(c_ * ec ** np.arange(n + 1), divisor=2)
+        c2 = make_divisible(logspace(c2, c1[-1], n + 1), divisor=2)
+        # 核心部分的参数
+        self.t2b = nn.ModuleList()
+        self.b2t = nn.ModuleList()
+        self.proj = nn.ModuleList([copy.deepcopy(self.conv)])
+        for i in range(n):
+            (x1, x2), (x3, x4) = c1[i: i + 2], c2[i: i + 2]
+            self.t2b.append(Conv(x1, x2, s=2))
+            self.b2t.append(Conv(x1 + x4, x3, 1))
+            if i: self.proj.append(Conv(x1, x1, 1))
+        # 瓶颈部分的参数
+        self.proj.append(ConvFFN(c1[-1], 5))
+        self.upsample = partial(F.interpolate, scale_factor=2, mode=upmode)
+
+    def forward(self, x):
+        xcache = [self.conv(x)]
+        # top to bottom
+        for m in self.t2b: xcache.append(m(xcache[-1]))
+        xcache[0] = x
+        for i, m in enumerate(self.proj): xcache[i] = m(xcache[i])
+        # bottom to top
+        x = xcache[-1]
+        for i, m in reversed(tuple(enumerate(self.b2t))):
+            x = m(torch.cat([self.upsample(x), xcache[i]], dim=1))
+        return x
+
+
 @register_module('c1,c2')
 class Bottleneck(nn.Module):
 
     def __init__(self, c1, c2, s=1, g=1, d=1, e=0.5):
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, c_, 1)
-        self.cv2 = Conv(c_, c2, 3, s, g, d, act=None)
+        self.conv1 = Conv(c1, c_, 1)
+        self.conv2 = Conv(c_, c2, 3, s, g, d, act=None)
         self.ds = nn.Identity() if c1 == c2 and s == 1 else Conv(c1, c2, 1, s, act=None)
-        self.act = self.cv1.act
+        self.act = self.conv1.act
 
     def forward(self, x):
-        return self.act(self.ds(x) + self.cv2(self.cv1(x)))
-
-
-@register_module('c1,c2')
-class MobileOne(nn.Sequential):
-
-    def __init__(self, c1, c2, k=(0, 1, 3), s=1, d=1):
-        super().__init__(
-            RepConv(c1, c1, k=k, s=s, g='dw', d=d),
-            Conv(c1, c2, 1)  # RepConv(c1, c1, k=(0, 1))
-        )
+        return self.act(self.ds(x) + self.conv2(self.conv1(x)))
 
 
 @register_module('c1')
@@ -240,16 +276,16 @@ class SPPF(nn.Module):
     def __init__(self, c1, c2, k=5, e=0.5, n=3):  # equivalent to SPP(k=(5, 9, 13))
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, c_, 1)
-        self.cv2 = Conv(c_ * (n + 1), c2, 1)
+        self.conv1 = Conv(c1, c_, 1)
+        self.conv2 = Conv(c_ * (n + 1), c2, 1)
         self.n = n
         self.m = partial(F.max_pool2d, kernel_size=k, stride=1, padding=auto_pad(k))
 
     def forward(self, x):
-        x = [self.cv1(x)]
+        x = [self.conv1(x)]
         for _ in range(self.n):
             x.append(self.m(x[-1]))
-        return self.cv2(torch.cat(x, dim=1))
+        return self.conv2(torch.cat(x, dim=1))
 
 
 class Shortcut(nn.Module):
@@ -303,8 +339,8 @@ class SEReLU(nn.Module):
 
 class Upsample(nn.Upsample):
 
-    def __init__(self, s=2):
-        super().__init__(size=None, scale_factor=s, mode='nearest')
+    def __init__(self, s=2, mode='nearest'):
+        super().__init__(scale_factor=s, mode=mode)
 
 
 class DropBlock(nn.Module):
