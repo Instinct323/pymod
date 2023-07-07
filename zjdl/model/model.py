@@ -1,3 +1,4 @@
+import copy
 import time
 from pathlib import Path
 from typing import Union
@@ -63,7 +64,7 @@ class YamlModel(nn.Module):
         self.cfg.setdefault('in_channels', 3)
         img_size = self.cfg.setdefault('img_size', None)
         if img_size:
-            self.cfg['img_size'] = to_2tuple(int(img_size))
+            self.cfg['img_size'] = to_2tuple(img_size)
         # 模型架构信息, 参数固定层信息
         assert self.cfg.get('architecture', None), '\"architecture\" is not defined'
         self.cfg['fixed_layers'] = [i % len(self.cfg['architecture']) for i in self.cfg.get('fixed_layers', [])]

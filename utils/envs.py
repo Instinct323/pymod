@@ -54,4 +54,4 @@ if __name__ == '__main__':
 
     env = CondaEnv()
     # env.jupyter(r'D:\Information\Python\Work_Space')
-    os.system('pot -h')
+    env.install('pypdf2')

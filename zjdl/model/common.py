@@ -1,4 +1,3 @@
-import copy
 import math
 from collections import OrderedDict
 from typing import Optional
@@ -69,8 +68,7 @@ class Conv(nn.Module):
 
 @register_module('c1,c2')
 class RepConv(nn.Module):
-    ''' RepConv
-        k: 卷积核尺寸, 0 表示恒等映射'''
+    ''' k: 卷积核尺寸, 0 表示恒等映射'''
     deploy = property(fget=lambda self: isinstance(self.m, nn.Conv2d))
 
     def __init__(self, c1, c2, k=(0, 1, 3), s=1, g=1, d=1,
@@ -178,23 +176,27 @@ class CSP_OSA(nn.Module):
 @register_module('c1,c2', 'n')
 class Hourglass(nn.Module):
 
-    def __init__(self, c1, c2, eb=.75, ec=1.25, upmode='nearest', n=3):
+    def __init__(self, c1, c2, eb=.75, ec=1.125, upmode='nearest', n=3):
         super().__init__()
-        c_ = int(c2 * eb)
+        c_ = make_divisible(c2 * eb, divisor=4)
         self.conv = Conv(c1, c_, 1)
-        c1 = make_divisible(c_ * ec ** np.arange(n + 1), divisor=2)
-        c2 = make_divisible(logspace(c2, c1[-1], n + 1), divisor=2)
+        c1t = make_divisible(c_ * ec ** np.arange(n + 1), divisor=2)
+        c2t = make_divisible(logspace(c2, c1t[-1], n + 1), divisor=2)
         # 核心部分的参数
         self.t2b = nn.ModuleList()
         self.b2t = nn.ModuleList()
-        self.proj = nn.ModuleList([copy.deepcopy(self.conv)])
+        self.proj = nn.ModuleList()
         for i in range(n):
-            (x1, x2), (x3, x4) = c1[i: i + 2], c2[i: i + 2]
+            (x1, x2), (x3, x4) = c1t[i: i + 2], c2t[i: i + 2]
+            x_ = make_divisible(x1 * eb)
             self.t2b.append(Conv(x1, x2, s=2))
-            self.b2t.append(Conv(x1 + x4, x3, 1))
-            if i: self.proj.append(Conv(x1, x1, 1))
+            self.b2t.append(Conv(x_ + x4, x3, 1))
+            self.proj.append(Conv(x1 if i else c1, x_, 1))
         # 瓶颈部分的参数
-        self.proj.append(ConvFFN(c1[-1], 5))
+        self.proj.append(nn.Sequential(
+            Conv(c1t[-1], c1t[-1], 3),
+            Conv(c1t[-1], c1t[-1], 3)
+        ))
         self.upsample = partial(F.interpolate, scale_factor=2, mode=upmode)
 
     def forward(self, x):

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import fitz
+from PyPDF2 import PdfMerger
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.layout import *
 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
@@ -22,6 +23,12 @@ def pdf_load(file: Path):
             yield device.get_result()
 
 
+def merge_pdf(src: Iterator[Path], dst: Path):
+    merger = PdfMerger()
+    for f in src: merger.append(f)
+    merger.write(str(dst))
+
+
 def pdf2img(file: Path, suffix='.jpg', root='Project', blowup=15):
     ''' file: pdf 文件
         suffix: 图像后缀名
@@ -39,4 +46,7 @@ def pdf2img(file: Path, suffix='.jpg', root='Project', blowup=15):
 
 
 if __name__ == '__main__':
-    pass
+    import os
+
+    root = Path(os.getenv('dl'))
+    merge_pdf((root / 'pdf').iterdir(), root / 'new.pdf')
