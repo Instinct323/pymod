@@ -5,6 +5,7 @@ import sys
 from pathlib import WindowsPath, PosixPath, Path as _path
 
 import cv2
+import numpy as np
 from tqdm import tqdm
 
 logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.INFO)
@@ -188,17 +189,17 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
 class Capture(cv2.VideoCapture):
     ''' 视频捕获
         file: 视频文件名称 (默认连接摄像头)
-        show: 视频帧的滞留时间 (ms)
+        delay: 视频帧的滞留时间 (ms)
         dpi: 相机分辨率'''
 
     def __init__(self,
                  file: str = 0,
-                 show: int = 0,
+                 delay: int = 0,
                  dpi: list = [1280, 720]):
         super().__init__(file)
         if not self.isOpened():
             raise RuntimeError('Failed to initialize video capture')
-        self.show = show
+        self.delay = delay
         # 设置相机的分辨率
         if not file and dpi:
             self.set(cv2.CAP_PROP_FRAME_WIDTH, dpi[0])
@@ -210,10 +211,30 @@ class Capture(cv2.VideoCapture):
     def __next__(self):
         ok, image = self.read()
         if not ok: raise StopIteration
-        if self.show:
+        if self.delay:
             cv2.imshow('Capture', image)
-            cv2.waitKey(self.show)
+            cv2.waitKey(self.delay)
         return image
+
+    def flow(self):
+        delay, self.delay = self.delay, 0
+        gray1 = cv2.cvtColor(next(self), cv2.COLOR_BGR2GRAY)
+        for rgb in self:
+            gray2 = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY)
+            # 两通道, 分别表示像素在 x,y 方向上的位移值
+            flow = cv2.calcOpticalFlowFarneback(gray1, gray2, None, pyr_scale=0.5, levels=3, winsize=15,
+                                                iterations=3, poly_n=5, poly_sigma=1.2, flags=0)
+            yield rgb, flow
+            # 光流图的位移: 笛卡尔 -> 极坐标, hue 表示相角, value 表示幅度
+            if delay:
+                v, h = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+                hsv = np.full_like(rgb, fill_value=255)
+                hsv[..., 0] = h * 90 / np.pi
+                hsv[..., 2] = cv2.normalize(v, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
+                cv2.imshow('Capture', cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR))
+                cv2.waitKey(delay)
+            gray1 = gray2
+        self.delay = delay
 
 
 if __name__ == '__main__':

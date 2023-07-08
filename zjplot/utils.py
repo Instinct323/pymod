@@ -2,19 +2,6 @@ import logging
 
 import matplotlib.pyplot as plt
 
-BGR_COLOR = {
-    'red': (58, 0, 255),
-    'orange': (49, 125, 237),
-    'yellow': (255, 255, 0),
-    'green': (71, 173, 112),
-    'cyan': (255, 255, 0),
-    'blue': (240, 176, 0),
-    'purple': (209, 0, 152),
-    'pink': (241, 130, 234),
-    'gray': (190, 190, 190),
-    'black': (0, 0, 0)
-}
-
 # matplotlib 颜色常量
 red = 'orangered'
 orange = 'orange'

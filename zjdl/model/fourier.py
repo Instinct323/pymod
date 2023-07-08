@@ -73,8 +73,7 @@ def image_regression(image, fe, downsample=2.,
         plt.subplot(1, 2, i + 1)
         plt.imshow(img)
     # 保存图像 / 展示图像
-    (plt.savefig(file), plt.close(),
-     print(f'The result is stored in {file}')) if file else plt.show()
+    (plt.savefig(file), plt.close(), print(f'The result is stored in {file}')) if file else plt.show()
 
 
 if __name__ == '__main__':

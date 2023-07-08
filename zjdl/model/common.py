@@ -100,8 +100,8 @@ class RepConv(nn.Module):
         Conv.reparam(model)
         # 查询模型的所有子模型, 对 RepConv 进行合并
         for m in filter(lambda m: isinstance(m, cls) and not m.deploy, model.modules()):
-            expp, cfg = m.m[-1].conv.weight, m.m[-1]._config
-            conv = nn.Conv2d(**cfg, bias=True).to(expp)
+            src, cfg = m.m[-1].conv.weight, m.m[-1]._config
+            conv = nn.Conv2d(**cfg, bias=True).to(src)
             mlist, m.m = m.m, conv
             (c2, c1g, k, _), g = conv.weight.shape, conv.groups
             # nn.Conv2d 参数置零
@@ -111,7 +111,7 @@ class RepConv(nn.Module):
                 # BatchNorm
                 if isinstance(branch, BatchNorm):
                     w, b = branch.unpack(detach=True)
-                    conv.weight.data[..., k // 2, k // 2] += torch.eye(c1g).repeat(g, 1).to(expp) * w[:, None]
+                    conv.weight.data[..., k // 2, k // 2] += torch.eye(c1g).repeat(g, 1).to(src) * w[:, None]
                 # Conv
                 else:
                     branch = branch.conv
