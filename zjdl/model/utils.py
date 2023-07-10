@@ -29,7 +29,6 @@ def register_module(*args):
 class LOCAL:
     hw = None  # Size of the feature map before patch embedding
     pmask = None  # Mask for patches
-    amask = None  # Mask of the self-attention matrix
 
 
 def auto_pad(k, s=1, d=1):

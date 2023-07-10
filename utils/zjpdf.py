@@ -46,7 +46,8 @@ def pdf2img(file: Path, suffix='.jpg', root='Project', blowup=15):
 
 
 if __name__ == '__main__':
-    import os
-
-    root = Path(os.getenv('dl'))
-    merge_pdf((root / 'pdf').iterdir(), root / 'new.pdf')
+    ROOT = Path(r'D:\Information\Notes\info')
+    merge_pdf([
+        ROOT / '童赞嘉.pdf',
+        ROOT / '【获奖证书】.pdf'
+    ], ROOT / 'merge.pdf')

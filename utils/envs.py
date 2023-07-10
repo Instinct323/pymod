@@ -3,6 +3,17 @@ import re
 import sys
 
 
+def git_push(repositories=(r'D:\Information\Python\mod',
+                           r'D:\Information\Python\Library',
+                           r'D:\Information\Notes',
+                           r'D:\Information\Notes\info'),
+             msg='update'):
+    for repo in repositories:
+        os.chdir(repo), print(repo)
+        for cmd in ('git status', 'git add .',
+                    f'git commit -m {msg}', 'git push main master'): os.system(cmd)
+
+
 class CondaEnv:
 
     def __init__(self):
@@ -14,17 +25,16 @@ class CondaEnv:
         os.system(f'conda create -n {name} python=={version}')
 
     def install(self, pack, pip=True, uninstall=False, upgrade=False):
-        p = ['pip' if pip else 'conda']
-        p.append('uninstall -y' if uninstall else ('install' + upgrade * ' --upgrade'))
+        p = ['pip', 'uninstall -y' if uninstall else ('install' + upgrade * ' --upgrade'), '--no-cache-dir'] \
+            if pip else ['conda', 'uninstall -y' if uninstall else ('upgrade' if upgrade else 'install')]
         p.append(pack)
-        if pip: p.append('--no-cache-dir')
         os.system(' '.join(p))
 
     def load_requirements(self, file='requirements.txt'):
-        os.system(f'pip install --no-cache-dir -r {str(file)}')
+        os.system(f'pip install --no-cache-dir -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
 
     def clean(self):
-        return os.system('conda clean -ay')
+        os.system('conda clean -ay')
 
     def jupyter(self, root='.', cfg=False):
         os.chdir(str(root))
@@ -32,9 +42,9 @@ class CondaEnv:
 
     def config(self):
         # 配置 pip
-        for k, v in {'timeout': 6000,
-                     'index-url': 'https://pypi.tuna.tsinghua.edu.cn/simple',
-                     'trusted-host': 'pypi.tuna.tsinghua.edu.cn'}.items():
+        for k, v in (('timeout', 6000),
+                     ('index-url', 'https://pypi.tuna.tsinghua.edu.cn/simple'),
+                     ('trusted-host', 'pypi.tuna.tsinghua.edu.cn')):
             os.system(f'pip config set global.{k} {v}')
         # 配置 conda
         for p in ('--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/',
@@ -54,4 +64,5 @@ if __name__ == '__main__':
 
     env = CondaEnv()
     # env.jupyter(r'D:\Information\Python\Work_Space')
-    env.install('pypdf2')
+    # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
+    git_push()
