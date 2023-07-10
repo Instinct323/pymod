@@ -9,7 +9,7 @@ def git_push(repositories=(r'D:\Information\Python\mod',
                            r'D:\Information\Notes\info'),
              msg='update'):
     for repo in repositories:
-        os.chdir(repo), print('-' * 30 + '\n', repo)
+        os.chdir(repo), print('-' * 15, repo, '-' * 15, '\n')
         for cmd in ('git status', 'git add .',
                     f'git commit -m {msg}', 'git push main master'): os.system(cmd)
 
