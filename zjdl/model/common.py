@@ -74,8 +74,8 @@ class RepConv(nn.Module):
     def __init__(self, c1, c2, k=(0, 1, 3), s=1, g=1, d=1,
                  act: Optional[nn.Module] = nn.ReLU):
         super().__init__()
-        assert len(k) > 1, 'RepConv with a single branch is illegal'
         self.m = nn.ModuleList()
+        assert len(k) > 1, 'RepConv with a single branch is illegal'
         for k in sorted(k):
             # Identity
             if k == 0:
