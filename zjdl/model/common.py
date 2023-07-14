@@ -74,10 +74,9 @@ class RepConv(nn.Module):
     def __init__(self, c1, c2, k=(0, 1, 3), s=1, g=1, d=1,
                  act: Optional[nn.Module] = nn.ReLU):
         super().__init__()
-        klist = sorted(k)
-        assert len(klist) > 1, 'RepConv with a single branch is illegal'
+        assert len(k) > 1, 'RepConv with a single branch is illegal'
         self.m = nn.ModuleList()
-        for k in klist:
+        for k in sorted(k):
             # Identity
             if k == 0:
                 assert c1 == c2, 'Failed to add the identity mapping branch'
