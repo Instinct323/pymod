@@ -123,7 +123,7 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
             'json': self.json, 'yaml': self.yaml,
             'csv': self.csv, 'xls': self.excel,
             'pt': self.torch
-        }.get(self.suffix[1:], self.pickle)
+        }.get(self.suffix[1:], self.binary)
         # 根据 load/dump 方法载入数据
         if self.is_file():
             data = f_load_dump(None, **fld_kwd)
@@ -146,7 +146,7 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
             LOGGER.warning(f'Unsupported files: {", ".join(map(str, pools[False]))}')
         return pools[True]
 
-    def pickle(self, data=None, **kwargs):
+    def binary(self, data=None, **kwargs):
         import pickle
         return pickle.load(self.open('rb'), **kwargs) \
             if data is None else pickle.dump(self.open('wb'), f, **kwargs)

@@ -591,11 +591,11 @@ class MultiheadAttn(nn.Module):
     def qkv_proj(self, query, key=None):
         key = query if key is None else key
         B, L, C = map(int, key.shape)
-        multi_head = (-1, L, self.nhead, self.chead) if self.nhead != 1 else None
+        dims = (-1, L, self.nhead, self.chead) if self.nhead != 1 else None
         # q: [B, L, C] -> [B, L, N, C_head] -> [B, N, L, C_head]
         q = self.norm_q(self.q(query)) * self.scale
-        if multi_head:
-            q = q.view(*multi_head).transpose(1, 2)
+        if dims:
+            q = q.view(*dims).transpose(1, 2)
         # Spatial-reduction
         if self.sr_radio > 1:
             key = self.norm(self.sr(key))
@@ -603,9 +603,9 @@ class MultiheadAttn(nn.Module):
         # v: [B, L, C] -> [B, L', N, C_head] -> [B, N, L', C_head]
         k, v = self.kv(key).chunk(2, -1)
         k = self.norm_k(k)
-        if multi_head:
-            k = k.view(*multi_head).permute(0, 2, 3, 1)
-            v = v.view(*multi_head).transpose(1, 2)
+        if dims:
+            k = k.view(*dims).permute(0, 2, 3, 1)
+            v = v.view(*dims).transpose(1, 2)
         else:
             k = k.transpose(1, 2)
         return q, k, v

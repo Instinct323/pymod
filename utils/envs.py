@@ -16,22 +16,23 @@ def git_push(repositories=(r'D:\Information\Python\mod',
 
 class CondaEnv:
 
-    def __init__(self):
+    def __init__(self, engine='pip'):
         self.env = os.popen('conda info --envs')
         self.version = sys.version_info[:3]
+        self.engine = engine
 
     def create(self, name, version=(3, 8, 0)):
         version = '.'.join(map(str, version if version else self.version))
         os.system(f'conda create -n {name} python=={version}')
 
-    def install(self, pack, pip=True, uninstall=False, upgrade=False):
-        p = ['pip', 'uninstall -y' if uninstall else ('install' + upgrade * ' --upgrade'), '--no-cache-dir'] \
-            if pip else ['conda', 'uninstall -y' if uninstall else ('upgrade' if upgrade else 'install')]
+    def install(self, pack, uninstall=False, upgrade=False):
+        p = [self.engine, 'uninstall -y' if uninstall else ('install' + upgrade * ' --upgrade'), '--no-cache-dir'] \
+            if self.engine == 'pip' else ['conda', 'uninstall -y' if uninstall else ('upgrade' if upgrade else 'install')]
         p.append(pack)
         os.system(' '.join(p))
 
     def load_requirements(self, file='requirements.txt'):
-        os.system(f'pip install --no-cache-dir -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
+        os.system(f'{self.engine} install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
 
     def clean(self):
         os.system('conda clean -ay')
@@ -65,4 +66,5 @@ if __name__ == '__main__':
     env = CondaEnv()
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
+    # env.install('mmgen')
     git_push()

@@ -48,6 +48,12 @@ def pdf2img(file: Path, suffix='.jpg', root='Project', blowup=15):
 if __name__ == '__main__':
     ROOT = Path(r'D:\Information\Notes\info')
     merge_pdf([
+        # ROOT / 'tmp/附件1--电子科技大学（深圳）高等研究院“优秀大学生选拔计划”申请表.doc',
         ROOT / '童赞嘉.pdf',
-        ROOT / '【获奖证书】.pdf'
-    ], ROOT / 'merge.pdf')
+        ROOT / 'tmp/身份证.pdf',
+        ROOT / 'tmp/学生证.pdf',
+        ROOT / 'tmp/成绩单.pdf',
+        # ROOT / 'Appendix/【学籍验证】.pdf',
+        ROOT / '【获奖证书】.pdf',
+        Path(r'D:\Information\Python\Library\Zotero\storage\G9Q72TU5\Tong 等 - 2023 - Wise-IoU Bounding Box Regression Loss with Dynami.pdf')
+    ], ROOT / '申请材料清单.pdf')
