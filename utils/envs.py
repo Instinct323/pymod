@@ -8,11 +8,11 @@ def git_push(repositories=(r'D:\Information\Python\mod',
                            r'D:\Information\Python\Library',
                            r'D:\Information\Notes',
                            r'D:\Information\Notes\info'),
-             msg=f'"updated on {datetime.date.today()}"'):
+             msg=f'updated on {datetime.datetime.today()}'):
     for repo in repositories:
         os.chdir(repo), print(repo.center(50, '-'))
         for cmd in ('git status', 'git add .',
-                    f'git commit -m {msg}', 'git push main master'): os.system(cmd)
+                    f'git commit -m "{msg}"', 'git push main master'): os.system(cmd)
 
 
 class CondaEnv:
