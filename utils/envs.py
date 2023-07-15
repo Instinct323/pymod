@@ -1,3 +1,4 @@
+import datetime
 import os
 import re
 import sys
@@ -7,7 +8,7 @@ def git_push(repositories=(r'D:\Information\Python\mod',
                            r'D:\Information\Python\Library',
                            r'D:\Information\Notes',
                            r'D:\Information\Notes\info'),
-             msg='update'):
+             msg=f'"updated on {datetime.date.today()}"'):
     for repo in repositories:
         os.chdir(repo), print(repo.center(50, '-'))
         for cmd in ('git status', 'git add .',
@@ -27,7 +28,8 @@ class CondaEnv:
 
     def install(self, pack, uninstall=False, upgrade=False):
         p = [self.engine, 'uninstall -y' if uninstall else ('install' + upgrade * ' --upgrade'), '--no-cache-dir'] \
-            if self.engine == 'pip' else ['conda', 'uninstall -y' if uninstall else ('upgrade' if upgrade else 'install')]
+            if self.engine == 'pip' else ['conda',
+                                          'uninstall -y' if uninstall else ('upgrade' if upgrade else 'install')]
         p.append(pack)
         os.system(' '.join(p))
 
