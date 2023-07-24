@@ -70,7 +70,7 @@ class Trainer:
             loss -> tensor: train 调用, 返回带梯度的标量损失
             metrics -> numpy: eval 调用, 返回多个指标分数 (shape=[n,])
             fitness -> float: 根据 metrics 函数的返回值计算适应度'''
-    training = property(fget=lambda self: self.model.training)
+    training = property(lambda self: self.model.training)
 
     def __init__(self, model, project, m_title, hyp):
         self.project = project

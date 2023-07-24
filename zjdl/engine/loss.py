@@ -46,7 +46,7 @@ class FocalLoss(nn.Module):
 
 class MultiFocalLoss(FocalLoss):
     # nc (tuple): Number of classes for each family
-    c1 = property(fget=lambda self: sum(1 if nc == 2 else x for x in self.nc))
+    c1 = property(lambda self: sum(1 if nc == 2 else x for x in self.nc))
 
     def get_target(self, target):
         return torch.cat([F.one_hot(target[..., i], nc) if nc > 2 else target[..., i, None]
@@ -74,7 +74,7 @@ class CrossEntropy(nn.Module):
 
 class MultiCrossEntropy(nn.Module):
     # nc (tuple): Number of classes for each family
-    c1 = property(fget=lambda self: sum(self.nf))
+    c1 = property(lambda self: sum(self.nf))
 
     def __init__(self,
                  nc: Union[tuple, list],
@@ -119,7 +119,7 @@ class MultiCrossEntropy(nn.Module):
 class ContrastiveLoss(nn.Module):
     ''' 同数据类型的对比损失
         g: 增强数据相对于原数据的倍数'''
-    t = property(fget=lambda self: self.param_t.sigmoid() * 4.5 + .5)
+    t = property(lambda self: self.param_t.sigmoid() * 4.5 + .5)
 
     def __init__(self, g=1, dim=-1):
         super().__init__()

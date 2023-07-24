@@ -8,8 +8,6 @@ from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
 from pdfminer.pdfpage import PDFPage
 from tqdm import tqdm
 
-STOP_WORDS = r'\/:*?"<>|'
-
 
 def pdf_load(file: Path):
     # 初始化 pdf 解析设备
@@ -55,5 +53,7 @@ if __name__ == '__main__':
         ROOT / 'tmp/成绩单.pdf',
         # ROOT / 'Appendix/【学籍验证】.pdf',
         ROOT / '【获奖证书】.pdf',
-        Path(r'D:\Information\Python\Library\Zotero\storage\G9Q72TU5\Tong 等 - 2023 - Wise-IoU Bounding Box Regression Loss with Dynami.pdf')
+        Path(
+            r'D:\Information\Python\Library\Zotero\storage\G9Q72TU5\Tong 等 - 2023 - Wise-IoU Bounding Box Regression '
+            r'Loss with Dynami.pdf')
     ], ROOT / '申请材料清单.pdf')

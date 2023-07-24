@@ -8,8 +8,8 @@ class _CoordSys_nd:
     dtype = np.float16
     dim = None
     # 位置, 各个轴的方向向量
-    position = property(fget=lambda self: self.s[:self.dim, -1])
-    direction = property(fget=lambda self: self.s[:self.dim, :self.dim])
+    position = property(lambda self: self.s[:self.dim, -1])
+    direction = property(lambda self: self.s[:self.dim, :self.dim])
 
     def __init__(self, csys: np.ndarray = None):
         size = self.dim + 1

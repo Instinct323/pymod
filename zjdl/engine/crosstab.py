@@ -15,10 +15,10 @@ class Crosstab:
             pred, target = map(lambda x: x.flatten(), (pred, target))
             self.data = np.bincount(pred + num_classes * target, minlength=num_classes ** 2).reshape((num_classes,) * 2)
 
-    _tp = property(fget=lambda self: np.diag(self.data))
-    accuracy = property(fget=lambda self: self._div(self._tp.sum(), self.data.sum()))
-    precision = property(fget=lambda self: self._div(self._tp, self.data.sum(axis=0)))
-    recall = property(fget=lambda self: self._div(self._tp, self.data.sum(axis=1)))
+    _tp = property(lambda self: np.diag(self.data))
+    accuracy = property(lambda self: self._div(self._tp.sum(), self.data.sum()))
+    precision = property(lambda self: self._div(self._tp, self.data.sum(axis=0)))
+    recall = property(lambda self: self._div(self._tp, self.data.sum(axis=1)))
 
     def f_score(self, beta=1.):
         alpha = beta ** 2

@@ -28,7 +28,7 @@ class Artist:
         pad_width: 隐藏图像的侧边距'''
 
     def __init__(self, img, material=None, shape=[2, 3],
-                 dpi=300, pad_width=0.05, pad_value=255):
+                 dpi=1000, pad_width=0.05, pad_value=255):
         # 对前景图像进行分割, 并读取隐藏图像的素材包
         self.stride = dpi
         self.cells = self.partition(img, shape)
@@ -119,8 +119,6 @@ class Artist:
 if __name__ == '__main__':
     import os
 
-    os.chdir(Path(os.getenv('Lab')) / 'tmp')
+    os.chdir(Path(os.getenv('dl')))
 
-    print(img2str('../data/jntm.png'))
-    Artist(Path('../data/hhhh.jpg'), material=Path('mat'), shape=[2, 3])
-
+    Artist(Path('main.png'), material=Path('mat'), shape=[2, 2])

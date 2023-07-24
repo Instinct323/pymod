@@ -18,7 +18,7 @@ class Result(pd.DataFrame):
     __exist__ = []
     orient = 'index'
     project = Path()
-    file = property(fget=lambda self: self.project / 'result.json')
+    file = property(lambda self: self.project / 'result.json')
 
     def __init__(self, project: Path, title: tuple):
         self.project = project

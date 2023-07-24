@@ -1,7 +1,7 @@
 fixed_layers: [ ]
 depth_multiple: 1.0
 width_multiple: 1.0
-img_size: 608
+img_size: 224
 drop_pos: [ ]
 
 architecture:
@@ -14,8 +14,9 @@ architecture:
 
     [ -1, 1, Conv, [ 128, 3 ] ],
 
+    [ -1, 1, Conv, [ 128, 7 ] ],
+    [ -1, 1, Conv, [ 128, 5 ] ],
     [ -1, 1, Conv, [ 128, 3 ] ],
     [ -1, 1, Conv, [ 128, 1 ] ],
     [ -1, 1, MobileOne, [ 128 ] ],
-    [ -1, 1, RepConv, [ 128 ] ],
   ]

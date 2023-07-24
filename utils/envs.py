@@ -5,9 +5,9 @@ import sys
 
 
 def git_push(repositories=(r'D:\Information\Python\mod',
-                           r'D:\Information\Python\Library',
                            r'D:\Information\Notes',
-                           r'D:\Information\Notes\info'),
+                           r'D:\Information\Notes\info',
+                           r'D:\Information\Python\Library'),
              msg=f'update on {datetime.datetime.today()}'):
     for repo in repositories:
         os.chdir(repo), print(repo.center(50, '-'))

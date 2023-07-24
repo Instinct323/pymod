@@ -32,7 +32,7 @@ class BatchNorm(nn.BatchNorm2d):
 @register_module('c1,c2')
 class Conv(nn.Module):
     ''' Conv - BN - Act'''
-    deploy = property(fget=lambda self: isinstance(self.conv, nn.Conv2d))
+    deploy = property(lambda self: isinstance(self.conv, nn.Conv2d))
 
     def __init__(self, c1, c2, k=3, s=1, g=1, d=1,
                  act: Optional[nn.Module] = nn.ReLU, ctrpad=True):
@@ -69,7 +69,7 @@ class Conv(nn.Module):
 @register_module('c1,c2')
 class RepConv(nn.Module):
     ''' k: 卷积核尺寸, 0 表示恒等映射'''
-    deploy = property(fget=lambda self: isinstance(self.m, nn.Conv2d))
+    deploy = property(lambda self: isinstance(self.m, nn.Conv2d))
 
     def __init__(self, c1, c2, k=(0, 1, 3), s=1, g=1, d=1,
                  act: Optional[nn.Module] = nn.ReLU):
@@ -350,7 +350,7 @@ class DropBlock(nn.Module):
         scheme: drop_prob adjustment scheme'''
     epochs = 10
     scheme = 'linear'
-    _progress = property(fget=lambda self: torch.clip(self.cnt / self.epochs, min=0, max=1).item())
+    _progress = property(lambda self: torch.clip(self.cnt / self.epochs, min=0, max=1).item())
 
     @property
     def drop(self):
@@ -686,7 +686,7 @@ class GroupingLayer(nn.Module):
         nhead: 注意力头数
         drop: MHA,MixFFN 中的 dropout
         droppath: 残差连接的 droppath'''
-    assignment = property(fget=lambda self: self._memory)
+    assignment = property(lambda self: self._memory)
 
     def __init__(self, c1, g=8, e=4., nhead=8, drop=0.1, droppath=0., n=3):
         super().__init__()

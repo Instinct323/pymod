@@ -1,8 +1,12 @@
 import logging
+import multiprocessing
 import time
+from functools import partial
 
 import numpy as np
+import optuna
 import pandas as pd
+from tqdm import tqdm
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
@@ -82,5 +86,48 @@ def cal_RI(n, epochs=1000, decimals=4):
         return RI
 
 
+class solvex:
+    ''' fx: 关于 x 的函数 f(x), 优化目标为 f(x) = 0
+        xlow,xhigh: x 的上下限'''
+
+    def __new__(cls, fx, xlow, xhigh, timeout=.2, dtype='float', log=False):
+        self = object.__new__(cls)
+        self.fx = fx
+        self.xcfg = dict(low=xlow, high=xhigh, log=log)
+        self.dtype = dtype
+        # 使用 optuna 求解自变量 x
+        logging.disable(logging.INFO)
+        study = optuna.create_study(direction='minimize')
+        study.optimize(self.ferror, timeout=timeout)
+        logging.disable(logging.NOTSET)
+        # xs = sorted(set(trial.params['x'] for trial in study.trials))
+        return study.best_params['x']
+
+    def ferror(self, trial: optuna.Trial):
+        x = getattr(trial, f'suggest_{self.dtype}')('x', **self.xcfg)
+        return self.fx(x) ** 2
+
+    @classmethod
+    def _sym_map_handler(cls, f, sym_tar, **kwargs):
+        fx = lambda x: f.subs({sym_tar: x})
+        return cls(fx, **kwargs)
+
+    @classmethod
+    def sym_map(cls, f, sym_tar, sym_dict, workers=8, **kwargs):
+        sym_list = [[k, v.flatten().tolist()] for k, v in sym_dict.items()]
+        shape = sym_dict.copy().popitem()[1].shape
+        n = np.prod(shape)
+        # 生成阻塞多进程
+        x = tqdm(multiprocessing.Pool(workers).imap(
+            partial(cls._sym_map_handler, sym_tar=sym_tar, **kwargs),
+            [f.subs({k: v[i] for k, v in sym_list}) for i in range(n)]
+        ), total=n, desc='Sym Map')
+        return np.array(list(x)).reshape(shape)
+
+
 if __name__ == '__main__':
-    pass
+    import sympy as sp
+
+    x, y = sp.symbols('x, y')
+    f = x + y
+    print(solvex.sym_map(f, y, {x: np.arange(15).reshape(5, 3)}, xlow=-20, xhigh=20))

@@ -11,6 +11,7 @@ from tqdm import tqdm
 logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
+STOP_WORDS = r'\/:*?"<>|'
 # {'bmp', 'webp', 'pfm', 'ppm', 'ras', 'pnm', 'dib', 'tiff', 'pbm', 'pic',
 # 'hdr', 'tif', 'sr', 'jp2', 'jpg', 'pgm', 'pxm', 'exr', 'png', 'jpe', 'jpeg'}
 IMG_FORMAT = set(re.findall(r'\\\*\.(\w+)', cv2.imread.__doc__))
@@ -31,6 +32,27 @@ def colorstr(msg, *setting):
         'end': '\033[0m', 'bold': '\033[1m', 'underline': '\033[4m',
     }
     return ''.join(colors[x] for x in setting) + str(msg) + colors['end']
+
+
+def check_running_status():
+    ''' 通过临时文件, 保证当前程序只在一个进程中被执行'''
+    import psutil
+    # 根据所运行的 py 文件生成程序标识
+    exeid = (Path.cwd() / Path(__file__).name).resolve().as_posix().split(':')[-1].replace('/', '')
+    f = (Path(os.getenv('tmp')) / f'py-{exeid}').with_suffix('.txt')
+    # 读取文件, 并判断是否已有进程存在
+    cur = psutil.Process()
+    if f.is_file():
+        try:
+            _pid, time = f.read_text().split()
+            other = psutil.Process(int(_pid))
+        except:
+            other, time = cur, cur.create_time() + 1
+        # 退出: 文件所描述的进程仍然存在
+        if other.create_time() == float(time):
+            raise RuntimeError(f'The current program has been executed in process {other.pid}')
+    # 继续: 创建文件描述当前进程
+    f.write_text(' '.join(map(str, [cur.pid, cur.create_time()])))
 
 
 class timer:
@@ -71,16 +93,17 @@ class run_once:
         return handler
 
 
-def singleton(cls):
+class singleton:
     # Singleton class decorators
     _instance = {}
 
-    def handler(*args, **kwargs):
-        if cls not in _instance:
-            _instance[cls] = cls(*args, **kwargs)
-        return _instance[cls]
+    def __new__(ctx, cls):
+        def handler(*args, **kwargs):
+            if cls not in ctx._instance:
+                ctx._instance[cls] = cls(*args, **kwargs)
+            return ctx._instance[cls]
 
-    return handler
+        return handler
 
 
 def try_except(func):
@@ -184,6 +207,11 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
         import netron
         if self.suffix == '.pt': LOGGER.warning('pytorch model may not be supported')
         return netron.start(str(self))
+
+    def unzip(self, path=None, pwd=None):
+        import zipfile
+        f = zipfile.ZipFile(self, mode='r')
+        f.extractall(self.parent if path is None else path, pwd=pwd)
 
 
 class Capture(cv2.VideoCapture):

@@ -8,7 +8,7 @@ from torch import nn
 class EmaModel:
     ''' Mean teachers are better role models
         通过学生的 state_dict 保存 / 加载参数'''
-    ema = property(fget=lambda self: self.__model.ema)
+    ema = property(lambda self: self.__model.ema)
 
     def __init__(self,
                  model: nn.Module,

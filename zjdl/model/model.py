@@ -51,7 +51,7 @@ class YamlModel(nn.Module):
                 number: 串联深度 / 模块 n 参数
                 module: 模块名称
                 args: 模块初始化参数 (c2, ...)'''
-    device = property(fget=lambda self: next(self.parameters()).device)
+    device = property(lambda self: next(self.parameters()).device)
 
     def __init__(self, yaml_cfg: Union[Path, dict], ch_divisor: int = 4):
         super().__init__()
