@@ -6,10 +6,6 @@ def printvar(*args):
     for x in args: print(f'{x} = {eval(x)}')
 
 
-l = 0.6  # 初始吃水深度
-lmax = 2
-lmin = 0
-
 vw = 24  # 风速
 rb = 1  # 浮标半径
 rc = 0.025  # 钢管半径
@@ -27,13 +23,6 @@ sig = 7  # 单位长度的钢管质量
 lb = 2  # 浮标总高
 lt = 0  # 拖地长度
 ps = 1025  # 海水密度
-Gq = -mq * g
-Gc = -mc * g
-Gd = -md * g
-Gb = -mb * g
-Gs = -sig * (la - lt) * g  # 锚链重力
-Fcy = ps * g * np.pi * lc * rc ** 2
-Fdy = ps * g * np.pi * ld * rd ** 2
 
 endtime = 100
 
@@ -44,8 +33,15 @@ def y(x, H, C1, sig, g):
 
 
 def main():
-    # note: 如果对全局变量进行修改, 在此声明
-    global l, lmax, lmin
+    l, lmin, lmax = 0.6, 0, 2  # 吃水深度
+
+    Gq = -mq * g
+    Gc = -mc * g
+    Gd = -md * g
+    Gb = -mb * g
+    Gs = -sig * (la - lt) * g  # 锚链重力
+    Fcy = ps * g * np.pi * lc * rc ** 2
+    Fdy = ps * g * np.pi * ld * rd ** 2
 
     for _ in range(endtime):
         Fby = ps * g * np.pi * l * rb ** 2
@@ -84,7 +80,7 @@ def main():
 
     R = lt + a + lc * (np.cos(b1) + np.cos(b2) + np.cos(b3) + np.cos(b4)) + ld * np.cos(b5)
 
-    # note: 固定的返回值
+    # note: 固定的返回值 (局部变量)
     return locals()
 
 

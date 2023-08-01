@@ -1,3 +1,4 @@
-import vspace
+import vspace as vs
 
-print(vspace.main())
+vs.endtime = 10
+print(vs.main())
