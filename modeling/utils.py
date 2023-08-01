@@ -86,26 +86,63 @@ def cal_RI(n, epochs=1000, decimals=4):
         return RI
 
 
+def bc_shape(*args):
+    return max((x if isinstance(x, np.ndarray) else np.array(1) for x in args), key=lambda x: x.shape)
+
+
+def bc_args(*args):
+    # 广播后的张量
+    zero = np.zeros_like(max((x if isinstance(x, np.ndarray) else np.array(1) for x in args), key=lambda x: x.shape))
+    return [x + zero for x in args] if zero.size > 1 else args
+
+
+def arr_zip(*args):
+    flag = [isinstance(x, np.ndarray) for x in args]
+    n = max(x.size if flag[i] else 1 for i, x in enumerate(args))
+    for i in range(n):
+        yield [x[i] if flag[j] else x for j, x in enumerate(args)]
+
+
 class solvex:
     ''' fx: 关于 x 的函数 f(x), 优化目标为 f(x) = 0
         xlow,xhigh: x 的上下限'''
 
-    def __new__(cls, fx, xlow, xhigh, timeout=.2, dtype='float', log=False):
+    def __new__(cls, fx, xlow, xhigh, timeout=.2, dtype='float', log=False, plot=False):
         self = object.__new__(cls)
         self.fx = fx
         self.xcfg = dict(low=xlow, high=xhigh, log=log)
         self.dtype = dtype
         # 使用 optuna 求解自变量 x
         logging.disable(logging.INFO)
-        study = optuna.create_study(direction='minimize')
+        study = optuna.create_study(direction='minimize', sampler=optuna.samplers.TPESampler())
         study.optimize(self.ferror, timeout=timeout)
         logging.disable(logging.NOTSET)
-        # xs = sorted(set(trial.params['x'] for trial in study.trials))
-        return study.best_params['x']
+        result = study.best_params['x']
+        if plot:
+            import matplotlib.pyplot as plt
+            # 解所在的平面 (灰色虚线)
+            plt.plot([xlow, xhigh], [0] * 2, color='gray', linestyle='--')
+            # 原函数曲线 (蓝色实线)
+            x = np.linspace(xlow, xhigh, 1000)
+            plt.plot(x, [fx(i) for i in x], color='deepskyblue')
+            # 搜索过程中的试验点 (橙色散点)
+            xs = np.array([trial.params['x'] for trial in study.trials])
+            plt.scatter(xs, [fx(i) for i in xs], color='orange', alpha=np.linspace(.1, 1, len(xs)))
+            # 最优解 (红色散点)
+            plt.scatter(result, fx(result), color='red')
+            plt.show()
+        return result
 
     def ferror(self, trial: optuna.Trial):
         x = getattr(trial, f'suggest_{self.dtype}')('x', **self.xcfg)
         return self.fx(x) ** 2
+
+    @classmethod
+    def map(cls, fxs, dst, workers=8, **kwargs):
+        x = tqdm(multiprocessing.Pool(workers).imap(
+            partial(cls, **kwargs), fxs
+        ), total=len(fxs), desc='Solve Map')
+        return np.array(list(x)).reshape(dst.shape)
 
     @classmethod
     def _sym_map_handler(cls, f, sym_tar, **kwargs):

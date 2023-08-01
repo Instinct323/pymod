@@ -68,5 +68,5 @@ if __name__ == '__main__':
     env = CondaEnv()
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
-    # env.install('mmgen')
+    # env.install('lxml')
     git_push()
