@@ -15,17 +15,32 @@ def adjusted_r_squared(pred, target, n_features):
     return 1 - rss / tss * adjusted
 
 
-def poly_fit(x, y, deg=1):
-    ''' 多项式拟合
-        x: [n_samples, n_features]
-        y: [n_samples, ]'''
-    model = make_pipeline(
-        PolynomialFeatures(degree=deg, include_bias=False),
-        LinearRegression()
-    ).fit(x, y)
-    pred = model.predict(x)
-    score = adjusted_r_squared(pred, y, n_features=x.shape[1])
-    return {'w': model[-1].coef_, 'b': model[-1].intercept_, 'score': score, 'model': model}
+class PolyFit:
+    ''' 多项式拟合'''
+    w = property(lambda self: self.__w[::-1])
+
+    def __init__(self, x, y, deg, plot=False):
+        self.__w = np.polyfit(x, y, deg)
+        self.__f = np.poly1d(self.__w)
+        self.target = y
+        self.pred = self(x)
+        # 绘制拟合结果
+        if plot:
+            plt.plot(x, self.target, label='target', color='orange')
+            plt.plot(x, self.pred, label='pred', color='deepskyblue')
+            plt.legend(), plt.show()
+
+    def __call__(self, x):
+        return self.__f(x)
+
+    def __repr__(self):
+        return str(self.w)
+
+    def abs_error(self):
+        return np.abs(self.pred - self.target)
+
+    def rela_error(self):
+        return self.abs_error() / self.target
 
 
 if __name__ == '__main__':

@@ -1,13 +1,14 @@
 from typing import Sequence, Optional
 
 import numpy as np
-from sklearn.preprocessing import minmax_scale
 from tqdm import trange
 
-DTYPE = np.float16
+DTYPE = np.float32
+INF = np.finfo(DTYPE).max
+EPS = np.finfo(DTYPE).eps
 
 
-class Particle_Swarm_Optimizer:
+class ParticleSwarmOpt:
     ''' 粒子群优化器
         particle_size: 粒子群规模
         coord_range: 每个坐标的取值范围
@@ -19,7 +20,7 @@ class Particle_Swarm_Optimizer:
     def __init__(self, particle_size: int,
                  coord_range: Sequence[Sequence],
                  integer: bool = False,
-                 well_percent: float = 0.05,
+                 well_percent: float = 0.15,
                  learn_rate: float = 1.,
                  best_unit: Optional[Sequence] = None):
         # 记录系统参数
@@ -32,7 +33,7 @@ class Particle_Swarm_Optimizer:
         # 记录最优个体
         if best_unit:
             self.best_unit = np.array(best_unit, DTYPE)
-            self.best_fitness = self.fitness(self.best_unit)
+            self.best_fitness = self.fitness(self.best_unit[None])
         else:
             self.best_unit = None
             self.best_fitness = - np.inf
@@ -44,13 +45,13 @@ class Particle_Swarm_Optimizer:
         x = np.random.random([num, len(self._coord_range)])
         return x * self._coord_scale + self._coord_range[:, 0]
 
-    def fitness(self, particle: np.ndarray) -> float:
+    def fitness(self, particle: np.ndarray) -> np.ndarray:
         ''' 适应度函数 (max -> best)'''
         raise NotImplementedError
 
     def fit(self, epochs: int,
-            patience: int = 50,
-            inertia_weight: float = 0.2,
+            patience: int = -1,
+            inertia_weight: float = 0.5,
             random_epochs_percent: float = 0.2,
             prefix='PSO_fit') -> float:
         ''' epochs: 训练轮次
@@ -101,10 +102,8 @@ class Particle_Swarm_Optimizer:
 
     def _fitness_factor(self) -> np.ndarray:
         ''' 适应度因子'''
-        fitness = np.array(list(map(self.fitness, self.particle)), dtype=DTYPE)
-        # 只保留优粒子的适应度
-        well_bound = np.sort(fitness)[-self._well_size]
-        fitness *= fitness >= well_bound
+        fitness = np.array(self.fitness(self.particle), dtype=DTYPE)
+        fitness[~ np.isfinite(fitness)] = - INF
         # 局部最优的个体
         cur_best_index = fitness.argmax()
         cur_best_fitness = fitness[cur_best_index]
@@ -115,8 +114,10 @@ class Particle_Swarm_Optimizer:
             self.best_unit = self.particle[cur_best_index].copy()
         else:
             self._angry += 1
-        # 转化为与最优适应度的比例
-        fitness = minmax_scale(np.append(fitness, self.best_fitness))
+        # 只保留优粒子的适应度
+        well_bound = np.sort(fitness)[-self._well_size]
+        fitness = np.maximum(np.append(fitness, self.best_fitness) - well_bound, 0)
+        fitness /= fitness.max() + EPS
         # 削弱最优适应度的影响力
         fitness[-1] = 1.1 - fitness[:-1].max()
         return fitness
@@ -152,15 +153,15 @@ if __name__ == '__main__':
         plt.plot([bound] * 2, [-1, 1], color='aqua', linestyle='--')
 
 
-    class My_PSO(Particle_Swarm_Optimizer):
+    class My_PSO(ParticleSwarmOpt):
 
         def fitness(self, particle):
-            return np.sin(particle).sum()
+            return np.sin(particle).sum(axis=-1) - 1000
 
 
     # 重写粒子群优化器, 并初始化
     pso = My_PSO(100, coord_range=COORD_RANGE, integer=False)
-    best = pso.fit(100)
+    best = pso.fit(2)
     print(best)
     # 绘制最优解
     plt.scatter(best, np.sin(best), marker='p', c='orange')

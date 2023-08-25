@@ -14,6 +14,19 @@ LOGGER = logging.getLogger(__name__)
 NUMBER = int, float
 
 
+def runge_kutta(pdfunc, init, dt, n):
+    ''' pdfunc: 偏微分函数
+        init: 初值条件'''
+    ret = [np.array(init)]
+    for _ in range(n):
+        k1 = pdfunc(ret[-1])
+        k2 = pdfunc(ret[-1] + dt / 2 * k1)
+        k3 = pdfunc(ret[-1] + dt / 2 * k2)
+        k4 = pdfunc(ret[-1] + dt * k3)
+        ret.append(ret[-1] + dt / 6 * (k1 + 2 * (k2 + k3) + k4))
+    return np.stack(ret)
+
+
 def laida_bound(data):
     ''' 拉以达边界
         data: 单指标向量'''
