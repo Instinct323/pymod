@@ -15,36 +15,33 @@ def adjusted_r_squared(pred, target, n_features):
     return 1 - rss / tss * adjusted
 
 
-class PolyFit:
-    ''' 多项式拟合'''
-    w = property(lambda self: self.__w[::-1])
+class PolyFun(np.poly1d):
+    w = property(lambda self: self.c[::-1])
 
+    def gradf(self):
+        return np.poly1d(self.c[:-1] * np.arange(self.o, 0, -1))
+
+
+class PolyFit(PolyFun):
+    ''' 多项式拟合'''
     def __init__(self, x, y, deg, plot=False):
-        self.__w = np.polyfit(x, y, deg)
-        self.__f = np.poly1d(self.__w)
-        self.target = y
+        super().__init__(np.polyfit(x, y, deg))
+        self.y = y
         self.pred = self(x)
         # 绘制拟合结果
         if plot:
-            plt.plot(x, self.target, label='target', color='orange')
-            plt.plot(x, self.pred, label='pred', color='deepskyblue')
+            plt.plot(x, self.y, label='true', color='orange')
+            plt.plot(x, self.pred, label='pred', color='deepskyblue', linestyle='--')
             plt.legend(), plt.show()
 
-    def __call__(self, x):
-        return self.__f(x)
-
-    def __repr__(self):
-        return str(self.w)
-
     def abs_error(self):
-        return np.abs(self.pred - self.target)
+        return np.abs(self.pred - self.y)
 
     def rela_error(self):
-        return self.abs_error() / self.target
+        return self.abs_error() / self.y
 
 
 if __name__ == '__main__':
-    from plot import standard_coord
     import matplotlib.pyplot as plt
     import math
 
@@ -63,7 +60,6 @@ if __name__ == '__main__':
     ]
 
     for i, (x, y) in enumerate(data):
-        standard_coord(2, 2, i + 1, zero_p=False)
         plt.title(f'S{"V" * i}PWM调速方式的机械特性')
 
         z = process(x)

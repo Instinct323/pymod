@@ -22,6 +22,28 @@ def torch_show(img, delay=0):
         cv2.waitKey(delay)
 
 
+class LossLandScape:
+
+    def __init__(self, w=1., dpi=20):
+        self.dpi = dpi + ((dpi + 1) & 1)
+        w = np.linspace(-w, w, self.dpi)
+        self.coord = np.stack(np.meshgrid(w, w), axis=-1)
+
+    def process(self, m0, m1, m2, m3, m4):
+        ms = [m - m0 for m in (m1, m2, m3, m4)]
+        for x, y in self.coord.reshape(-1, 2):
+            m = m0
+            if x: m = m + abs(x) * ms[x > 0]
+            if y: m = m + abs(y) * ms[2 + (y > 0)]
+            yield m
+
+    def plot(self, losses, cmap='Blues'):
+        losses = np.array(losses).reshape(self.dpi, self.dpi)
+        fig = plt.subplot(projection='3d')
+        fig.plot_surface(self.coord[..., 0], self.coord[..., 1], losses, cmap=cmap)
+        plt.show()
+
+
 class ParamUtilization:
 
     def __new__(cls, model: nn.Module, path='model', sample=4,

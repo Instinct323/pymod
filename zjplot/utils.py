@@ -59,8 +59,9 @@ def bar2d(dataset, xticks=None, labels=None, colors=None, alpha=1):
     if xticks: plt.xticks(x, xticks)
 
 
-def hotmap(array, cmap='Blues', annotate=10, colorbar=False,
+def hotmap(array, pos=0, cmap='Blues', size=10, colorbar=False,
            xticks=None, yticks=None, xlabel=None, ylabel=None):
+    pos = np.array([-.1, .05]) + pos
     # 去除坐标轴
     fig = plt.subplot()
     for key in 'right', 'top', 'left', 'bottom':
@@ -73,13 +74,12 @@ def hotmap(array, cmap='Blues', annotate=10, colorbar=False,
     # 标注数据信息
     for i, row in enumerate(array):
         for j, item in enumerate(row):
-            plt.annotate(f'{item:.2f}', (j - .1, i + .05), size=annotate)
+            if np.isfinite(item):
+                plt.annotate(f'{item:.2f}', pos + [j, i], size=size)
     # 坐标轴标签
     plt.xticks(range(len(array)), xticks)
     plt.yticks(range(len(array[0])), yticks, rotation=90)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.show()
+    plt.xlabel(xlabel), plt.ylabel(ylabel), plt.show()
 
 
 if __name__ == '__main__':

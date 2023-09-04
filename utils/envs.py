@@ -69,5 +69,4 @@ if __name__ == '__main__':
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
     # env.install('lxml')
-    env.install('plotly')
     git_push()
