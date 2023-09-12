@@ -196,7 +196,7 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
         writer = pd.ExcelWriter(self)
         for df in [data] if isinstance(data, pd.DataFrame) else data:
             df.to_excel(writer, **kwargs)
-        writer.save()
+        writer.close()
 
     def torch(self, data=None, map_location=None):
         import torch

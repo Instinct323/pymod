@@ -1,4 +1,4 @@
-from collections import deque
+import collections
 
 
 class PositionalPID:
@@ -10,11 +10,10 @@ class PositionalPID:
 
     def reset(self, n=3):
         # 历史误差 (最近 n 帧), 累积误差 (EMA)
-        self._lerror, self._serror = deque(maxlen=n), 0.
+        self._lerror, self._serror = collections.deque(maxlen=n), 0.
 
     def update(self, measure, m=0.9):
         error = self.target - measure
         self._lerror.append(error)
         self._serror = error + m * self._serror
-        derror = error - self._lerror[0]
-        return self.kp * error + self.ki * self._serror + self.kd * derror
+        return self.kp * error + self.ki * self._serror + self.kd * (error - self._lerror[0])

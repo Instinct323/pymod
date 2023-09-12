@@ -53,7 +53,7 @@ class ParticleSwarmOpt:
     def fit(self, epochs: int,
             patience: int = -1,
             inertia_weight: float = 0.5,
-            random_epochs_percent: float = 0.2,
+            random_epochs_percent: float = 0.4,
             prefix='PSO_fit') -> float:
         ''' epochs: 训练轮次
             patience: 允许搜索无进展的次数
@@ -74,7 +74,7 @@ class ParticleSwarmOpt:
             # 根据轮次生成随机移动量, 随机缩放比例: [-1, 1]
             if i < random_epochs:
                 self._angry = 0
-                move_pace *= 2 * np.random.random(self.particle.shape) - 1
+                move_pace *= np.random.uniform(-1, 1, self.particle.shape)
             # 移动粒子: 吸引力 + 惯量 * 系数
             self.particle += (move_pace + inertia_weight * self.inertia) * self._lr
             self.inertia = move_pace
@@ -105,7 +105,7 @@ class ParticleSwarmOpt:
         cur_best_index = fitness.argmax()
         cur_best_fitness = fitness[cur_best_index]
         # 更新全局最优的个体
-        if cur_best_fitness > self.best_fitness:
+        if np.isfinite(cur_best_fitness) and cur_best_fitness > self.best_fitness:
             self._angry = 0
             self.best_fitness = cur_best_fitness
             self.best_unit = self.particle[cur_best_index].copy()
@@ -116,7 +116,7 @@ class ParticleSwarmOpt:
         fitness = np.maximum(np.append(fitness, self.best_fitness) - well_bound, 0)
         fitness /= fitness.max() + EPS
         # 削弱最优适应度的影响力
-        fitness[-1] = 1. - fitness[:-1].max()
+        fitness[-1] = 1.1 - fitness[:-1].max()
         return fitness
 
     def _move_pace(self) -> np.ndarray:

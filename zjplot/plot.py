@@ -133,7 +133,7 @@ def rubik_cube(figure, csys: CoordSys_3d,
 
 if __name__ == '__main__':
     plt.rcParams['figure.figsize'] = [6.4, 6.4]
-    index = 4
+    index = 1
 
     if index == 1:
         fig = plt.subplot()
