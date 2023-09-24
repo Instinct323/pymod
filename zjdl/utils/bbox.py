@@ -17,31 +17,31 @@ BGR_COLOR = {
 }
 
 
-def xywh2xyxy(labels):
+def xywh2xyxy(labels, i=1):
     labels = labels.copy()
-    labels[..., 1:3] -= labels[..., 3:5] / 2
-    labels[..., 3:5] += labels[..., 1:3]
+    labels[..., i:i + 2] -= labels[..., i + 2:i + 4] / 2
+    labels[..., i + 2:i + 4] += labels[..., i:i + 2]
     return labels
 
 
-def xyxy2xywh(labels):
+def xyxy2xywh(labels, i=1):
     labels = labels.copy()
-    labels[..., 3:5] -= labels[..., 1:3]
-    labels[..., 1:3] += labels[..., 3:5] / 2
+    labels[..., i + 2:i + 4] -= labels[..., i:i + 2]
+    labels[..., i:i + 2] += labels[..., i + 2:i + 4] / 2
     return labels
 
 
-def pixel2radio(labels, h, w):
+def pixel2radio(labels, h, w, i=1):
     labels = labels.copy()
-    labels[..., 1:5:2] /= w
-    labels[..., 2:5:2] /= h
+    labels[..., i:i + 4:2] /= w
+    labels[..., i + 1:i + 4:2] /= h
     return labels
 
 
-def radio2pixel(labels, h, w):
+def radio2pixel(labels, h, w, i=1):
     labels = labels.copy()
-    labels[..., 1:5:2] *= w
-    labels[..., 2:5:2] *= h
+    labels[..., i:i + 4:2] *= w
+    labels[..., i + 1:i + 4:2] *= h
     return labels
 
 
