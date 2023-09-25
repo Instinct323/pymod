@@ -55,7 +55,7 @@ class CosineLR(torch.optim.lr_scheduler.LambdaLR):
         super().__init__(optimizer, lr_lambda, verbose=verbose)
 
 
-class Trainer:
+class TrainerBase:
     ''' model: 网络模型
         project: 项目目录 (Path)
             best.pt: 最优模型的字典
@@ -115,22 +115,22 @@ class Trainer:
     def cuda_memory(self, divisor=1e9):
         return torch.cuda.memory_reserved() / divisor
 
-    def load_ckpt(self, _file: str = 'last.pt') -> dict:
-        _file = self.project / _file
-        if not _file.is_file(): return {}
+    def load_ckpt(self, file: str = 'last.pt') -> dict:
+        file = self.project / file
+        if not file.is_file(): return {}
         # 若文件存在, 则加载 checkpoint
-        ckpt = torch.load(_file, map_location=self.device)
+        ckpt = torch.load(file, map_location=self.device)
         self._optim.load_state_dict(ckpt['optim'])
         self._lr_scheduler.load_state_dict(ckpt['sche'])
         self.model.load_state_dict(ckpt['model'], strict=True)
         return ckpt
 
-    def save_ckpt(self, _files: list = ['last.pt'], **ckpt_kwd):
+    def save_ckpt(self, files: list = ['last.pt'], **ckpt_kwd):
         ckpt_kwd.update({'optim': self._optim.state_dict(),
                          'sche': self._lr_scheduler.state_dict(),
                          'model': self.model.state_dict()})
         # 保存 checkpoint
-        for f in _files: torch.save(ckpt_kwd, self.project / f)
+        for f in files: torch.save(ckpt_kwd, self.project / f)
 
     def bp_gradient(self, loss):
         self._scaler.scale(loss).backward()
@@ -138,6 +138,9 @@ class Trainer:
         self._scaler.update()
         self._optim.zero_grad()
         return torch.isfinite(loss)
+
+
+class Trainer(TrainerBase):
 
     def loss(self, *args, **kwargs) -> torch.Tensor:
         raise NotImplementedError

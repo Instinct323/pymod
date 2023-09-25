@@ -13,11 +13,8 @@ class IouLoss:
             False: non-monotonic FM
         }'''
 
-    def __init__(self, n, t, ltype='WIoU', monotonous=False, alpha=1.9, delta=3):
-        # The momentum of running mean
-        time_to_real = n * t
-        self.momentum = 1 - pow(0.05, 1 / time_to_real)
-
+    def __init__(self, a=0, b=1, c=0, ltype='WIoU', monotonous=False, alpha=1.9, delta=3):
+        self.p = torch.tensor([a, b, c], dtype=torch.float32)
         self.ltype = ltype
         self.monotonous = monotonous
 
@@ -63,22 +60,15 @@ class IouLoss:
             # IoU
             'iou': lambda: 1 - self.s_inter / self.s_union
         }
-        if self._is_train:
-            self.iou_mean.mul_(1 - self.momentum)
-            self.iou_mean.add_(self.momentum * self.iou.detach().mean().item())
 
         loss = self._scaled_loss(getattr(self, self.ltype)(**kwargs))
         return (loss, self.iou) if ret_iou else loss
 
-    def train(self):
-        self._is_train = True
-
-    def eval(self):
-        self._is_train = False
-
     def _scaled_loss(self, loss):
         if isinstance(self.monotonous, bool):
-            beta = self.iou.detach() / self.iou_mean
+            div = (torch.tensor([torch.square(self.iou_mean), self.iou_mean, 1]) * self.p).sum()
+            beta = self.iou.detach() / div
+
             if self.monotonous:
                 loss *= beta.sqrt()
             else:
@@ -128,9 +118,7 @@ class IouLoss:
 
     def __repr__(self):
         return f'{self.ltype}(' \
-               f'iou_mean={self.iou_mean.item():.3f}, ' \
-               f'm={self.momentum:.3e}, ' \
-               f'train={self._is_train})'
+               f'iou_mean={self.iou_mean.item():.3f})' \
 
 
 if __name__ == '__main__':
