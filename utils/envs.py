@@ -69,4 +69,5 @@ if __name__ == '__main__':
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
     # env.install('lxml')
+    env.install('setuptools==59.5.0')
     git_push()
