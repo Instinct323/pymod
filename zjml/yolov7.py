@@ -76,11 +76,10 @@ def prune_dataset(image_dir, label_dir, cls_pool=None, min_n_boxes=1):
             temp.rename(txt)
 
 
-def get_train_data(project, weighted=False, excel=True):
-    ''' 解析 YOLOv7 result.txt'''
+def get_train_data(project, weighted=False, csv=True):
+    ''' 解析 YOLOv7 result.txt (需修改)'''
     with open(project / 'results.txt') as f:
-        data = [list(map(eval, line.split()[2: -3]))
-                for line in f.readlines()]
+        data = [list(map(eval, line.split()[2: -3])) for line in f.readlines()]
     data = list(map(lambda x: x[:3] + x[-4:], data))
     # 为数据附加列标签
     df = pd.DataFrame(
@@ -94,7 +93,7 @@ def get_train_data(project, weighted=False, excel=True):
         for key in df.columns[:3]: df[key] /= hyp[key]
     # 将各个指标化成百分数
     for key in df.columns[3:]: df[key] *= 100
-    if excel: excel_dump(df, project / f'{project.name}.xls')
+    if csv: df.to_csv(project / f'{project.name}.csv')
     return df
 
 
