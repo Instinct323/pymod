@@ -10,14 +10,15 @@ class BayerOpt:
                  file: Path,
                  direction: str = 'maximize',
                  best: dict = None):
-        self.study = optuna.create_study(direction=direction)
+        self.study = optuna.create_study(direction=direction,
+                                         storage='mysql://zjtong:20010323@localhost:3306/pyresult')
         self.file = file
         self.best = best
         # 加载已完成的试验, 如果文件不存在则尝试最优参数
-        if file.is_file():
+        '''if file.is_file():
             self.study.add_trials(pickle.loads(file.read_bytes()))
         elif best:
-            self.study.enqueue_trial(best)
+            self.study.enqueue_trial(best)'''
 
     def __call__(self, func, n_trials):
         for i in range(n_trials):
