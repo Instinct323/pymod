@@ -1,4 +1,4 @@
-from mod.utils.file_oper import *
+from mod.zjdl.utils.utils import *
 
 
 def make_index(image_dir):

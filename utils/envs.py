@@ -36,14 +36,17 @@ class CondaEnv:
     def load_requirements(self, file='requirements.txt'):
         os.system(f'{self.engine} install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
 
-    def clean(self):
+    @staticmethod
+    def clean():
         os.system('conda clean -ay')
 
-    def jupyter(self, root='.', cfg=False):
+    @staticmethod
+    def jupyter(root='.', cfg=False):
         os.chdir(str(root))
         os.system('jupyter notebook' + cfg * ' --generate-config')
 
-    def config(self):
+    @staticmethod
+    def config():
         # 配置 pip
         for k, v in (('timeout', 6000),
                      ('index-url', 'https://pypi.tuna.tsinghua.edu.cn/simple'),
@@ -69,5 +72,5 @@ if __name__ == '__main__':
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
     # env.install('lxml')
-    env.install('MySQL-python')
+    env.install('pymysql')
     git_push()

@@ -112,7 +112,8 @@ class TrainerBase:
         self._scaler = amp.GradScaler(enabled=cuda)
         torch.cuda.empty_cache()
 
-    def cuda_memory(self, divisor=1e9):
+    @staticmethod
+    def cuda_memory(divisor=1e9):
         return torch.cuda.memory_reserved() / divisor
 
     def load_ckpt(self, file: str = 'last.pt') -> dict:

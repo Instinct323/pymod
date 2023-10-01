@@ -102,7 +102,8 @@ class TCP_Socket(socket.socket):
         if self != self._conn and self._conn: self._conn.close()
         self.close()
 
-    def _user(self, addr):
+    @staticmethod
+    def _user(addr):
         return f'{addr[0]}:{addr[1]}'
 
     def _bind(self):
