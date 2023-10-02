@@ -19,7 +19,6 @@ def git_push(repositories=(r'D:\Information\Python\mod',
 class CondaEnv:
 
     def __init__(self, engine='pip'):
-        self.env = os.popen('conda info --envs')
         self.version = sys.version_info[:3]
         self.engine = engine
 
@@ -73,10 +72,7 @@ class CondaEnv:
             os.system(f'conda config {p}')
 
     def __repr__(self):
-        if not isinstance(self.env, str):
-            self.env = re.search(r'\*\s+.+', self.env.read()
-                                 ).group().split(maxsplit=1)[-1].rsplit('\\', maxsplit=1)[-1]
-        return f'<{type(self).__name__} {self.env} {".".join(map(str, self.version))}>'
+        return f'<{type(self).__name__} {".".join(map(str, self.version))}>'
 
 
 if __name__ == '__main__':
@@ -84,6 +80,7 @@ if __name__ == '__main__':
     CondaEnv.modify_env()
 
     env = CondaEnv()
+    print(env)
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
     # env.install('lxml')
