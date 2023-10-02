@@ -40,11 +40,11 @@ class CondaEnv:
     @staticmethod
     def modify_env(conda_path=Path('D:/Software/Anaconda3'),
                    env_path=Path('D:/Information/Python/Envs/cv')):
-        # os.environ['CONDA_DEFAULT_ENV'] = str(env_path)
-        # os.environ['CONDA_PREFIX'] = str(env_path)
-        # os.environ['CONDA_PROMPT_MODIFIER'] = f'({env_path})'
-        # os.environ['CONDA_SHLVL'] = '1'
-        # os.environ['PROMPT'] = f'({env_path}) $P$G'
+        os.environ['CONDA_DEFAULT_ENV'] = str(env_path)
+        os.environ['CONDA_PREFIX'] = str(env_path)
+        os.environ['CONDA_PROMPT_MODIFIER'] = f'({env_path})'
+        os.environ['CONDA_SHLVL'] = '1'
+        os.environ['PROMPT'] = f'({env_path}) $P$G'
         os.environ['PATH'] += ';'.join(map(
             str, [conda_path / 'condabin', conda_path / 'Library/Bin',
                   env_path, env_path / 'bin', env_path / 'Scripts',
@@ -84,9 +84,8 @@ if __name__ == '__main__':
     CondaEnv.modify_env()
 
     env = CondaEnv()
-    os.system('conda info --envs')
-    print(env)
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
     # env.install('lxml')
+    env.install('pymysql', uninstall=True)
     git_push()
