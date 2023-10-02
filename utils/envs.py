@@ -84,6 +84,7 @@ if __name__ == '__main__':
     CondaEnv.modify_env()
 
     env = CondaEnv()
+    os.system('conda info --envs')
     print(env)
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
