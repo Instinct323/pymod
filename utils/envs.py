@@ -39,11 +39,11 @@ class CondaEnv:
     @staticmethod
     def modify_env(conda_path=Path('D:/Software/Anaconda3'),
                    env_path=Path('D:/Information/Python/Envs/cv')):
-        #os.environ['CONDA_DEFAULT_ENV'] = str(env_path)
+        # os.environ['CONDA_DEFAULT_ENV'] = str(env_path)
         # os.environ['CONDA_PREFIX'] = str(env_path)
-        #os.environ['CONDA_PROMPT_MODIFIER'] = f'({env_path})'
-        #os.environ['CONDA_SHLVL'] = '1'
-        #os.environ['PROMPT'] = f'({env_path}) $P$G'
+        # os.environ['CONDA_PROMPT_MODIFIER'] = f'({env_path})'
+        # os.environ['CONDA_SHLVL'] = '1'
+        # os.environ['PROMPT'] = f'({env_path}) $P$G'
         os.environ['PATH'] += ';'.join(map(
             str, [conda_path / 'condabin', conda_path / 'Library/Bin',
                   env_path, env_path / 'bin', env_path / 'Scripts',
@@ -77,6 +77,7 @@ class CondaEnv:
 
 if __name__ == '__main__':
     os.chdir(os.getenv('dl'))
+    CondaEnv.clean()
     CondaEnv.modify_env()
 
     env = CondaEnv()
