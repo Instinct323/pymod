@@ -37,19 +37,6 @@ class CondaEnv:
         os.system(f'{self.engine} install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
 
     @staticmethod
-    def modify_env(conda_path=Path('D:/Software/Anaconda3'),
-                   env_path=Path('D:/Information/Python/Envs/cv')):
-        # os.environ['CONDA_DEFAULT_ENV'] = str(env_path)
-        # os.environ['CONDA_PREFIX'] = str(env_path)
-        # os.environ['CONDA_PROMPT_MODIFIER'] = f'({env_path})'
-        # os.environ['CONDA_SHLVL'] = '1'
-        # os.environ['PROMPT'] = f'({env_path}) $P$G'
-        os.environ['PATH'] += ';'.join(map(
-            str, [conda_path / 'condabin', conda_path / 'Library/Bin',
-                  env_path, env_path / 'bin', env_path / 'Scripts',
-                  env_path / 'Library/bin', env_path / 'Library/usr/bin', env_path / 'Library/mingw-w64/bin']))
-
-    @staticmethod
     def clean():
         os.system('conda clean -ay')
 
@@ -71,13 +58,24 @@ class CondaEnv:
                   '--set show_channel_urls yes'):
             os.system(f'conda config {p}')
 
+    @staticmethod
+    def modify_env(conda_path: Path = Path('D:/Software/Anaconda3'),
+                   env_path: Path = Path('D:/Information/Python/Envs/cv')):
+        # os.environ['CONDA_DEFAULT_ENV'] = str(env_path)
+        # os.environ['CONDA_PREFIX'] = str(env_path)
+        # os.environ['CONDA_PROMPT_MODIFIER'] = f'({env_path})'
+        # os.environ['CONDA_SHLVL'] = '1'
+        # os.environ['PROMPT'] = f'({env_path}) $P$G'
+        os.environ['PATH'] += ';'.join(map(
+            str, [env_path, env_path / 'bin', env_path / 'Scripts',
+                  env_path / 'Library/bin', env_path / 'Library/usr/bin', env_path / 'Library/mingw-w64/bin']))
+
     def __repr__(self):
         return f'<{type(self).__name__} {".".join(map(str, self.version))}>'
 
 
 if __name__ == '__main__':
     os.chdir(os.getenv('dl'))
-    CondaEnv.clean()
     CondaEnv.modify_env()
 
     env = CondaEnv()
