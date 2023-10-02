@@ -2,6 +2,7 @@ import datetime
 import os
 import re
 import sys
+from pathlib import Path
 
 
 def git_push(repositories=(r'D:\Information\Python\mod',
@@ -37,6 +38,19 @@ class CondaEnv:
         os.system(f'{self.engine} install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
 
     @staticmethod
+    def modify_env(conda_path=Path('D:/Software/Anaconda3'),
+                   env_path=Path('D:/Information/Python/Envs/cv')):
+        # os.environ['CONDA_DEFAULT_ENV'] = str(env_path)
+        # os.environ['CONDA_PREFIX'] = str(env_path)
+        # os.environ['CONDA_PROMPT_MODIFIER'] = f'({env_path})'
+        # os.environ['CONDA_SHLVL'] = '1'
+        # os.environ['PROMPT'] = f'({env_path}) $P$G'
+        os.environ['PATH'] += ';'.join(map(
+            str, [conda_path / 'condabin', conda_path / 'Library/Bin',
+                  env_path, env_path / 'bin', env_path / 'Scripts',
+                  env_path / 'Library/bin', env_path / 'Library/usr/bin', env_path / 'Library/mingw-w64/bin']))
+
+    @staticmethod
     def clean():
         os.system('conda clean -ay')
 
@@ -67,6 +81,7 @@ class CondaEnv:
 
 if __name__ == '__main__':
     os.chdir(os.getenv('dl'))
+    CondaEnv.modify_env()
 
     env = CondaEnv()
     # env.jupyter(r'D:\Information\Python\Work_Space')
