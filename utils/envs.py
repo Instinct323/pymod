@@ -59,8 +59,7 @@ class CondaEnv:
             os.system(f'conda config {p}')
 
     @staticmethod
-    def modify_env(conda_path: Path = Path('D:/Software/Anaconda3'),
-                   env_path: Path = Path('D:/Information/Python/Envs/cv')):
+    def modify_env(env_path: Path = Path('D:/Information/Python/Envs/cv')):
         # os.environ['CONDA_DEFAULT_ENV'] = str(env_path)
         # os.environ['CONDA_PREFIX'] = str(env_path)
         # os.environ['CONDA_PROMPT_MODIFIER'] = f'({env_path})'
@@ -69,6 +68,8 @@ class CondaEnv:
         os.environ['PATH'] += ';'.join(map(
             str, [env_path, env_path / 'bin', env_path / 'Scripts',
                   env_path / 'Library/bin', env_path / 'Library/usr/bin', env_path / 'Library/mingw-w64/bin']))
+        # conda_path: Path = Path('D:/Software/Anaconda3')
+        # conda_path / 'condabin', conda_path / 'Library/Bin'
 
     def __repr__(self):
         return f'<{type(self).__name__} {".".join(map(str, self.version))}>'
