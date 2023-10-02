@@ -84,8 +84,8 @@ if __name__ == '__main__':
     CondaEnv.modify_env()
 
     env = CondaEnv()
+    print(env)
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
     # env.install('lxml')
-    env.install('pymysql')
     git_push()
