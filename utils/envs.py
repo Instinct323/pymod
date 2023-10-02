@@ -68,7 +68,7 @@ class CondaEnv:
         os.environ['PATH'] += ';'.join(map(
             str, [env_path, env_path / 'bin', env_path / 'Scripts',
                   env_path / 'Library/bin', env_path / 'Library/usr/bin', env_path / 'Library/mingw-w64/bin']))
-        # conda_path: Path = Path('D:/Software/Anaconda3')
+        # conda_path=Path('D:/Software/Anaconda3')
         # conda_path / 'condabin', conda_path / 'Library/Bin'
 
     def __repr__(self):
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     CondaEnv.modify_env()
 
     env = CondaEnv()
-    print(env)
+    os.system('conda')
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
     # env.install('lxml')
