@@ -11,7 +11,7 @@ def git_push(msg=f'update on {datetime.datetime.today()}',
     for repo in repositories:
         os.chdir(repo), print(repo.center(50, '-'))
         for cmd in ('git status', 'git add .',
-                    f'git commit -m "{msg}"', 'git push main master'): os.system(cmd)
+                    f'git commit -m "{msg}"', 'git push origin master'): os.system(cmd)
 
 
 class PythonEnv:
