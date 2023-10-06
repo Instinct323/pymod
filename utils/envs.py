@@ -93,5 +93,5 @@ if __name__ == '__main__':
     env = PythonEnv()
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
-    # env.install('lxml')
+    env.install('pyautogui')
     git_push()
