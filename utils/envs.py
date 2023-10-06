@@ -4,10 +4,10 @@ from pathlib import Path
 
 
 def git_push(msg=f'update on {datetime.datetime.today()}',
-             repositories=(r'D:\Information\Python\mod',
+             repositories=(r'D:\Workbench\mod',
                            r'D:\Information\Notes',
                            r'D:\Information\Notes\info',
-                           r'D:\Information\Python\Library')):
+                           r'D:\Workbench\Library')):
     for repo in repositories:
         os.chdir(repo), print(repo.center(50, '-'))
         for cmd in ('git status', 'git add .',
@@ -93,5 +93,4 @@ if __name__ == '__main__':
     env = PythonEnv()
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
-    env.install('pyautogui')
     git_push()
