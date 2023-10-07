@@ -4,9 +4,9 @@ import scipy.linalg
 
 class KalmenFilter:
     ''' 卡尔曼滤波器 (单目标):
-        _std_weight_position: 位置标准差权值
-        _std_weight_velocity: 速度标准差权值
-        _motion_tran: 状态转移矩阵'''
+        :cvar _std_weight_position: 位置标准差权值
+        :cvar _std_weight_velocity: 速度标准差权值
+        :ivar _motion_tran: 状态转移矩阵'''
     _std_weight_position = 1 / 20
     _std_weight_velocity = 1 / 160
 
@@ -65,9 +65,9 @@ class KalmenFilter:
 
 class SingleObjTrack(KalmenFilter):
     ''' 单目标跟踪器
-        init: 目标确认丢失, 重新初始化
-        track: 目标未丢失则跟踪, 丢失则预测
-        mark_miss: 目标暂时丢失, 标记'''
+        :ivar init: 目标确认丢失, 重新初始化
+        :ivar track: 目标未丢失则跟踪, 丢失则预测
+        :ivar mark_miss: 目标暂时丢失, 标记'''
     miss_time_thresh = 5
     confirm_time_thresh = 3
 

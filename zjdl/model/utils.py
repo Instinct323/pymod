@@ -1,3 +1,4 @@
+import logging
 import warnings
 from functools import partial
 
@@ -5,6 +6,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
+
+logging.basicConfig(format='%(message)s', level=logging.INFO)
+LOGGER = logging.getLogger(__name__)
 
 # 重新封装 sum 函数, 以减少加 0 时产生的计算
 sum_ = lambda x: sum(x[1:], x[0])

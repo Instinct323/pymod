@@ -1,7 +1,6 @@
 import time
 
 import matplotlib.patches as pch
-import numpy as np
 
 # coord.py 详见: https://blog.csdn.net/qq_55745968/article/details/129912954
 from .coord import CoordSys_2d, CoordSys_3d
@@ -13,10 +12,10 @@ DTYPE = np.float16  # 矩阵使用的数据类型
 
 class Spot:
     ''' 闪烁斑点对象
-        xylim: xy 坐标区间, [[xmin, ymin], [xmax, ymax]]
-        n: 闪烁斑点的数量
-        r: 斑点的半径均值, 标准差为 r/2, 最小值为 r/4
-        delta: 斑点寿命的均值, 标准差为 delta, 最小值为 delta/10'''
+        :param xylim: xy 坐标区间, [[xmin, ymin], [xmax, ymax]]
+        :param n: 闪烁斑点的数量
+        :param r: 斑点的半径均值, 标准差为 r/2, 最小值为 r/4
+        :param delta: 斑点寿命的均值, 标准差为 delta, 最小值为 delta/10'''
     colors = [red, orange, yellow, green, cyan, blue, purple, pink]
 
     def __init__(self, xylim: np.ndarray, n: int,
@@ -60,7 +59,7 @@ class Spot:
 
     def __call__(self, fig, csys: CoordSys_2d = None):
         ''' 刷新斑点的透明度
-            csys: CoordSys_2d 对象'''
+            :param csys: CoordSys_2d 对象'''
         x = time.time() - self.start
         # y = 4/d^2 x (d - x)
         alpha = self.alpha * np.maximum(4 / self.deltas ** 2 * x * (self.deltas - x), 0)
@@ -75,12 +74,12 @@ def cylinder(figure, csys: CoordSys_3d,
              R: float, h: float, r: float = 0,
              smooth: int = 2, **plot_kwd):
     ''' 以 csys 的 z 轴为主轴绘制圆柱
-        figure: 3D 工作站对象
-        csys: CoordSys_3d 齐次坐标系
-        R: 圆柱底面外径
-        r: 圆柱底面内径
-        h: 圆柱高度
-        smooth: 图像细致程度 (至少 2)'''
+        :param figure: 3D 工作站对象
+        :param csys: CoordSys_3d 齐次坐标系
+        :param R: 圆柱底面外径
+        :param r: 圆柱底面内径
+        :param h: 圆柱高度
+        :param smooth: 图像细致程度 (至少 2)'''
     theta = np.linspace(0, 2 * np.pi, ROUND_EDGE, dtype=DTYPE)
     z = np.linspace(-h / 2, h / 2, smooth, dtype=DTYPE)
     theta, z = np.meshgrid(theta, z)
@@ -102,9 +101,9 @@ def cylinder(figure, csys: CoordSys_3d,
 
 def ball(figure, csys: CoordSys_3d, r: float, **plot_kwd):
     ''' 绘制球体
-        figure: 3D 工作站对象
-        csys: CoordSys_3d 齐次坐标系
-        r: 球体半径'''
+        :param figure: 3D 工作站对象
+        :param csys: CoordSys_3d 齐次坐标系
+        :param r: 球体半径'''
     theta = np.linspace(0, 2 * np.pi, ROUND_EDGE, dtype=DTYPE)
     phi = np.linspace(0, np.pi, ROUND_EDGE // 2, dtype=DTYPE)
     theta, phi = np.meshgrid(theta, phi)
@@ -118,10 +117,10 @@ def rubik_cube(figure, csys: CoordSys_3d,
                length: float, hollow: float = 0.7, smooth: int = 10,
                colors: list = [red, orange, yellow, green, cyan, blue, purple, pink], **plot_kwd):
     ''' 绘制魔方
-        figure: 3D 工作站对象
-        csys: CoordSys_3d 齐次坐标系
-        length: 边长
-        smooth: 魔方的细粒度'''
+        :param figure: 3D 工作站对象
+        :param csys: CoordSys_3d 齐次坐标系
+        :param length: 边长
+        :param smooth: 魔方的细粒度'''
     x = np.linspace(-length / 2, length / 2, smooth + 1)
     filled = np.random.random([smooth] * 3) > hollow
     color = np.random.choice(colors, size=filled.shape)

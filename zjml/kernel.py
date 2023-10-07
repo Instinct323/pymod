@@ -5,12 +5,12 @@ import numpy as np
 
 
 def kernel_select(img, k, s=1, d=1, pad_value=0, axis=0):
-    ''' img: OpenCV 格式的图像 [h, w, c]
-        k: kernel size
-        s: stride
-        d: dilation
-        pad_value: 边界填充常量
-        axis: 新维度的位置'''
+    ''' :param img: OpenCV 格式的图像 [h, w, c]
+        :param k: kernel size
+        :param s: stride
+        :param d: dilation
+        :param pad_value: 边界填充常量
+        :param axis: 新维度的位置'''
     assert k & 1, 'The size of the kernel should be odd'
     # 获取膨胀操作核
     coord = np.arange(- (k // 2), k // 2 + 1)

@@ -3,17 +3,6 @@ from pathlib import Path
 import pandas as pd
 
 
-def try_except(func):
-    # try-except function. Usage: @try_except decorator
-    def handler(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as error:
-            LOGGER.error(f'{type(error).__name__}: {error}')
-
-    return handler
-
-
 class Result(pd.DataFrame):
     __exist__ = []
     orient = 'index'

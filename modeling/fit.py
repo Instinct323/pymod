@@ -24,6 +24,7 @@ class PolyFun(np.poly1d):
 
 class PolyFit(PolyFun):
     ''' 多项式拟合'''
+
     def __init__(self, x, y, deg, plot=False):
         super().__init__(np.polyfit(x, y, deg))
         self.y = y
@@ -43,7 +44,6 @@ class PolyFit(PolyFun):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    import math
 
     # 调整曲线和散点的颜色
     colors = ['deepskyblue', 'orange']
@@ -55,8 +55,8 @@ if __name__ == '__main__':
 
     # 实验数据
     data = [
-      np.array([[0.2, 0.3, 0.4, 0.5, 0.6],
-                [945, 897, 834, 746, 666]])
+        np.array([[0.2, 0.3, 0.4, 0.5, 0.6],
+                  [945, 897, 834, 746, 666]])
     ]
 
     for i, (x, y) in enumerate(data):

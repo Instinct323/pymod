@@ -53,9 +53,9 @@ class CoordSys_2d(_CoordSys_nd):
 
     def transform(self, dx: float = 0., dy: float = 0.,
                   theta: float = 0, relative: bool = True):
-        ''' dx,dy: 平移变换的参数
-            theta: 旋转变换的参数
-            relative: 是否使用相对变换'''
+        ''' :param dx,dy: 平移变换的参数
+            :param theta: 旋转变换的参数
+            :param relative: 是否使用相对变换'''
         mat = np.concatenate((np.eye(3, 2, dtype=self.dtype),
                               np.array((dx, dy, 1))[:, None]), axis=-1)
         if theta:

@@ -132,7 +132,7 @@ class ColorJitter(_augment):
 
 
 class GaussianBlur(_augment):
-    ''' sigma: [min, std]'''
+    ''' :param sigma: [min, std]'''
 
     def __init__(self, hyp, sigma=(0.1, 1.0)):
         self.ksize = hyp.get('gb_kernel', 0)

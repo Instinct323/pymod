@@ -1,13 +1,12 @@
 import sympy
-from sympy import pprint
 
 
 def Solve_Ode(ode, symbol, diff_time, subject_to=None, known_symbols=None):
-    ''' ode: n阶常微分方程
-        symbol: 自变量 [symbol, value]
-        subject_to: 约束条件 {0: {x(0): 1, …}}
-        diff_time: 微分次数
-        known_symbols: 已知变量(set)'''
+    ''' :param ode: n阶常微分方程
+        :param diff_time: 微分次数
+        :param symbol: 自变量 [symbol, value]
+        :param subject_to: 约束条件 {0: {x(0): 1, …}}
+        :param known_symbols: 已知变量(set)'''
     if subject_to is None:
         subject_to = {}
     if known_symbols is None:

@@ -39,7 +39,6 @@ class SimSiam(Trainer):
 
 
 class SimCLR(Trainer):
-    # tf: 数据增强时使用的变换器
 
     def __init__(self, model, project, m_title, hyp):
         self.cl = ContrastiveLoss(g=1)
@@ -52,10 +51,10 @@ class SimCLR(Trainer):
 
 class MaskedAutoEncoder(Trainer):
     ''' 仅适用于经典 ViT
-        npatch: patches 的总数
-        pmask: patches 的固定掩码
-        drop: patches 的遮蔽比例
-        downsample: 复原图像的下采样比例'''
+        :param npatch: patches 的总数
+        :param pmask: patches 的固定掩码
+        :param drop: patches 的遮蔽比例
+        :param downsample: 复原图像的下采样比例'''
 
     def __init__(self, model, project, m_title, hyp,
                  npatch, pmask=None, drop=.75, downsample=4):

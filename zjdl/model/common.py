@@ -43,12 +43,12 @@ class Conv(nn.Module):
             g = c1
             assert c1 == c2, 'Failed to create DWConv'
         # nn.Conv2d 的关键字参数
-        self._config = dict(
+        self.cfg_ = dict(
             in_channels=c1, out_channels=c2, kernel_size=k,
             stride=s, padding=auto_pad(k, s if ctrpad else 1, d), groups=g, dilation=d
         )
         self.conv = nn.Sequential(OrderedDict(
-            conv=nn.Conv2d(**self._config, bias=False),
+            conv=nn.Conv2d(**self.cfg_, bias=False),
             bn=BatchNorm(c2)
         ))
         self.act = act() if act else nn.Identity()
@@ -62,13 +62,13 @@ class Conv(nn.Module):
             kernel = m.conv.conv.weight.data
             bn_w, bn_b = m.conv.bn.unpack(detach=True)
             # 合并 nn.Conv 与 BatchNorm
-            m.conv = nn.Conv2d(**m._config, bias=True)
+            m.conv = nn.Conv2d(**m.cfg_, bias=True)
             m.conv.weight.data, m.conv.bias.data = kernel * bn_w.view(-1, 1, 1, 1), bn_b
 
 
 @register_module('c1,c2')
 class RepConv(nn.Module):
-    ''' k: 卷积核尺寸, 0 表示恒等映射'''
+    ''' :param k: 卷积核尺寸, 0 表示恒等映射'''
     deploy = property(lambda self: isinstance(self.m, nn.Conv2d))
 
     def __init__(self, c1, c2, k=(0, 1, 3), s=1, g=1, d=1,
@@ -98,7 +98,7 @@ class RepConv(nn.Module):
         Conv.reparam(model)
         # 查询模型的所有子模型, 对 RepConv 进行合并
         for m in filter(lambda m: isinstance(m, cls) and not m.deploy, model.modules()):
-            src, cfg = m.m[-1].conv.weight, m.m[-1]._config
+            src, cfg = m.m[-1].conv.weight, m.m[-1].cfg_
             conv = nn.Conv2d(**cfg, bias=True).to(src)
             mlist, m.m = m.m, conv
             (c2, c1g, k, _), g = conv.weight.shape, conv.groups
@@ -318,8 +318,7 @@ class QuickGELU(nn.Module):
 
 @register_module('c1')
 class SEReLU(nn.Module):
-    ''' Squeeze-and-Excitation Block
-        scale: 是否作为门控因子'''
+    ''' Squeeze-and-Excitation Block'''
 
     def __init__(self, c1, r=16):
         super().__init__()
@@ -344,10 +343,10 @@ class Upsample(nn.Upsample):
 
 
 class DropBlock(nn.Module):
-    ''' k: size of the masking area
-        drop: target value of drop_prob
-        epochs: the number of epochs in which drop_prob reaches its target value
-        scheme: drop_prob adjustment scheme'''
+    ''' :param k: size of the masking area
+        :param drop: target value of drop_prob
+        :cvar epochs: the number of epochs in which drop_prob reaches its target value
+        :cvar scheme: drop_prob adjustment scheme'''
     epochs = 10
     scheme = 'linear'
     _progress = property(lambda self: torch.clip(self.cnt / self.epochs, min=0, max=1).item())
@@ -427,8 +426,8 @@ class AttnPool(nn.Module):
 
 @register_module('c1,c2')
 class MixFFN(nn.Module):
-    ''' e: 全连接层通道膨胀比
-        k: 深度可分离卷积的尺寸 (k<2 时不使用)'''
+    ''' :param e: 全连接层通道膨胀比
+        :param k: 深度可分离卷积的尺寸 (k<2 时不使用)'''
 
     def __init__(self, c1, c2=None, e=4., k=3, drop=0.1,
                  act: Optional[nn.Module] = QuickGELU):
@@ -537,7 +536,7 @@ class MaskEmbedding(nn.Module):
     def forward(self, x):
         x = self.proj(x)
         x_new = torch.stack((self.mtoken, torch.zeros_like(self.mtoken))
-                            )[LOCAL.pmask.long()][None].repeat(b, 1, 1)
+                            )[LOCAL.pmask.long()][None].repeat(int(x.size(0)), 1, 1)
         for i, j in enumerate(torch.nonzero(LOCAL.pmask).flatten()):
             x_new[:, j] = x[:, i]
         return self.norm(x_new + self.pos_embed(x_new))
@@ -557,10 +556,10 @@ class SeqConv(nn.Conv2d):
 
 @register_module('c1')
 class MultiheadAttn(nn.Module):
-    ''' nhead: 注意力头数
-        s: SRA 的 stride (s<2 时不使用)
-        drop: 注意力权值的 dropout
-        bias: QKV 线性映射的偏置'''
+    ''' :param nhead: 注意力头数
+        :param s: SRA 的 stride (s<2 时不使用)
+        :param drop: 注意力权值的 dropout
+        :param bias: QKV 线性映射的偏置'''
 
     def __init__(self, c1, nhead=8, s=0, drop=0.1, qk_norm=False, bias=True):
         super().__init__()
@@ -645,12 +644,12 @@ class TranEncoder(nn.Module):
 
 @register_module('c1,c2', 'n')
 class PyramidViT(nn.Module):
-    ''' n: TranEncoder 堆叠数
-        r: SRA 中空间缩减时的 stride (r<2 时不使用)
-        e: TranEncoder 全连接层通道膨胀比
-        nhead: 注意力头数
-        drop: 注意力权值、各个层的 dropout
-        droppath: 残差连接的 droppath'''
+    ''' :param n: TranEncoder 堆叠数
+        :param r: SRA 中空间缩减时的 stride (r<2 时不使用)
+        :param e: TranEncoder 全连接层通道膨胀比
+        :param nhead: 注意力头数
+        :param drop: 注意力权值、各个层的 dropout
+        :param droppath: 残差连接的 droppath'''
 
     def __init__(self, c1, c2, k=3, s=2, r=4, e=4., nhead=8, drop=0.1, droppath=0., n=3):
         super().__init__()
@@ -680,12 +679,12 @@ class AssignAttn(MultiheadAttn):
 
 @register_module('c1', 'n')
 class GroupingLayer(nn.Module):
-    ''' n: TranEncoder 深度
-        g: Group token 的数量
-        e: MixFFN 全连接层通道膨胀比
-        nhead: 注意力头数
-        drop: MHA,MixFFN 中的 dropout
-        droppath: 残差连接的 droppath'''
+    ''' :param n: TranEncoder 深度
+        :param g: Group token 的数量
+        :param e: MixFFN 全连接层通道膨胀比
+        :param nhead: 注意力头数
+        :param drop: MHA,MixFFN 中的 dropout
+        :param droppath: 残差连接的 droppath'''
     assignment = property(lambda self: self._memory)
 
     def __init__(self, c1, g=8, e=4., nhead=8, drop=0.1, droppath=0., n=3):

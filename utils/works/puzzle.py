@@ -22,10 +22,10 @@ def img2str(img, rows=20, char='#$@&GU?^.   '):
 
 
 class Artist:
-    ''' img: 前景图像文件
-        shape: 前景图像的目标分割形状
-        material: 隐藏图像素材包的路径
-        pad_width: 隐藏图像的侧边距'''
+    ''' :param img: 前景图像文件
+        :param shape: 前景图像的目标分割形状
+        :param material: 隐藏图像素材包的路径
+        :param pad_width: 隐藏图像的侧边距'''
 
     def __init__(self, img, material=None, shape=[2, 3],
                  dpi=1000, pad_width=0.05, pad_value=255):

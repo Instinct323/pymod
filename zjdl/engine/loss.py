@@ -22,7 +22,7 @@ class EmaParam(nn.Parameter):
 
 
 class FocalLoss(nn.Module):
-    # nc (int): Number of classes
+    # :param nc (int): Number of classes
 
     def __init__(self, nc, gamma: float = 1.5):
         super().__init__()
@@ -45,8 +45,8 @@ class FocalLoss(nn.Module):
 
 
 class MultiFocalLoss(FocalLoss):
-    # nc (tuple): Number of classes for each family
-    c1 = property(lambda self: sum(1 if nc == 2 else x for x in self.nc))
+    # :param nc (tuple): Number of classes for each family
+    c1 = property(lambda self: sum(1 if self.nc == 2 else x for x in self.nc))
 
     def get_target(self, target):
         return torch.cat([F.one_hot(target[..., i], nc) if nc > 2 else target[..., i, None]
@@ -73,7 +73,7 @@ class CrossEntropy(nn.Module):
 
 
 class MultiCrossEntropy(nn.Module):
-    # nc (tuple): Number of classes for each family
+    # :param nc (tuple): Number of classes for each family
     c1 = property(lambda self: sum(self.nf))
 
     def __init__(self,

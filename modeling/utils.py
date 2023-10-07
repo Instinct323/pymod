@@ -15,8 +15,8 @@ NUMBER = int, float
 
 
 def runge_kutta(pdfunc, init, dt, n):
-    ''' pdfunc: 偏微分函数
-        init: 初值条件'''
+    ''' :param pdfunc: 偏微分函数
+        :param init: 初值条件'''
     ret = [np.array(init)]
     for _ in range(n):
         k1 = pdfunc(ret[-1])
@@ -29,7 +29,7 @@ def runge_kutta(pdfunc, init, dt, n):
 
 def laida_bound(data):
     ''' 拉以达边界
-        data: 单指标向量'''
+        :param data: 单指标向量'''
     std = np.std(data)
     mean = np.mean(data)
     return mean - std * 3, mean + std * 3
@@ -37,10 +37,10 @@ def laida_bound(data):
 
 def comentropy(origin):
     ''' 熵权法
-        proba: 概率
-        info: 信息量 -ln(proba)
-        entropy: 信息熵 (Σ proba * info) / ln(n)
-        redu: 冗余度 1 - entropy'''
+        :var proba: 概率
+        :var info: 信息量 -ln(proba)
+        :var entropy: 信息熵 (Σ proba * info) / ln(n)
+        :var redu: 冗余度 1 - entropy'''
     proba = origin / origin.sum(axis=0, keepdims=True)
     info = - np.log(proba, where=proba > 0)
     redu = 1 - (proba * info).sum(axis=0) / np.log(origin.shape[0])
@@ -49,7 +49,7 @@ def comentropy(origin):
 
 def solve_weight(array):
     ''' 求解特征方程
-        return: w, CI'''
+        :return: w, CI'''
     array, n, wlist = array.copy(), array.shape[0], []
     # 算术平均法
     w = (array / array.sum(axis=0)).mean(axis=1, keepdims=True)
@@ -117,8 +117,8 @@ def arr_zip(*args):
 
 
 class solvex:
-    ''' fx: 关于 x 的函数 f(x), 优化目标为 f(x) = 0
-        xlow,xhigh: x 的上下限'''
+    ''' :param fx: 关于 x 的函数 f(x), 优化目标为 f(x) = 0
+        :param xlow,xhigh: x 的上下限'''
 
     def __new__(cls, fx, xlow, xhigh, timeout=.2, dtype='float', log=False, plot=False):
         self = object.__new__(cls)

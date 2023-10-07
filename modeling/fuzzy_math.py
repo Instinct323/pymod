@@ -12,10 +12,7 @@ def eval_weight(R):
 
 def rela_dev_fun(data, is_benefit):
     ''' 相对偏差法:
-        data:
-            行索引: 各方案
-            列索引: 各指标
-        return: 模糊综合评价矩阵R'''
+        :return: 模糊综合评价矩阵R'''
     plan = np.array([col.max() if flag else col.min() for col, flag in zip(data.T, is_benefit)])
     print(f'虚拟理想方案: {plan}')
     return np.abs(plan - data) / (data.max(axis=0) - data.min(axis=0))
@@ -23,10 +20,7 @@ def rela_dev_fun(data, is_benefit):
 
 def rela_opti_fun(data, is_benefit):
     ''' 相对优属度法:
-        data:
-            行索引: 各方案
-            列索引: 各指标
-        return: 模糊综合评价矩阵R'''
+        :return: 模糊综合评价矩阵R'''
     for i, flag in enumerate(is_benefit):
         col = data[:, i]
         data[:, i] = col / col.max() if flag else col.min() / col
@@ -34,8 +28,8 @@ def rela_opti_fun(data, is_benefit):
 
 
 def fuzzy_oper(A, R, mode):
-    ''' mode 模糊算子模式
-        {0: (&, |), 1: (*, |), 2: (&, +), 3: (*, +)}'''
+    ''' :param mode: 模糊算子模式
+            {0: (&, |), 1: (*, |), 2: (&, +), 3: (*, +)}'''
     assert 0 <= mode <= 3
     A = A.reshape(-1, 1)
     result = A * R if mode % 2 else np.fmin(A, R)

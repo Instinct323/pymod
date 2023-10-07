@@ -172,7 +172,7 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
     def binary(self, data=None, **kwargs):
         import pickle
         return pickle.load(self.open('rb'), **kwargs) \
-            if data is None else pickle.dump(self.open('wb'), f, **kwargs)
+            if data is None else pickle.dump(data, self.open('wb'), **kwargs)
 
     def json(self, data=None, **kwargs):
         import json
@@ -216,9 +216,9 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
 
 class Capture(cv2.VideoCapture):
     ''' 视频捕获
-        file: 视频文件名称 (默认连接摄像头)
-        delay: 视频帧的滞留时间 (ms)
-        dpi: 相机分辨率'''
+        :param file: 视频文件名称 (默认连接摄像头)
+        :param delay: 视频帧的滞留时间 (ms)
+        :param dpi: 相机分辨率'''
 
     def __init__(self,
                  file: str = 0,

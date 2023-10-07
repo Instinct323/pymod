@@ -40,9 +40,10 @@ class Disjoint_Set:
 
 def rem_theorem(mods, rems, lcm_fcn=math.prod):
     ''' 中国剩余定理
-        mods, rems: 模数集, 余数集
-        lcm_fcn: 最小公倍数的求解函数 (模数集全为质数时使用 math.prod)
-        return: 满足给定条件的余数项'''
+        :param mods: 模数集
+        :param rems: 余数集
+        :param lcm_fcn: 最小公倍数的求解函数 (模数集全为质数时使用 math.prod)
+        :return: 满足给定条件的余数项'''
     lcm = lcm_fcn(mods)
     # 费马小定理求逆元, 要求 a,p 互质
     inv = lambda a, p: pow(a, p - 2, p)
@@ -55,7 +56,7 @@ def rem_theorem(mods, rems, lcm_fcn=math.prod):
 
 def prime_filter(n):
     ''' 质数筛选 (埃氏筛法)
-        return: 质数标志 (Check: 10000 以内有 1229)'''
+        :return: 质数标志 (Check: 10000 以内有 1229)'''
     is_prime = [True] * (n + 1)
     # 枚举 [2, sqrt(n)]
     for i in range(2, math.isqrt(n) + 1):
@@ -116,7 +117,7 @@ def try_div(n, factor={}):
 
 def all_factor(n):
     ''' 所有因数'''
-    prime = try_divide(n)
+    prime = try_div(n)
     factor = [1]
     for i in prime:
         tmp = []
@@ -240,8 +241,8 @@ def next_perm(seq):
 
 def dijkstra(source, adj):
     ''' 单源最短路径 (不带负权)
-        source: 源点
-        adj: 图的邻接表'''
+        :param source: 源点
+        :param adj: 图的邻接表'''
     n = len(adj)
     # 记录单源最短路, 未访问标记
     info = [[float('inf'), True] for _ in range(n)]
@@ -264,8 +265,8 @@ def dijkstra(source, adj):
 
 def spfa(source, adj):
     ''' 单源最短路径 (带负权)
-        source: 源点
-        adj: 图的邻接表'''
+        :param source: 源点
+        :param adj: 图的邻接表'''
     n, undone = len(adj), [(0, source)]
     # 单源最短路, 是否在队, 入队次数
     info = [[float('inf'), False, 0] for _ in range(n)]
@@ -291,7 +292,7 @@ def spfa(source, adj):
 
 def floyd(adj):
     ''' 多源最短路径 (带负权)
-        adj: 图的邻接矩阵'''
+        :param adj: 图的邻接矩阵'''
     # import itertools as it
     n = len(adj)
     for m in range(n):
@@ -301,8 +302,8 @@ def floyd(adj):
 
 def topo_sort(in_degree, adj):
     ''' AOV 网拓扑排序 (最小字典序)
-        in_degree: 入度表
-        adj: 图的邻接表'''
+        :param in_degree: 入度表
+        :param adj: 图的邻接表'''
     undone = [i for i, v in enumerate(in_degree) if v == 0]
     heapq.heapify(undone)
     order = []
@@ -318,8 +319,8 @@ def topo_sort(in_degree, adj):
 
 def prim(source, adj):
     ''' 最小生成树
-        source: 源点
-        adj: 图的邻接表'''
+        :param source: 源点
+        :param adj: 图的邻接表'''
     edges, n = [], len(adj)
     # 未完成搜索的结点
     undone = [(w, i) for i, w in adj[source].items()]

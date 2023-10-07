@@ -7,10 +7,22 @@ import numpy as np
 import optuna
 import yaml
 
-from .result import Result, try_except
+from .result import Result
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
+
+
+def try_except(func):
+    # try-except function. Usage: @try_except decorator
+    def handler(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as error:
+            LOGGER.error(f'{type(error).__name__}: {error}')
+
+    return handler
+
 
 # lower lim, upper lim, pace
 META = {
@@ -79,9 +91,9 @@ class InertiaOpt:
                     setattr(self, key[2:], self.hyp.pop(key))
 
     def __call__(self, fitness, epochs, mutation=.5):
-        ''' fitness(hyp, epoch) -> float: 适应度函数
-            epochs: 超参数进化总轮次
-            mutation: 基因突变时的浮动百分比'''
+        ''' :param fitness(hyp, epoch) -> float: 适应度函数
+            :param epochs: 超参数进化总轮次
+            :param mutation: 基因突变时的浮动百分比'''
         epoch, best_fit = len(self.result) - 1, self.result['fitness'].max()
         self.save_or_load(save=False)
         LOGGER.info(f'Evolving hyperparameters: {list(self.meta)}')
@@ -197,8 +209,8 @@ class BayesOpt:
                     setattr(self, key[2:], self.hyp.pop(key))
 
     def __call__(self, fitness, epochs, n_suggest=3):
-        ''' fitness(hyp, epoch) -> float: 适应度函数
-            epochs: 超参数进化总轮次'''
+        ''' :param fitness(hyp, epoch) -> float: 适应度函数
+            :param epochs: 超参数进化总轮次'''
         n_suggest = min(n_suggest, len(self.hyp))
         self.save_or_load(save=False)
         # 检查最后一个 trials 是否未完成
@@ -233,7 +245,6 @@ class BayesOpt:
 
 if __name__ == '__main__':
     from pathlib import Path
-    from engine.evolve import *
 
 
     def fitness(hyp, epoch=None):

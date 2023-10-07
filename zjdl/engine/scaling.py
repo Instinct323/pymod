@@ -14,10 +14,10 @@ LOGGER = logging.getLogger(__name__)
 
 class ModelScaling:
     ''' 模型复合缩放规划
-        stride: 网络步长
-        flops: 目标 FLOPS
-        w_stride: 网络宽度增益的步长
-        r_max: 分辨率的最高倍率'''
+        :param stride: 网络步长
+        :param flops: 目标 FLOPS
+        :param w_stride: 网络宽度增益的步长
+        :param r_max: 分辨率的最高倍率'''
     orient = 'index'
 
     def __init__(self, project, cfg, stride, flops=2.,
@@ -54,8 +54,8 @@ class ModelScaling:
         self.plans.to_json(plan_file, orient=self.orient, indent=4)
 
     def __call__(self, fitness, epochs):
-        ''' fitness(cfg, epoch) -> float: 适应度函数
-            epochs: 复合缩放总轮次'''
+        ''' :param fitness(cfg, epoch) -> float: 适应度函数
+            :param epochs: 复合缩放总轮次'''
         result = Result(self.project, title=self.attr + ('fitness',))
         # 检查训练总轮次
         if len(self.plans) < epochs:

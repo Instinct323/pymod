@@ -12,7 +12,7 @@ from .utils import make_grid
 
 
 class FourierFeatures:
-    ''' f: Fourier basis frequencies'''
+    ''' :param f: Fourier basis frequencies'''
 
     def __init__(self,
                  c2: Optional[int] = None,

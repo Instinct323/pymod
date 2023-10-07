@@ -14,8 +14,7 @@ def onnx_simplify(src, new=None):
 
 
 class OnnxModel(ort.InferenceSession):
-    ''' onnx 推理模型
-        provider: 优先使用 GPU'''
+    ''' onnx 推理模型'''
     device = property(lambda self: self.get_providers()[0][:-17])
 
     def __init__(self, src):

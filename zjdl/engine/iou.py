@@ -5,9 +5,9 @@ from torch import nn
 
 
 class IouLoss(nn.Module):
-    ''' n: Number of batches per training epoch
-        t: The epoch when mAP's ascension slowed significantly
-        monotonous: {
+    ''' :param n: Number of batches per training epoch
+        :param t: The epoch when mAP's ascension slowed significantly
+        :param monotonous: {
             None: origin
             True: monotonic FM
             False: non-monotonic FM

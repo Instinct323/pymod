@@ -56,20 +56,16 @@ class CosineLR(torch.optim.lr_scheduler.LambdaLR):
 
 
 class TrainerBase:
-    ''' model: 网络模型
-        project: 项目目录 (Path)
+    ''' :param model: 网络模型
+        :param project: 项目目录 (Path)
             best.pt: 最优模型的字典
             last.pt: 最新模型的字典
             result.json: 训练过程信息
-        m_title: 实例方法 <metrics> 中各个度量的名称
-        hyp: 超参数字典
+        :param m_title: 实例方法 <metrics> 中各个度量的名称
+        :param hyp: 超参数字典
             epochs: 训练总轮次
             lr0, lrf: 起始、最终学习率
-            weight_decay: 权值的 L2 范数系数
-        [WARN] Needs to be rewriten:
-            loss -> tensor: train 调用, 返回带梯度的标量损失
-            metrics -> numpy: eval 调用, 返回多个指标分数 (shape=[n,])
-            fitness -> float: 根据 metrics 函数的返回值计算适应度'''
+            weight_decay: 权值的 L2 范数系数'''
     training = property(lambda self: self.model.training)
 
     def __init__(self, model, project, m_title, hyp):
@@ -142,6 +138,9 @@ class TrainerBase:
 
 
 class Trainer(TrainerBase):
+    ''' :ivar loss -> tensor: train 调用, 返回带梯度的标量损失
+        :ivar metrics -> numpy: eval 调用, 返回多个指标分数 (shape=[n,])
+        :ivar fitness -> float: 根据 metrics 函数的返回值计算适应度'''
 
     def loss(self, *args, **kwargs) -> torch.Tensor:
         raise NotImplementedError

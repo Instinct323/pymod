@@ -3,7 +3,7 @@ import numpy as np
 
 def var_analysis(var):
     ''' 方差分析
-        var: [n_sample, n_features]'''
+        :param var: [n_sample, n_features]'''
     mean = var.mean(axis=0)
     length = var.shape[0]
     # 总平均值
@@ -45,7 +45,7 @@ def pearson(var_a, var_b):
             2. 两变量所来自的总体都应是正态分布, 或接近正态的单峰对称分布。
             3. 变量必须是成对的数据
             4. 两变量间为线性关系
-        return: 相关系数 r'''
+        :return: 相关系数 r'''
     var_a = var_a[None] - var_a.mean()
     var_b = var_b[:, None] - var_b.mean()
     cov = var_a @ var_b
@@ -58,7 +58,7 @@ def spearman(var_a, var_b):
     ''' Spearman 等级相关系数
         适用条件:
             按大小 / 优劣排位的定序变量
-        return: 相关系数 r, [统计量 t]'''
+        :return: 相关系数 r, [统计量 t]'''
     n = var_a.size
     assert var_b.size == n
     var_a = np.sort(var_a)

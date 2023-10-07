@@ -10,11 +10,11 @@ EPS = np.finfo(DTYPE).eps
 
 class ParticleSwarmOpt:
     ''' 粒子群优化器
-        n: 粒子群规模
-        coord_info: 每个坐标的信息 (e.g.,取值范围)
-        well_percent: 优粒子百分比
-        lr: 学习率
-        best_unit: 已知最优个体'''
+        :param n: 粒子群规模
+        :param coord_info: 每个坐标的信息 (e.g.,取值范围)
+        :param well_percent: 优粒子百分比
+        :param lr: 学习率
+        :param best_unit: 已知最优个体'''
 
     def __init__(self, n: int,
                  coord_info: Sequence,
@@ -55,10 +55,10 @@ class ParticleSwarmOpt:
             inertia_weight: float = 0.5,
             random_epochs_percent: float = 0.4,
             prefix='PSO_fit') -> float:
-        ''' epochs: 训练轮次
-            patience: 允许搜索无进展的次数
-            inertia_weight: 惯性权值
-            random_epochs_percent: 随机搜索轮次百分比'''
+        ''' :param epochs: 训练轮次
+            :param patience: 允许搜索无进展的次数
+            :param inertia_weight: 惯性权值
+            :param random_epochs_percent: 随机搜索轮次百分比'''
         # 生成粒子群
         self.particle = self.generate(self._n)
         if isinstance(self.best_unit, np.ndarray): self.particle[0] = self.best_unit

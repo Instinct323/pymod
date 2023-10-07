@@ -23,8 +23,7 @@ def np2mat(array, reshape=False):
 
 
 class Result:
-    ''' Result:
-        解决 cvxopt 与 scipy 的兼容问题'''
+    ''' 解决 cvxopt 与 scipy 的兼容问题'''
     success = True
 
     def __init__(self, result):
@@ -34,10 +33,10 @@ class Result:
 
 class Programme:
     ''' 规划问题模型
-        .data: 最优解表格
-        .x: 最优浮点数解
-        .int_num: 整数规划的x数目
-        .show_all: 是否筛除浮点数解'''
+        :cvar data: 最优解表格
+        :cvar x: 最优浮点数解
+        :param int_num: 整数规划的 x 数目
+        :param show_all: 是否筛除浮点数解'''
     min = 'min'
     data = None
     x = None
@@ -97,8 +96,9 @@ class Linprog(Programme):
         引入正松弛变量: 不等式 => 等式
         互斥约束问题: 决策变量y, 4x+5y < 200+(1-y)*M, M -> ∞
         condition: A_ub @ x - b_ub <= 0, A_eq @ x - b_eq == 0
-        int_num: 整数规划的变量数
-        decimals: 结果精度'''
+
+        :param int_num: 整数规划的 x 数目
+        :param decimals: 结果精度'''
 
     def __init__(self, weight, A_ub=None, b_ub=None, A_eq=None, b_eq=None, bounds=(0, None),
                  columns=None, decimals=3, int_num=0, show_all=False):
@@ -116,11 +116,12 @@ class Linprog(Programme):
 
 class Non_Linprog(Programme):
     ''' 非线性规划
-        fun: 需要优化的函数
-        x0: 搜索的初态
         condition: A_ub @ x - b_ub <= 0, A_eq @ x - b_eq == 0
-        int_num: 整数规划的变量数
-        decimals: 结果精度'''
+
+        :param fun: 需要优化的函数
+        :param x0: 搜索的初态
+        :param int_num: 整数规划的变量数
+        :param decimals: 结果精度'''
     methods = ['nelder-mead', 'powell', 'cg', 'bfgs', 'newton-cg',
                'l-bfgs-b', 'tnc', 'cobyla', 'slsqp', 'trust-constr',
                'dogleg', 'trust-ncg', 'trust-exact', 'trust-krylov']

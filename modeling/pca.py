@@ -4,16 +4,14 @@ from sklearn.preprocessing import StandardScaler
 
 
 def association(data):
-    ''' 相关系数矩阵 (协方差矩阵)
-        data: 形如 [n_sample, n_features] 的 array'''
+    ''' 相关系数矩阵 (协方差矩阵)'''
     return np.cov(StandardScaler().fit_transform(data).T)
 
 
 def principal(asso, thresh=0.80, dims=None):
     ''' 主成分分析
-        asso: 形如 [n_features, n_features] 的 array
-        thresh: 累积贡献率阈值
-        return: 旋转降维矩阵'''
+        :param thresh: 累积贡献率阈值
+        :return: 旋转降维矩阵'''
     cha_value, rota = np.linalg.eig(asso)
     max_idx = np.abs(rota).argmax(axis=0)
     sign = np.sign([c[i] for i, c in zip(max_idx, rota.T)])

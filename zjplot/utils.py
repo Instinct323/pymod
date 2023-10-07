@@ -1,6 +1,7 @@
 import logging
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 # matplotlib 颜色常量
 red = 'orangered'
@@ -27,7 +28,7 @@ def figure3d():
 
 def std_coord(*args, zero_p=True):
     ''' 显示标准轴
-        args: subplot 参数'''
+        :param args: subplot 参数'''
     fig = plt.subplot(*args)
     for key in 'right', 'top':
         fig.spines[key].set_color('None')

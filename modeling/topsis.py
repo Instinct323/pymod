@@ -4,15 +4,12 @@ from .utils import NUMBER, comentropy
 
 
 def positive(data, flags):
-    ''' data:
-            行索引: 各方案
-            列索引: 各指标
-        flags: 指标类型
+    ''' :param flags: 指标类型
             True: 效益型
             False: 成本型
             num: 中间型
             [num, num]: 区间型
-        return: 正向化, 标准化矩阵'''
+        :return: 正向化, 标准化矩阵'''
     data = data.copy()
     for i, flag in enumerate(flags):
         col = data[:, i]
@@ -39,9 +36,9 @@ def positive(data, flags):
 
 
 def cal_score(pos, weight=None):
-    ''' pos: 正向化, 标准化矩阵
-        weight: 权重向量
-        return: 样本得分'''
+    ''' :param pos: 正向化, 标准化矩阵
+        :param weight: 权重向量
+        :return: 样本得分'''
     # 当无权值要求，则各个指标权值相等
     if np.all(weight is None):
         length = pos.shape[1]

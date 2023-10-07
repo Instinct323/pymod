@@ -6,7 +6,7 @@ BASE_TYPE = int, float, bool
 
 
 def load_tree(file: str):
-    ''' return: 数据树根结点 (可迭代)
+    ''' :return: 数据树根结点 (可迭代)
             tag, text, attrib, tail'''
     assert re.search(r'(\.xml)$', file)
     return ElementTree(file=file).getroot()
@@ -14,8 +14,8 @@ def load_tree(file: str):
 
 def dump_tree(data, parent: Element = None):
     ''' 创建 xml 结构树
-        data: 需要存储的数据
-        parent: 双亲结点'''
+        :param data: 需要存储的数据
+        :param parent: 双亲结点'''
     # 默认 parent 为 None，创建 root
     if parent is None: parent = Element('root')
     if isinstance(data, dict):
@@ -48,9 +48,9 @@ def dump_tree(data, parent: Element = None):
 
 def dumps(data, file: str = None, encoding='utf-8'):
     ''' 创建xml文本流
-        data: 需要存储的数据
-        file: 文件名称 (无需后缀)
-        xml_str: xml文本'''
+        :param data: 需要存储的数据
+        :param file: 文件名称 (无需后缀)
+        :return: xml文本'''
     doc = parseString(tostring(dump_tree(data)))
     xml_str = doc.toprettyxml(encoding=encoding).decode(encoding)
     if file:

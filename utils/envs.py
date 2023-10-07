@@ -2,12 +2,12 @@ import datetime
 import os
 from pathlib import Path
 
+PYPATH = Path('D:/Workbench/Library/envs/cv')
+CONDAPATH = Path('D:/Software/Anaconda3')
 
-def git_push(msg=f'update on {datetime.datetime.today()}',
-             repositories=(r'D:\Workbench\mod',
-                           r'D:\Information\Notes',
-                           r'D:\Information\Notes\info',
-                           r'D:\Workbench\Library')):
+
+def git_push(*repositories,
+             msg=f'update on {datetime.datetime.today()}'):
     for repo in repositories:
         os.chdir(repo), print(repo.center(50, '-'))
         for cmd in ('git status', 'git add .',
@@ -38,7 +38,7 @@ class PythonEnv:
             os.system(f'pip config set global.{k} {v}')
 
     @staticmethod
-    def modify_env(env_path: Path = Path('D:/Information/Python/Envs/cv')):
+    def modify_env(env_path: Path = PYPATH):
         os.environ['PATH'] = ';'.join(map(
             str, [env_path, env_path / 'bin', env_path / 'Scripts',
                   env_path / 'Library/bin', env_path / 'Library/usr/bin', env_path / 'Library/mingw-w64/bin',
@@ -70,8 +70,8 @@ class CondaEnv(PythonEnv):
             os.system(f'conda config {p}')
 
     @staticmethod
-    def modify_env(env_path: Path = Path('D:/Information/Python/Envs/cv'),
-                   conda_path: Path = Path('D:/Software/Anaconda3')):
+    def modify_env(env_path: Path = PYPATH,
+                   conda_path: Path = CONDAPATH):
         super().modify_env(env_path)
         import warnings
         warnings.warn('This function is incomplete', DeprecationWarning)
@@ -93,4 +93,9 @@ if __name__ == '__main__':
     env = PythonEnv()
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
-    git_push()
+    git_push(
+        r'D:\Workbench\mod',
+        r'D:\Information\Notes',
+        r'D:\Information\Notes\info',
+        r'D:\Workbench\Library'
+    )

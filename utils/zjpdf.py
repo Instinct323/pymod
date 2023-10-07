@@ -28,10 +28,10 @@ def merge_pdf(src: Iterator[Path], dst: Path):
 
 
 def pdf2img(file: Path, suffix='.jpg', root='Project', blowup=15):
-    ''' file: pdf 文件
-        suffix: 图像后缀名
-        root: 保存的源目录
-        blowup: 图像清晰度'''
+    ''' :param file: pdf 文件
+        :param suffix: 图像后缀名
+        :param root: 保存的源目录
+        :param blowup: 图像清晰度'''
     root = file.parent / root
     if not root.is_dir(): root.mkdir()
     # 枚举每一页 pdf

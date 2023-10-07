@@ -37,7 +37,7 @@ def cfg_modify(yaml_cfg: dict, modify: Union[tuple, list]):
 
 
 class YamlModel(nn.Module):
-    ''' yaml_cfg:
+    ''' :param yaml_cfg:
             depth_multiple: 模块深度增益
             width_multiple: 卷积宽度增益
             fixed_layers: 不受增益影响的层索引
@@ -287,7 +287,6 @@ if __name__ == '__main__':
     model1 = YamlModel(Path('ResNet-50.yaml')).eval().cuda().half()
     # OnnxModel.test(model1, (image,), 'model.onnx')
     # model1.profile(image)
-    print(*param_utilization(model1), sep='\n')
 
     '''traced = model1.torchscript(image.repeat(8, 1, 1, 1)).cuda()
     traced.save(Path('ResNet-50.pt'))'''

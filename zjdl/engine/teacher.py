@@ -8,8 +8,8 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from .data import SimpleDataset, to_tensor, ImagePool
-from .utils import Path, LOGGER
+from utils.data import SimpleDataset, to_tensor, ImagePool
+from utils.utils import Path, LOGGER
 
 SOFTMAX = partial(F.softmax, dim=-1)
 
@@ -36,12 +36,10 @@ class SoftLabel:
 
 
 class Knowledge(SimpleDataset):
-    ''' attr:
-            cache: 教师知识的存储文件
-            training: 训练模式用于录入知识, 验证模式用于输出知识
-        method:
-            eval: 保存当前知识库
-            append: (图像索引, 增强状态, 软标签)'''
+    ''' :param cache: 教师知识的存储文件
+        :ivar training: 训练模式用于录入知识, 验证模式用于输出知识
+        :ivar eval: 保存当前知识库
+        :ivar append: (图像索引, 增强状态, 软标签)'''
     orient = 'index'
 
     def __init__(self,

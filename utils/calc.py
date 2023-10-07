@@ -37,9 +37,9 @@ def seq_comp(seq1, seq2):
 
 
 def salary(pre_tax, Si=485.12, Hf=230):
-    ''' pre_tax: 税前薪资 (k)
-        Si: 社会保险
-        Hf: 住房公积金'''
+    ''' :param pre_tax: 税前薪资 (k)
+        :param Si: 社会保险
+        :param Hf: 住房公积金'''
     result = pre_tax - (Si + Hf) / 1000
     # 应纳税所得额
     taxable_income = np.maximum(0, result - 5)

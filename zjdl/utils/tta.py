@@ -39,7 +39,7 @@ class LAME:
         return p
 
     def __call__(self, p, feats):
-        # p: 概率矩阵 [B, nc]
+        # :param p: 概率矩阵 [B, nc]
         logp = np.log(p + 1e-10)
         kernel = self.affinity(feats / np.linalg.norm(feats, axis=-1, keepdims=True))
         if isinstance(self.nc, int):

@@ -20,10 +20,10 @@ def set_brightness(value):
 
 class Monitor:
     ''' 动作捕捉监控
-        time_interval: 记录图像的时间间隔
-        sensitivity: 警报的回溯时间
-        screen_ctrl: 屏幕控制
-        log_path: 异常图像缓存目录'''
+        :cvar time_interval: 记录图像的时间间隔
+        :cvar sensitivity: 警报的回溯时间
+        :cvar screen_ctrl: 屏幕控制
+        :cvar log_path: 异常图像缓存目录'''
     time_interval = 1
     sensitivity = 10
     screen_ctrl = False
@@ -96,11 +96,11 @@ def SightSaver(env_range=[.06, .7],
                stride: int = 5,
                ulimit: int = 100):
     ''' 屏幕亮度管理
-        env_range: 启用自适应亮度的环境亮度区间
-        scr_range: 画面亮度对眼睛的刺激程度
-        interval: 刷新亮度的间隔
-        stride: 屏幕亮度的步长
-        ulimit: 屏幕亮度的上限'''
+        :param env_range: 启用自适应亮度的环境亮度区间
+        :param scr_range: 画面亮度对眼睛的刺激程度
+        :param interval: 刷新亮度的间隔
+        :param stride: 屏幕亮度的步长
+        :param ulimit: 屏幕亮度的上限'''
     mean, momentum = 1., .8
     # 使用 HSV 颜色空间定义的亮度
     get_mean = lambda img: img.max(axis=-1).astype(np.float16).mean() / 255

@@ -46,9 +46,9 @@ def lazy_obj(file, fget, *args, **kwargs):
 
 class Logistic_Regression:
     ''' 逻辑回归
-        model_file: 参数文件
-        lr: 学习率
-        weight_decay: 正则化强度'''
+        :param model_file: 参数文件
+        :param lr: 学习率
+        :param weight_decay: 正则化强度'''
     dtype = np.float16
 
     def __init__(self,

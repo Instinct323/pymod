@@ -12,16 +12,16 @@ def poisson_distribution(var, mean):
 
 
 def update_state(basic, proba, time):
-    ''' basic: 当前状态
-        proba: 转移概率矩阵
-        time: 转移次数
-        return: 新状态概率分布'''
+    ''' :param basic: 当前状态
+        :param proba: 转移概率矩阵
+        :param time: 转移次数
+        :return: 新状态概率分布'''
     return np.linalg.multi_dot([basic] + [proba] * time)
 
 
 def steady_state(proba):
-    ''' proba: 转移概率矩阵
-        return: 马氏链稳态概率分布'''
+    ''' :param proba: 转移概率矩阵
+        :return: 马氏链稳态概率分布'''
     assert len(proba) == len(proba[0]), '转移概率矩阵应为方阵'
     for row in proba:
         assert sum(row) == 1, '不满足转移概率矩阵条件'

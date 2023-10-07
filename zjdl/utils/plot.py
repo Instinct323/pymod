@@ -12,7 +12,7 @@ def heat_img(img, heat, cmap=cv2.COLORMAP_JET):
 
 
 def torch_show(img, delay=0):
-    ''' img: [B, C, H, W] or [C, H, W]'''
+    ''' :param img: [B, C, H, W] or [C, H, W]'''
     assert img.dtype == torch.uint8
     img = img.data.numpy()
     img = img[None] if img.ndim == 3 else img

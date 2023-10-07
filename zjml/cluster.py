@@ -6,26 +6,25 @@ from optimize import *
 
 def Eu_dist(data, center):
     ''' 以 欧氏距离 为聚类准则的距离计算函数
-        data: 形如 [n_sample, n_feature] 的 tensor
-        center: 形如 [n_cluster, n_feature] 的 tensor'''
+        :param data: 形如 [n_sample, n_feature] 的 tensor
+        :param center: 形如 [n_cluster, n_feature] 的 tensor'''
     return ((data[:, None] - center[None]) ** 2).sum(dim=2)
 
 
 class Dist_Cluster:
     ''' 基于距离的聚类器
-        n_cluster: 簇中心数
-        dist_fun: 距离计算函数
-            kwargs:
-                data: 形如 [n_sample, n_feather] 的 tensor
-                center: 形如 [n_cluster, n_feature] 的 tensor
-            return: 形如 [n_sample, n_cluster] 的 tensor
-        mode: 距离优化模式 ('max', 'mean', 'sum')
-        init: 初始簇中心
-        patience: 允许 loss 无进展的次数
-        lr: 中心点坐标学习率
+        :param n_cluster: 簇中心数
+        :param dist_fun: 距离计算函数
+            :param data: 形如 [n_sample, n_feather] 的 tensor
+            :param center: 形如 [n_cluster, n_feature] 的 tensor
+            :return: 形如 [n_sample, n_cluster] 的 tensor
+        :param mode: 距离优化模式 ('max', 'mean', 'sum')
+        :param init: 初始簇中心
+        :param patience: 允许 loss 无进展的次数
+        :param lr: 中心点坐标学习率
 
-        cluster_centers: 聚类中心
-        labels: 聚类结果'''
+        :ivar cluster_centers: 聚类中心
+        :ivar labels: 聚类结果'''
 
     def __init__(self, n_cluster: int,
                  dist_fun: Callable[[torch.tensor, torch.tensor],
@@ -45,8 +44,8 @@ class Dist_Cluster:
         self._bar_len = 20
 
     def fit(self, data: torch.tensor, prefix='Cluster'):
-        ''' data: 形如 [n_sample, n_feature] 的 tensor
-            return: 簇惯性'''
+        ''' :param data: 形如 [n_sample, n_feature] 的 tensor
+            :return: 簇惯性'''
         LOGGER.info(('%10s' * 3) % ('', 'cur_loss', 'min_loss'))
         self._init_cluster(data, self._patience // 5, prefix)
         inertia = self._train(data, self._lr, self._patience, prefix=prefix)
@@ -55,8 +54,8 @@ class Dist_Cluster:
         return inertia
 
     def classify(self, data: torch.tensor):
-        ''' data: 形如 [n_sample, n_feature] 的 tensor
-            return: 分类标签'''
+        ''' :param data: 形如 [n_sample, n_feature] 的 tensor
+            :return: 分类标签'''
         dist = self._dist_fun(data, self.cluster_centers)
         # 将标签加载到实例属性
         self.labels = dist.argmin(axis=1)
@@ -107,8 +106,8 @@ class Dist_Cluster:
 
 def Cos_similarity(data, refer):
     ''' 余弦相似度计算
-        data: 形如 [n_sample, n_feature] 的 tensor
-        refer: 形如 [n_cluster, n_feature] 的 tensor'''
+        :param data: 形如 [n_sample, n_feature] 的 tensor
+        :param refer: 形如 [n_cluster, n_feature] 的 tensor'''
     data_len = (data ** 2).sum(dim=1) ** 0.5
     refer_len = (refer ** 2).sum(dim=1) ** 0.5
     # 计算向量模
@@ -119,8 +118,8 @@ def Cos_similarity(data, refer):
 
 def PIoU_dist(boxes, anchor, eps=1e-5):
     ''' 以 IoU 为聚类准则的距离计算函数
-        boxes: 形如 [n_sample, 2] 的 tensor
-        anchor: 形如 [n_cluster, 2] 的 tensor'''
+        :param boxes: 形如 [n_sample, 2] 的 tensor
+        :param anchor: 形如 [n_cluster, 2] 的 tensor'''
     boxes = boxes[:, None]
     anchor = anchor[None]
     max_coord = torch.maximum(boxes, anchor)
@@ -136,8 +135,8 @@ def PIoU_dist(boxes, anchor, eps=1e-5):
 
 def DIoU_dist(boxes, anchor):
     """ 以 DIoU 为聚类准则的距离计算函数
-        boxes: 形如 [n_sample, 2] 的 tensor
-        anchor: 形如 [n_cluster, 2] 的 tensor"""
+        :param boxes: 形如 [n_sample, 2] 的 tensor
+        :param anchor: 形如 [n_cluster, 2] 的 tensor"""
     anchor = torch.abs(anchor)
     # 计算欧式距离
     dist = Eu_dist(boxes, anchor)

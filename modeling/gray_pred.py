@@ -10,10 +10,10 @@ warnings.filterwarnings('ignore')
 
 
 def gray_correlation(refer, data, rho=0.5):
-    ''' refer: 参照数列 (列向量)
-        data: 比较数列 (以列为单位)
-        rho: 分辨率
-        return: 灰色关联度'''
+    ''' :param refer: 参照数列 (列向量)
+        :param data: 比较数列 (以列为单位)
+        :param rho: 分辨率
+        :return: 灰色关联度'''
     # 确保参照数列为列向量
     refer = refer.reshape(-1, 1)
     # 数列间的绝对距离
@@ -28,7 +28,7 @@ def gray_correlation(refer, data, rho=0.5):
 
 
 def gray_poly(seq, alpha=0.5):
-    ''' return: 灰多项式 (加权邻值生成数列)'''
+    ''' :return: 灰多项式 (加权邻值生成数列)'''
     part_1 = alpha * seq[1:]
     part_2 = (1 - alpha) * seq[:-1]
     return part_1 + part_2
@@ -36,11 +36,11 @@ def gray_poly(seq, alpha=0.5):
 
 def gray_model(seq, alpha=0.5, decimals=4, show=False):
     ''' 灰色预测模型建立
-        seq: 原始序列
-        alpha: 灰多项式权值
-        decimals: 数值精度
-        show: 绘制真实值和预测值的对比图
-        return: 灰色预测模型, 模型信息'''
+        :param seq: 原始序列
+        :param alpha: 灰多项式权值
+        :param decimals: 数值精度
+        :param show: 绘制真实值和预测值的对比图
+        :return: 灰色预测模型, 模型信息'''
     seq, n = seq.flatten(), seq.size
     index = np.arange(1, n + 1)
     # 创建数据存储表单
@@ -73,7 +73,7 @@ def gray_model(seq, alpha=0.5, decimals=4, show=False):
 
     def inte_pred(time):
         ''' 白化模型预测函数
-            time: 序列首个值对应的时间为 1'''
+            :param time: 序列首个值对应的时间为 1'''
         assert np.all(time >= 1)
         return c1 * (np.exp(- a * (time - 1)) - np.exp(- a * (time - 2)))
 

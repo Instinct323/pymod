@@ -7,8 +7,8 @@ import numpy as np
 def cal_dist(x, coef: np.array, bias: Union[int, float]):
     ''' 计算点到直线的距离 (保留正负号)
         Dist = (coef × x + bias) / ||coef||
-            coef: [n_dim, ]
-            x: [n_sample, n_dim]'''
+        :param x: [n_sample, n_dim]
+        :param coef: [n_dim, ]'''
     return (x @ coef + bias) / np.linalg.norm(coef, ord=2)
 
 
@@ -16,11 +16,11 @@ def plot_hyperplane(svc, dataset, label, fig=None, s=None,
                     scatter_color=['deepskyblue', 'orange'],
                     plane_color=['mediumpurple', 'violet']):
     ''' 二分类 SVM 可视化
-        svc: 线性支持向量机实例
-        dataset: 数据集, [n_sample, n_dim]
-        label: 数据标签, [n_sample, ]
-        scatter_color: 负样本、正样本散点颜色
-        plane_color: 分界超平面、极端超平面颜色'''
+        :param svc: 线性支持向量机实例
+        :param dataset: 数据集, [n_sample, n_dim]
+        :param label: 数据标签, [n_sample, ]
+        :param scatter_color: 负样本、正样本散点颜色
+        :param plane_color: 分界超平面、极端超平面颜色'''
     # 读取超平面参数
     coef, bias = svc.coef_[0], svc.intercept_[0]
     # 各个维度的上下限

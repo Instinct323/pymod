@@ -6,11 +6,11 @@ DTYPE = np.float16
 
 class Genetic_Algorithm:
     ''' 遗传算法
-        n_unit: 染色体群体规模
-        n_gene: 染色体的基因数
-        well_radio: 最优个体比例
-        cross_proba: 交叉概率
-        var_proba: 变异概率'''
+        :param n_unit: 染色体群体规模
+        :param n_gene: 染色体的基因数
+        :param well_radio: 最优个体比例
+        :param cross_proba: 交叉概率
+        :param var_proba: 变异概率'''
 
     def __init__(self,
                  n_unit: int,
@@ -34,17 +34,17 @@ class Genetic_Algorithm:
 
     def new_unit(self, size: int) -> np.ndarray:
         ''' 初始化染色体群体
-            return: [size, n_gene]'''
+            :return: [size, n_gene]'''
         raise NotImplementedError
 
     def cross(self, unit: np.ndarray, other: np.ndarray) -> np.ndarray:
         ''' 交叉遗传
-            return: [n_gene, ]'''
+            :return: [n_gene, ]'''
         raise NotImplementedError
 
     def variation(self, unit: np.ndarray) -> np.ndarray:
         ''' 基因突变
-            return: [n_gene, ]'''
+            :return: [n_gene, ]'''
         l, r = self._random_section()
         np.random.shuffle(unit[l: r + 1])
         return unit
@@ -56,8 +56,8 @@ class Genetic_Algorithm:
     def fit(self, epochs: int,
             patience: int = np.inf,
             prefix: str = 'GA_fit') -> np.ndarray:
-        ''' epochs: 训练轮次
-            patience: 允许搜索无进展的次数'''
+        ''' :param epochs: 训练轮次
+            :param patience: 允许搜索无进展的次数'''
         unit_idx = list(range(self._n_unit))
         pbar = trange(epochs)
         last_fitness, angry = - np.inf, 0

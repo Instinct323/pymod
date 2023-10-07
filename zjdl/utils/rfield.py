@@ -67,7 +67,7 @@ class ReceptiveField:
         del self
 
     def compare(self, theoretical=True, original=True, state_dict=None, **imshow_kw):
-        ''' state_dict: 完成训练的模型权值'''
+        ''' :param state_dict: 完成训练的模型权值'''
         task = []
         if original: task.append(('Before Training', self.effective()))
         if theoretical: task.insert(0, ('Theoretical', self.theoretical()))

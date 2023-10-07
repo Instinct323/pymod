@@ -3,7 +3,7 @@ import numpy as np
 
 def plot_conv(fig, width, height, colors, alpha=0.7,
               xbias=0, ybias=0, zbias=0):
-    ''' colors: 各个通道的颜色'''
+    ''' :param colors: 各个通道的颜色'''
     x = np.arange(width + 1) + xbias - 0.5
     y = np.arange(height + 1) + ybias - 0.5
     filled = np.ones([width, height, 1])
