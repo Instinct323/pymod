@@ -1,6 +1,7 @@
 #pragma once
-#include <fstream>
+
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -66,4 +67,3 @@ protected:
     }
 
 };
-
