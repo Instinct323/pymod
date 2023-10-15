@@ -26,7 +26,7 @@ public:
     /**
      * @param file 要与 BinFile 对象关联的文件路径
      */
-    explicit BinFile(const string &file) : file(file) {}
+    BinFile(const string file) : file(file) {}
 
     /**
      *  @brief 序列化函数, 用于将对象序列化并写入文件
@@ -34,7 +34,7 @@ public:
     void dump(const dType &obj) {
         fstream f = this->open(ios::out);
         if (f) {
-            f.write((const char *) &obj, sizeof(obj));
+            f << (const char *) &obj;
             f.close();
         }
     }
