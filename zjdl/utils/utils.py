@@ -112,7 +112,7 @@ def try_except(func):
         try:
             return func(*args, **kwargs)
         except Exception as error:
-            LOGGER.warning(error)
+            LOGGER.error(error)
 
     return handler
 
@@ -188,11 +188,13 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
         return yaml.load(self.read_text(), Loader=yaml.Loader, **kwargs) \
             if data is None else self.write_text(yaml.dump(data, **kwargs))
 
+    @try_except
     def csv(self, data=None, **kwargs):
         import pandas as pd
         return pd.read_csv(self, **kwargs) \
             if data is None else data.to_csv(self, **kwargs)
 
+    @try_except
     def excel(self, data=None, **kwargs):
         import pandas as pd
         # Only excel in 'xls' format is supported

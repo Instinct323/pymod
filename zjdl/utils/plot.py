@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import nn
+from tqdm import tqdm
 
 
 def heat_img(img, heat, cmap=cv2.COLORMAP_JET):
@@ -118,30 +119,34 @@ class ParamUtilization:
         else:
             raise TypeError(f'Incorrect argument type {type(model_or_sdit).__name__}')
 
-        return cls.export(result, **export_kwd)
+        result = pd.DataFrame(result).T
+        cls.export(result, **export_kwd)
+        return result
 
     @classmethod
-    def export(cls, result, plot=False, group_lv=1, sep='.', limit=25, **vplot_kwd):
-        result = pd.DataFrame(result).T
-        if plot:
-            from mod.zjplot import rand_colors, violinplot
-            # 绘图相关参数设定
-            limit = limit if limit else len(result)
-            plt.rcParams['figure.figsize'] = [.8 + 0.46 * (limit + 1), 6.4]
-            ymin = min(map(min, result['score']))
-            ymax = max(map(max, result['score']))
-            # 对神经网络中的层进行分组
-            k2i = lambda k: sep.join(k.split(sep)[:group_lv + 1])
-            groups = sorted({k2i(k) for k in result.index})
-            colors = rand_colors(len(groups))
-            # 分页读取 result
-            for i in range(int(np.ceil(len(result) / limit))):
-                tmp = result.iloc[i * limit: (i + 1) * limit]
-                plt.ylabel('score')
-                # 根据分组分配颜色
-                violinplot(tmp['score'], labels=list(tmp.index),
-                           colors=[colors[groups.index(k2i(k))] for k in tmp.index], xrotate=90, **vplot_kwd)
-                # 设置上下限, 布局优化
-                plt.xlim([0, limit + 1]), plt.ylim(ymin, ymax), plt.grid()
-                plt.tight_layout(), plt.show()
-        return result
+    def export(cls, result, project, show=False, group_lv=1, sep='.', limit=25, **vplot_kwd):
+        from mod.zjplot import rand_colors, violinplot
+        # 创建项目目录, 输出 csv
+        project.mkdir(parents=True, exist_ok=True)
+        (project / 'pu.csv').csv(result)
+        # 绘图相关参数设定
+        limit = limit if limit else len(result)
+        plt.rcParams['figure.dpi'] = 300
+        plt.rcParams['figure.figsize'] = [.8 + 0.46 * (limit + 1), 6.4]
+        ymin = min(map(min, result['score']))
+        ymax = max(map(max, result['score']))
+        # 对神经网络中的层进行分组
+        k2i = lambda k: sep.join(k.split(sep)[:group_lv + 1])
+        groups = sorted({k2i(k) for k in result.index})
+        colors = rand_colors(len(groups))
+        # 分页读取 result
+        for i in tqdm(range(int(np.ceil(len(result) / limit))), desc='exporting plots'):
+            tmp = result.iloc[i * limit: (i + 1) * limit]
+            plt.ylabel('score')
+            # 根据分组分配颜色
+            violinplot(tmp['score'], labels=list(tmp.index),
+                       colors=[colors[groups.index(k2i(k))] for k in tmp.index], xrotate=90, **vplot_kwd)
+            # 设置上下限, 布局优化
+            plt.xlim([0, limit + 1]), plt.ylim(ymin, ymax)
+            plt.grid(), plt.tight_layout()
+            plt.show() if show else (plt.savefig(project / f'pu{i}.jpg'), plt.close())
