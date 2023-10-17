@@ -169,6 +169,10 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
             LOGGER.warning(f'Unsupported files: {", ".join(map(str, pools[False]))}')
         return pools[True]
 
+    def copy_to(self, dst):
+        import shutil
+        shutil.copy(self, dst)
+
     def binary(self, data=None, **kwargs):
         import pickle
         return pickle.load(self.open('rb'), **kwargs) \

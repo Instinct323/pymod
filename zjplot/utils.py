@@ -38,12 +38,13 @@ def std_coord(*args, zero_p=True):
     return fig
 
 
-def boxplot(dataset, labels, colors):
+def boxplot(dataset, colors, labels=None):
     ''' 绘制箱线图'''
     bp = plt.boxplot(dataset, labels=labels)
     for i, color in enumerate(colors):
         bp['boxes'][i].set(color=color, linewidth=1.5)
         bp['medians'][i].set(color=color, linewidth=2.1)
+    return bp
 
 
 def bar2d(dataset, xticks=None, labels=None, colors=None, alpha=1):

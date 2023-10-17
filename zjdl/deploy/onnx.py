@@ -35,24 +35,10 @@ class OnnxModel(ort.InferenceSession):
         return self.run(self.io_name[-1], input_feed)
 
     @classmethod
-    def from_torch(cls, model, args, dst, test=False, **export_kwd):
+    def from_torch(cls, model, args, dst, **export_kwd):
         args = (args,) if isinstance(args, torch.Tensor) else args
         torch.onnx.export(model, args, dst, opset_version=11, **export_kwd)
-        onnx_model = cls(dst)
-        if test:
-            Timer = timer(repeat=3)
-            # 测试 Torch 的运行时间
-            torch_output = model(*args).data.numpy()
-            print(f'Torch: {Timer(model)(*args):.2f} ms')
-            # data: tensor -> array
-            args = tuple(map(lambda x: x.data.numpy(), args))
-            # 测试 onnx 的运行时间
-            onnx_output = onnx_model(*args)
-            print(f'Onnx: {Timer(onnx_model)(*args):.2f} ms')
-            # 计算 Torch 模型与 onnx 模型输出的绝对误差
-            abs_error = np.abs(torch_output - onnx_output).mean()
-            print(f'Mean Error: {abs_error:.2f}')
-        return onnx_model
+        return cls(dst)
 
 
 if __name__ == '__main__':

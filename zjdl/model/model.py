@@ -158,9 +158,10 @@ class YamlModel(nn.Module):
         for f in (Conv.reparam, RepConv.reparam): f(model)
         return model
 
-    def onnx(self, file, x=None):
-        x = self.example_input() if x is None else x
-        torch.onnx.export(self, (x,), file, opset_version=11)
+    def onnx(self, file, branch=None, x=None):
+        x = self.example_input().to(self.device) if x is None else x
+        m = getattr(self, branch) if branch else self
+        torch.onnx.export(m, (x,), file, opset_version=11)
 
     def torchscript(self, x=None):
         x = self.example_input() if x is None else x
@@ -215,6 +216,7 @@ class YamlModel(nn.Module):
                 redundantp.append(key)
         if redundantp: LOGGER.warning(f'Redundant parameter: {", ".join(redundantp)}')
         super().load_state_dict(state_dict, strict=False)
+        return self
 
     def parse_architecture(self, ch_divisor=4):
         print('\n%3s %17s %2s %9s  %-15s %-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))

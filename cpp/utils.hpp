@@ -17,14 +17,14 @@ void use_utf8() {
 
 /**
  *  @brief 控制对象的存储
- *  @tparam dType 要序列化/反序列化的数据类型
+ *  @tparam dType - 要序列化/反序列化的数据类型
  */
-template<class dType>
+template<typename dType>
 class BinFile {
 
 public:
     /**
-     * @param file 要与 BinFile 对象关联的文件路径
+     * @param file - 要与 BinFile 对象关联的文件路径
      */
     BinFile(const string file) : file(file) {}
 

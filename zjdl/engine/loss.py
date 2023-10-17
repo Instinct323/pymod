@@ -121,16 +121,15 @@ class ContrastiveLoss(nn.Module):
         g: 增强数据相对于原数据的倍数'''
     t = property(lambda self: self.param_t.sigmoid() * 4.5 + .5)
 
-    def __init__(self, g=1, dim=-1):
+    def __init__(self, g=1, dim=-1, const_t=False):
         super().__init__()
         assert g > 0, f'Invalid value g={g}'
         self.g = g
-        self.param_t = nn.Parameter(torch.tensor(1.))
+        self.param_t = nn.Parameter(torch.tensor(-2.079), requires_grad=not const_t)
         self.measure = nn.CosineSimilarity(dim=dim, eps=1e-6)
 
     def extra_repr(self):
-        return f'group={self.g}, \n' \
-               f'overlap={self.overlap}, \n' \
+        return f'g={self.g}, \n' \
                f'T={self.t.item()}'
 
     def gs(self, x):
@@ -140,19 +139,20 @@ class ContrastiveLoss(nn.Module):
 
     def forward(self, x):
         gs = self.gs(x)
-        measure = (self.measure(x, x[gs:, None]) / self.t).exp()
-        # 分离出正对的数据
-        posi = torch.cat([torch.diag(measure.narrow(0, i * gs, gs)[:, :gs]) for i in range(self.g)])
-        measure = measure * (1 - torch.eye(gs).repeat(self.g, self.g + 1).to(x.device))
-        return - torch.log(posi / (measure.sum(dim=-1) + posi.detach())).mean()
+        measure = (self.measure(x, x[:, None]) / self.t).exp() * (1 - torch.eye(int(x.size(0)))).to(x)
+        # 创建掩膜, 分离正负对的数据
+        mask = torch.eye(gs).repeat(self.g + 1, self.g + 1).to(x)
+        p = (mask * measure).sum(dim=-1)
+        n = ((1 - mask) * measure).sum(dim=-1)
+        return - torch.log(p / (n + p.detach())).mean()
 
     def accuracy(self, x):
+        B = int(x.size(0))
         gs = self.gs(x)
-        measure = self.measure(x, x[gs:, None]).exp()
-        # 分离出正对的数据
-        posi = torch.cat([torch.diag(measure.narrow(0, i * gs, gs)[:, :gs]) for i in range(self.g)])
-        measure = measure * (1 - torch.eye(gs).repeat(self.g, self.g + 1).to(x.device))
-        return (posi > measure.max(dim=-1)[0]).float().mean().item()
+        measure = self.measure(x, x[:, None]) * (1 - torch.eye(B)).to(x)
+        # 每个样本匹配 g 个样本
+        topk = torch.argsort(measure, dim=-1, descending=True)[:, :self.g].to(x)
+        return (topk % gs == (torch.arange(B)[:, None].to(x) % gs)).float().mean().item()
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ from tqdm import trange
 DTYPE = np.float16
 
 
-class Genetic_Algorithm:
+class GeneticOpt:
     ''' 遗传算法
         :param n_unit: 染色体群体规模
         :param n_gene: 染色体的基因数
@@ -23,7 +23,6 @@ class Genetic_Algorithm:
         self._well_radio = well_radio
         self._cross_proba = cross_proba
         self._var_proba = var_proba
-        self.group = self.new_unit(self._n_unit)
 
     def _random_section(self) -> tuple:
         ''' 产生随机区间'''
@@ -58,11 +57,12 @@ class Genetic_Algorithm:
             prefix: str = 'GA_fit') -> np.ndarray:
         ''' :param epochs: 训练轮次
             :param patience: 允许搜索无进展的次数'''
+        self.group = self.new_unit(self._n_unit)
         unit_idx = list(range(self._n_unit))
         pbar = trange(epochs)
         last_fitness, angry = - np.inf, 0
         # 最优个体数, 随机选取数
-        n_well = round(self._n_unit * self._well_radio)
+        n_well = max(2, round(self._n_unit * self._well_radio))
         n_choose = self._n_unit - n_well
         for _ in pbar:
             self.group = np.unique(self.group, axis=0)
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
 
-    class Shortest_Path(Genetic_Algorithm):
+    class ShortestPath(GeneticOpt):
 
         def new_unit(self, size):
             ''' 初始化染色体群体'''
@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
 
     np.random.seed(0)
-    ga = Shortest_Path(80, 15, cross_proba=0, var_proba=0.6)
+    ga = ShortestPath(80, 15, cross_proba=0, var_proba=0.6)
     unit = ga.fit(500)
 
     # 绘制最优路径

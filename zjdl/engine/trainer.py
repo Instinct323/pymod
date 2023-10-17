@@ -58,22 +58,22 @@ class CosineLR(torch.optim.lr_scheduler.LambdaLR):
 class TrainerBase:
     ''' :param model: 网络模型
         :param project: 项目目录 (Path)
-            best.pt: 最优模型的字典
-            last.pt: 最新模型的字典
-            result.json: 训练过程信息
-        :param m_title: 实例方法 <metrics> 中各个度量的名称
+            :ivar best.pt: 最优模型的字典
+            :ivar last.pt: 最新模型的字典
         :param hyp: 超参数字典
-            epochs: 训练总轮次
-            lr0, lrf: 起始、最终学习率
-            weight_decay: 权值的 L2 范数系数'''
+            :key epochs: 训练总轮次
+            :key optimizer: 优化器类型
+            :key lr0, lrf: 起始学习率, 最终学习率 (比例)
+            :key weight_decay: 权值的 L2 范数系数
+            :key device: 设备 id
+            :key batch_size: 批尺寸'''
     training = property(lambda self: self.model.training)
+    lr = property(lambda self: self._optim.param_groups[0]['lr'])
 
-    def __init__(self, model, project, m_title, hyp):
+    def __init__(self, model, project, hyp):
         self.project = project
         self.project.mkdir(parents=True, exist_ok=True)
         LOGGER.info(f'Logging results to {self.project}')
-        assert len(m_title) > 0
-        self._m_title = m_title
         # 优先读取项目下的 hyp.yaml
         hyp_file = self.project / 'hyp.yaml'
         if hyp_file.is_file():
@@ -92,24 +92,28 @@ class TrainerBase:
         if isinstance(cfg, dict): (self.project / 'cfg.yaml').write_text(yaml.dump(cfg))
         # 根据设备对模型进行设置
         self.device = select_device(hyp['device'], batch_size=hyp.get('batch_size', None))
-        cuda = self.device.type != 'cpu'
         self.model = model.to(self.device)
-        # 加载最优模型的信息
-        self.best_fitness = - float('inf')
-        model_file = self.project / 'best.pt'
-        if model_file.is_file():
-            metrics = torch.load(model_file, map_location=self.device)['metrics']
-            if metrics.size > 0: self.best_fitness = self.fitness(metrics)
         # 实例化优化器, lr 监听器
         self._epochs = hyp['epochs']
         self._optim = getattr(torch.optim, hyp['optimizer'])(self.model.parameters(), lr=hyp['lr0'],
                                                              weight_decay=hyp['weight_decay'])
         self._lr_scheduler = CosineLR(self._optim, lrf=hyp['lrf'], epochs=self._epochs)
-        self._scaler = amp.GradScaler(enabled=cuda)
+        self._scaler = amp.GradScaler(enabled=self.device.type != 'cpu')
+        # 加载最新的模型参数
+        ckpt = self.load_ckpt('last.pt')
+        self._cur_epoch = ckpt.get('epoch', -1) + 1
         torch.cuda.empty_cache()
 
+    def __iter__(self):
+        def generator():
+            while self._cur_epoch < self._epochs:
+                yield self._cur_epoch
+                self._cur_epoch += 1
+
+        return generator()
+
     @staticmethod
-    def cuda_memory(divisor=1e9):
+    def cuda_memory(divisor=1e9) -> float:
         return torch.cuda.memory_reserved() / divisor
 
     def load_ckpt(self, file: str = 'last.pt') -> dict:
@@ -123,24 +127,37 @@ class TrainerBase:
         return ckpt
 
     def save_ckpt(self, files: list = ['last.pt'], **ckpt_kwd):
-        ckpt_kwd.update({'optim': self._optim.state_dict(),
+        ckpt_kwd.update({'epoch': self._cur_epoch,
+                         'optim': self._optim.state_dict(),
                          'sche': self._lr_scheduler.state_dict(),
                          'model': self.model.state_dict()})
-        # 保存 checkpoint
         for f in files: torch.save(ckpt_kwd, self.project / f)
 
-    def bp_gradient(self, loss):
+    def bp_gradient(self, loss) -> bool:
         self._scaler.scale(loss).backward()
         self._scaler.step(self._optim)
         self._scaler.update()
         self._optim.zero_grad()
-        return torch.isfinite(loss)
+        return torch.isfinite(loss).item()
 
 
 class Trainer(TrainerBase):
-    ''' :ivar loss -> tensor: train 调用, 返回带梯度的标量损失
+    ''' :param m_title: 实例方法 <metrics> 中各个度量的名称
+
+        :ivar loss -> tensor: train 调用, 返回带梯度的标量损失
         :ivar metrics -> numpy: eval 调用, 返回多个指标分数 (shape=[n,])
         :ivar fitness -> float: 根据 metrics 函数的返回值计算适应度'''
+
+    def __init__(self, model, project, m_title, hyp):
+        super().__init__(model, project, hyp)
+        assert len(m_title) > 0
+        self._m_title = m_title
+        # 加载最优模型的信息
+        self.best_fitness = - float('inf')
+        model_file = self.project / 'best.pt'
+        if model_file.is_file():
+            metrics = torch.load(model_file, map_location=self.device)['metrics']
+            if metrics.size > 0: self.best_fitness = self.fitness(metrics)
 
     def loss(self, *args, **kwargs) -> torch.Tensor:
         raise NotImplementedError
@@ -153,11 +170,9 @@ class Trainer(TrainerBase):
         raise NotImplementedError
 
     def __call__(self, train_set, eval_set=None):
-        ckpt = self.load_ckpt('last.pt')
-        start_epoch = ckpt.get('epoch', 0)
         # 开始训练 / 继续训练
         result = Result(self.project, title=('loss', 'lr', *self._m_title))
-        for epoch in range(start_epoch + 1, self._epochs + 1):
+        for epoch in self:
             dump_files = ['last.pt']
             metrics = np.array([])
             # train
@@ -170,9 +185,9 @@ class Trainer(TrainerBase):
                 metrics = eval_res['metrics']
                 if eval_res['better']: dump_files += ['best.pt']
             # 存储 checkpoint
-            self.save_ckpt(dump_files, epoch=epoch, metrics=metrics)
+            self.save_ckpt(dump_files, metrics=metrics)
             # 保存结果到 Result
-            result.record((train_res['avg_loss'], self._optim.param_groups[0]['lr'], *metrics), epoch)
+            result.record((train_res['avg_loss'], self.lr, *metrics), epoch)
             LOGGER.info('')
         self.finish(result)
         return self.best_fitness
@@ -250,18 +265,17 @@ class Trainer(TrainerBase):
         torch.cuda.empty_cache()
         # 损失累计
         loss_sum = 0
-        cuda = self.device.type != 'cpu'
         pbar = tqdm(enumerate(data_set), total=len(data_set))
         if not self.training: pbar.set_description(fstring('', *self._m_title))
         for i, batch in pbar:
             if self.training:
-                with amp.autocast(enabled=cuda):
+                with amp.autocast(enabled=self.device.type != 'cpu'):
                     loss = self.loss(*batch)
                 # loss 反向传播梯度, 检查损失值是否异常
                 is_finite = self.bp_gradient(loss)
                 loss_sum += loss.item() if is_finite else loss_sum / (i + 1e-6)
                 pbar.set_description(fstring(prefix, self.cuda_memory(), loss_sum / (i + 1),
-                                             self._optim.param_groups[0]['lr'], str(not is_finite)))
+                                             self.lr, str(not is_finite)))
             else:
                 yield batch
         torch.cuda.empty_cache()

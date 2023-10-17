@@ -3,7 +3,6 @@ from collections import Counter
 import cv2
 import numpy as np
 import torch
-import yaml
 
 BG_COLOR = 114
 to_2tuple = lambda x: x if x is None or isinstance(x, (list, tuple)) else (x,) * 2

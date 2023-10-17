@@ -1,8 +1,10 @@
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
 from torch import nn
+from collections import OrderedDict
 
 
 def heat_img(img, heat, cmap=cv2.COLORMAP_JET):
@@ -45,49 +47,82 @@ class LossLandScape:
 
 
 class ParamUtilization:
+    decimals = 3
 
-    def __new__(cls, model: nn.Module, path='model', sample=4,
-                norm_kernel=False, decimals=3):
-        self = object.__new__(cls)
-        self.sample = sample
-        self.norm_kernel = norm_kernel
-        self.round = lambda x: list(map(lambda i: round(i, decimals), x.tolist()))
-        self.result = {}
-        self(model, path)
-        return pd.DataFrame(self.result).T
+    @classmethod
+    def _round(cls, x):
+        return list(map(lambda i: round(i, cls.decimals), x.tolist()))
 
-    def __call__(self, model, path):
-        # 如果有属性 weight 则计算参数利用率
-        if hasattr(model, 'weight'):
-            weight = model.weight.data
-            c2, *not_1d = weight.shape
+    @classmethod
+    def _parse_weight(cls, weight) -> dict:
+        weight = weight.float().cpu()
+        c2, *not_1d = weight.shape
+        if not_1d:
             info = {'c2': c2}
-            if not_1d:
-                # 如果是卷积核
-                if self.norm_kernel and len(not_1d) == 3 and not_1d[-1] != 1:
-                    wc = weight.clone()
-                    k_size, norm_k = not_1d[-1], []
-                    for i in range((k_size - 1) // 2, -1, -1):
-                        k1, k2 = k_size - i * 2, max(0, k_size - (i + 1) * 2)
-                        # 计算归一化权值
-                        norm_k.append(((wc[..., i:i + k1, i:i + k1]).sum() / (k1 ** 2 - k2 ** 2)).abs().item())
-                        wc[..., i:-i, i:-i] *= 0
-                    norm_k = np.array(norm_k, dtype=np.float32)
-                    info['norm-kernel'] = self.round(norm_k / (norm_k.mean() + 1e-6))
-                # 计算相对稀疏度
-                weight = weight.view(c2, -1)
-                norm = torch.norm(weight, dim=-1)
-                info['norm-mean'] = norm.mean().item()
-                norm /= info['norm-mean']
-                # 计算输出通道的余弦相似度
-                cosine = torch.cosine_similarity(
-                    weight[None], weight[:, None], dim=-1, eps=1e-3
-                ).abs() - torch.eye(c2).half().to(weight.device)
-                cosine = 1 - cosine.max(dim=0)[0]
-                # 定义主导度为: sqrt(cossim) × norm
-                info['domiance'] = self.round(torch.sort(norm * cosine.sqrt()
-                                                         )[0][::self.sample].cpu().data.numpy())
-                self.result[path] = info
-        # 递归搜索
-        else:
-            for k, m in model._modules.items(): self(m, f'{path}[{k}:{type(m).__name__}]')
+            # 如果是 n×n 卷积核, 由里到外计算 卷积核核环 的平均范数
+            if len(not_1d) == 3 and not_1d[-1] != 1 and not_1d[-1] == not_1d[-2]:
+                wc = torch.norm(weight, dim=(0, 1))
+                k_size, norm_k = not_1d[-1], []
+                # 外核左上角元素的 横纵坐标
+                for i in range((k_size - 1) // 2, -1, -1):
+                    # 外核、内核 的核尺寸
+                    k1 = k_size - i * 2
+                    k2 = max(0, k1 - 2)
+                    # 计算平均范数
+                    norm_k.append(((wc[i:i + k1, i:i + k1]).sum() / (k1 ** 2 - k2 ** 2)).abs().item())
+                    wc[i:-i, i:-i] *= 0
+                norm_k = torch.tensor(norm_k, dtype=torch.float32)
+                info['norm-kernel'] = cls._round(norm_k / (norm_k.mean() + 1e-6))
+            weight = weight.view(c2, -1)
+            # 计算权重向量二范数 norm
+            norm = torch.norm(weight, dim=-1)
+            info['norm-mean'] = norm.mean().item()
+            # 根据 norm, 对 weight, norm 进行排序
+            i = torch.argsort(norm)
+            norm = norm[i]
+            weight = weight[i]
+            # 为每个输出通道 分配近邻
+            _cos_sim = torch.cosine_similarity(weight, weight[:, None], dim=-1, eps=1e-6).abs()
+            nbh = torch.arange(c2)
+            # 修改 _cos_sim 为上三角矩阵
+            for i in range(c2): _cos_sim[i, :i + 1] *= 0
+            cos = torch.zeros_like(norm)
+            for _ in range(c2 - 1):
+                x = _cos_sim.argmax().item()
+                i, j = x // c2, x % c2
+                nbh[i], cos[i] = j, _cos_sim[i, j]
+                # 移除 norm 较小的权重向量 (_cos_sim 矩阵置零)
+                _cos_sim[i] *= 0
+            # |w_s| / |w_b| * sin
+            score = norm / norm[nbh] * torch.sqrt(1 - torch.square(cos))
+            info['score'] = cls._round(torch.sort(score)[0])
+            return info
+
+    @classmethod
+    def parse_model(cls, model: nn.Module):
+        result = {}
+
+        def solve(model, path):
+            # 如果有属性 weight 则计算参数利用率
+            if hasattr(model, 'weight'):
+                info = cls._parse_weight(model.weight.data)
+                if info: result[path[1:]] = info
+            # 递归搜索
+            else:
+                for k, m in model._modules.items(): solve(m, f'{path}.{k}[{type(m).__name__}]')
+            return result
+
+        return cls.export(solve(model, ''))
+
+    @classmethod
+    def parse_state_dict(cls, state_dict: OrderedDict, suffix='.weight'):
+        result = {}
+        for k, v in state_dict.items():
+            if k.endswith(suffix):
+                info = cls._parse_weight(v)
+                if info: result[k.rstrip(suffix)] = info
+        return cls.export(result)
+
+    @classmethod
+    def export(cls, result):
+        return pd.DataFrame(result).T
