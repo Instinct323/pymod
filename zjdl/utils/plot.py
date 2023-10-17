@@ -82,47 +82,42 @@ class ParamUtilization:
             i = torch.argsort(norm)
             norm = norm[i]
             weight = weight[i]
-            # 为每个输出通道 分配近邻
-            _cos_sim = torch.cosine_similarity(weight, weight[:, None], dim=-1, eps=1e-6).abs()
-            nbh = torch.arange(c2)
-            # 修改 _cos_sim 为上三角矩阵
-            for i in range(c2): _cos_sim[i, :i + 1] *= 0
-            cos = torch.zeros_like(norm)
-            for _ in range(c2 - 1):
-                x = _cos_sim.argmax().item()
-                i, j = x // c2, x % c2
-                nbh[i], cos[i] = j, _cos_sim[i, j]
-                # 移除 norm 较小的权重向量 (_cos_sim 矩阵置零)
-                _cos_sim[i] *= 0
-            # |w_s| / |w_b| * sin
-            score = norm / norm[nbh] * torch.sqrt(1 - torch.square(cos))
+            # 计算余弦相似度, 修改为上三角矩阵
+            cos = torch.cosine_similarity(weight, weight[:, None], dim=-1, eps=1e-6).abs() - torch.eye(c2)
+            sin = torch.sqrt(1 - torch.square(cos))
+            # 小权重向量分解: 与大权重向量同方向、正交的部分
+            # 信息损失 (取最小): 正交部分的二范数 与 大权重向量的相对大小
+            norm_loss = sin * norm[:, None] / norm
+            score = torch.tensor([norm_loss[i, i:].min() for i in range(c2)])
             info['score'] = cls._round(torch.sort(score)[0])
             return info
 
     @classmethod
-    def parse_model(cls, model: nn.Module, **export_kwd):
+    def parse(cls, model_or_sdit, **export_kwd):
         result = {}
 
-        def solve(model, path):
-            # 如果有属性 weight 则计算参数利用率
-            if hasattr(model, 'weight'):
-                info = cls._parse_weight(model.weight.data)
-                if info: result[path[1:]] = info
-            # 递归搜索
-            else:
-                for k, m in model._modules.items(): solve(m, f'{path}.{k}[{type(m).__name__}]')
-            return result
+        if isinstance(model_or_sdit, nn.Module):
+            def solve(model, path):
+                # 如果有属性 weight 则计算参数利用率
+                if hasattr(model, 'weight'):
+                    info = cls._parse_weight(model.weight.data)
+                    if info: result[path[1:]] = info
+                # 递归搜索
+                else:
+                    for k, m in model._modules.items(): solve(m, f'{path}.{k}[{type(m).__name__}]')
 
-        return cls.export(solve(model, ''), **export_kwd)
+            solve(model_or_sdit, '')
 
-    @classmethod
-    def parse_state_dict(cls, state_dict: OrderedDict, **export_kwd):
-        suffix = '.weight'
-        result = {}
-        for k, v in state_dict.items():
-            if k.endswith(suffix):
-                info = cls._parse_weight(v)
-                if info: result[k.rstrip(suffix)] = info
+        elif isinstance(model_or_sdit, OrderedDict):
+            suffix = '.weight'
+            for k, v in model_or_sdit.items():
+                if k.endswith(suffix):
+                    info = cls._parse_weight(v)
+                    if info: result[k.rstrip(suffix)] = info
+
+        else:
+            raise TypeError(f'Incorrect argument type {type(model_or_sdit).__name__}')
+
         return cls.export(result, **export_kwd)
 
     @classmethod
@@ -130,7 +125,9 @@ class ParamUtilization:
         result = pd.DataFrame(result).T
         if plot:
             from mod.zjplot import rand_colors, violinplot
-            plt.rcParams['figure.figsize'] = [12.8, 6.4]
+            # 绘图相关参数设定
+            limit = limit if limit else len(result)
+            plt.rcParams['figure.figsize'] = [.8 + 0.46 * (limit + 1), 6.4]
             ymin = min(map(min, result['score']))
             ymax = max(map(max, result['score']))
             # 对神经网络中的层进行分组
@@ -144,7 +141,7 @@ class ParamUtilization:
                 plt.ylabel('score')
                 # 根据分组分配颜色
                 violinplot(tmp['score'], labels=list(tmp.index),
-                           colors=[colors[groups.index(k2i(k))] for k in tmp.index], xrotate=-90)
+                           colors=[colors[groups.index(k2i(k))] for k in tmp.index], xrotate=90)
                 # 设置上下限, 布局优化
                 plt.xlim([0, limit + 1]), plt.ylim(ymin, ymax), plt.grid()
                 plt.tight_layout(), plt.show()

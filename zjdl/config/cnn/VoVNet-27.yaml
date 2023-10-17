@@ -11,18 +11,18 @@ architecture:
     [ -1, 1, Conv, [ 128, 3 ] ],
     [ -1, 1, nn.MaxPool2d, [ 2 ] ],
 
-    [ -1, 4, CSP_OSA, [ 128 ] ],
+    [ -1, 4, CspOSA, [ 128 ] ],
     [ -1, 1, nn.MaxPool2d, [ 2 ] ],
 
-    [ -1, 4, CSP_OSA, [ 256 ] ],
-    [ -1, 1, nn.MaxPool2d, [ 2 ] ],
-    [ -1, 1, DropBlock, [ 5, 0.1 ] ],
-
-    [ -1, 4, CSP_OSA, [ 384 ] ],
+    [ -1, 4, CspOSA, [ 256 ] ],
     [ -1, 1, nn.MaxPool2d, [ 2 ] ],
     [ -1, 1, DropBlock, [ 5, 0.1 ] ],
 
-    [ -1, 4, CSP_OSA, [ 512 ] ],
+    [ -1, 4, CspOSA, [ 384 ] ],
+    [ -1, 1, nn.MaxPool2d, [ 2 ] ],
+    [ -1, 1, DropBlock, [ 5, 0.1 ] ],
+
+    [ -1, 4, CspOSA, [ 512 ] ],
     [ -1, 1, DropBlock, [ 5, 0.1 ] ],
 
     [ -1, 1, nn.AdaptiveAvgPool2d, [ 1 ] ],

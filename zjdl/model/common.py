@@ -150,7 +150,7 @@ class ELA(nn.Module):
 
 
 @register_module('c1,c2', 'n')
-class CSP_OSA(nn.Module):
+class CspOSA(nn.Module):
 
     def __init__(self, c1, c2, e=0.5, n=4):
         super().__init__()

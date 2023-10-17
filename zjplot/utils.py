@@ -12,7 +12,7 @@ cyan = 'aqua'
 blue = 'deepskyblue'
 purple = 'mediumpurple'
 pink = 'violet'
-rainbow = [red, orange, yellow, green, blue, purple, pink]
+rainbow = [red, orange, yellow, green, cyan, blue, purple, pink]
 
 plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']
 
@@ -58,10 +58,10 @@ def boxplot(dataset, labels=None, colors=None):
 
 
 def violinplot(dataset: list, labels=None, colors=None,
-               alpha=.6, linewidth=3, xrotate=0):
+               alpha=.4, linewidth=3, xrotate=0):
     ''' 绘制小提琴图'''
     for data in dataset: data.sort()
-    vp = plt.violinplot(dataset, showextrema=False)
+    vp = plt.violinplot(dataset, showextrema=False, widths=0.8)
     colors = colors if colors else rand_colors(len(dataset))
     for i, bd in enumerate(vp['bodies']):
         bd.set(color=colors[i], alpha=alpha, linewidth=0)
@@ -72,7 +72,7 @@ def violinplot(dataset: list, labels=None, colors=None,
     q = np.array([np.percentile(data, [0, 25, 50, 75, 100]) for data in dataset]).T
     plt.vlines(x, q[0], q[-1], colors=colors, lw=linewidth)
     plt.vlines(x, q[1], q[-2], colors=colors, lw=linewidth * 3)
-    plt.scatter(x, q[2], color='white', s=linewidth * 15, zorder=3)
+    plt.scatter(x, q[2], color='white', s=linewidth * 18, zorder=3)
     return vp
 
 

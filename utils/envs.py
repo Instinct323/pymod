@@ -91,7 +91,6 @@ if __name__ == '__main__':
     PythonEnv.modify_env()
 
     env = PythonEnv()
-    env.install('seaborn')
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
     git_push(
