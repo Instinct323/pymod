@@ -121,7 +121,7 @@ class ParamUtilization:
         return cls.export(result, **export_kwd)
 
     @classmethod
-    def export(cls, result, plot=False, group_lv=1, sep='.', limit=25):
+    def export(cls, result, plot=False, group_lv=1, sep='.', limit=25, **vplot_kwd):
         result = pd.DataFrame(result).T
         if plot:
             from mod.zjplot import rand_colors, violinplot
@@ -137,11 +137,10 @@ class ParamUtilization:
             # 分页读取 result
             for i in range(int(np.ceil(len(result) / limit))):
                 tmp = result.iloc[i * limit: (i + 1) * limit]
-                plt.title(cls.__name__)
                 plt.ylabel('score')
                 # 根据分组分配颜色
                 violinplot(tmp['score'], labels=list(tmp.index),
-                           colors=[colors[groups.index(k2i(k))] for k in tmp.index], xrotate=90)
+                           colors=[colors[groups.index(k2i(k))] for k in tmp.index], xrotate=90, **vplot_kwd)
                 # 设置上下限, 布局优化
                 plt.xlim([0, limit + 1]), plt.ylim(ymin, ymax), plt.grid()
                 plt.tight_layout(), plt.show()

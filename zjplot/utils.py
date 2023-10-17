@@ -58,7 +58,7 @@ def boxplot(dataset, labels=None, colors=None):
 
 
 def violinplot(dataset: list, labels=None, colors=None,
-               alpha=.4, linewidth=3, xrotate=0):
+               alpha=.4, linewidth=3, xrotate=0, yrotate=0):
     ''' 绘制小提琴图'''
     for data in dataset: data.sort()
     vp = plt.violinplot(dataset, showextrema=False, widths=0.8)
@@ -68,6 +68,7 @@ def violinplot(dataset: list, labels=None, colors=None,
     # 添加标签
     x = np.arange(1, 1 + len(dataset))
     if labels: plt.xticks(x, labels, rotation=xrotate)
+    plt.yticks(rotation=yrotate)
     # 在中位线处绘制散点, 25-75 间绘制粗线, 0-100 间绘制细线
     q = np.array([np.percentile(data, [0, 25, 50, 75, 100]) for data in dataset]).T
     plt.vlines(x, q[0], q[-1], colors=colors, lw=linewidth)
