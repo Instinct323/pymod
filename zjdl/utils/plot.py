@@ -1,10 +1,11 @@
+from collections import OrderedDict
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
 from torch import nn
-from collections import OrderedDict
 
 
 def heat_img(img, heat, cmap=cv2.COLORMAP_JET):
@@ -99,7 +100,7 @@ class ParamUtilization:
             return info
 
     @classmethod
-    def parse_model(cls, model: nn.Module):
+    def parse_model(cls, model: nn.Module, **export_kwd):
         result = {}
 
         def solve(model, path):
@@ -112,17 +113,39 @@ class ParamUtilization:
                 for k, m in model._modules.items(): solve(m, f'{path}.{k}[{type(m).__name__}]')
             return result
 
-        return cls.export(solve(model, ''))
+        return cls.export(solve(model, ''), **export_kwd)
 
     @classmethod
-    def parse_state_dict(cls, state_dict: OrderedDict, suffix='.weight'):
+    def parse_state_dict(cls, state_dict: OrderedDict, **export_kwd):
+        suffix = '.weight'
         result = {}
         for k, v in state_dict.items():
             if k.endswith(suffix):
                 info = cls._parse_weight(v)
                 if info: result[k.rstrip(suffix)] = info
-        return cls.export(result)
+        return cls.export(result, **export_kwd)
 
     @classmethod
-    def export(cls, result):
-        return pd.DataFrame(result).T
+    def export(cls, result, plot=False, group_lv=1, sep='.', limit=25):
+        result = pd.DataFrame(result).T
+        if plot:
+            from mod.zjplot import rand_colors, violinplot
+            plt.rcParams['figure.figsize'] = [12.8, 6.4]
+            ymin = min(map(min, result['score']))
+            ymax = max(map(max, result['score']))
+            # 对神经网络中的层进行分组
+            k2i = lambda k: sep.join(k.split(sep)[:group_lv + 1])
+            groups = sorted({k2i(k) for k in result.index})
+            colors = rand_colors(len(groups))
+            # 分页读取 result
+            for i in range(int(np.ceil(len(result) / limit))):
+                tmp = result.iloc[i * limit: (i + 1) * limit]
+                plt.title(cls.__name__)
+                plt.ylabel('score')
+                # 根据分组分配颜色
+                violinplot(tmp['score'], labels=list(tmp.index),
+                           colors=[colors[groups.index(k2i(k))] for k in tmp.index], xrotate=-90)
+                # 设置上下限, 布局优化
+                plt.xlim([0, limit + 1]), plt.ylim(ymin, ymax), plt.grid()
+                plt.tight_layout(), plt.show()
+        return result

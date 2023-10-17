@@ -6,7 +6,7 @@ import numpy as np
 # matplotlib 颜色常量
 red = 'orangered'
 orange = 'orange'
-yellow = 'yellow'
+yellow = 'gold'
 green = 'greenyellow'
 cyan = 'aqua'
 blue = 'deepskyblue'
@@ -18,6 +18,15 @@ plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']
 
 logging.basicConfig(format='%(message)s', level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
+
+
+def rand_colors(n=1, cmap=rainbow):
+    if cmap:
+        ret = cmap[:min(n, len(cmap))]
+        if len(ret) < n:
+            ret += rand_colors(n - len(ret), cmap=None)
+        return ret
+    return np.random.random([n, 3]).tolist()
 
 
 def figure3d():
@@ -38,13 +47,33 @@ def std_coord(*args, zero_p=True):
     return fig
 
 
-def boxplot(dataset, colors, labels=None):
+def boxplot(dataset, labels=None, colors=None):
     ''' 绘制箱线图'''
     bp = plt.boxplot(dataset, labels=labels)
-    for i, color in enumerate(colors):
+    for i, color in enumerate(
+            colors if colors else rand_colors(len(bp['boxes']))):
         bp['boxes'][i].set(color=color, linewidth=1.5)
         bp['medians'][i].set(color=color, linewidth=2.1)
     return bp
+
+
+def violinplot(dataset: list, labels=None, colors=None,
+               alpha=.6, linewidth=3, xrotate=0):
+    ''' 绘制小提琴图'''
+    for data in dataset: data.sort()
+    vp = plt.violinplot(dataset, showextrema=False)
+    colors = colors if colors else rand_colors(len(dataset))
+    for i, bd in enumerate(vp['bodies']):
+        bd.set(color=colors[i], alpha=alpha, linewidth=0)
+    # 添加标签
+    x = np.arange(1, 1 + len(dataset))
+    if labels: plt.xticks(x, labels, rotation=xrotate)
+    # 在中位线处绘制散点, 25-75 间绘制粗线, 0-100 间绘制细线
+    q = np.array([np.percentile(data, [0, 25, 50, 75, 100]) for data in dataset]).T
+    plt.vlines(x, q[0], q[-1], colors=colors, lw=linewidth)
+    plt.vlines(x, q[1], q[-2], colors=colors, lw=linewidth * 3)
+    plt.scatter(x, q[2], color='white', s=linewidth * 15, zorder=3)
+    return vp
 
 
 def bar2d(dataset, xticks=None, labels=None, colors=None, alpha=1):
@@ -86,4 +115,4 @@ def hotmap(array, fig=None, pos=0, fformat='%f', cmap='Blues', size=10, title=No
 
 
 if __name__ == '__main__':
-    pass
+    print(rand_colors(10))
