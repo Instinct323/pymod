@@ -1,5 +1,4 @@
 import math
-from collections import OrderedDict
 from typing import Optional
 
 from timm.models.layers import to_2tuple, DropPath
@@ -30,13 +29,12 @@ class BatchNorm(nn.BatchNorm2d):
 
 
 @register_module('c1,c2')
-class Conv(nn.Module):
+class Conv(nn.Conv2d):
     ''' Conv - BN - Act'''
-    deploy = property(lambda self: isinstance(self.conv, nn.Conv2d))
+    deploy = property(lambda self: isinstance(self.bn, nn.Identity))
 
     def __init__(self, c1, c2, k=3, s=1, g=1, d=1,
                  act: Optional[nn.Module] = nn.ReLU, ctrpad=True):
-        super().__init__()
         assert k & 1, 'The convolution kernel size must be odd'
         # 深度可分离卷积
         if g == 'dw':
@@ -47,60 +45,58 @@ class Conv(nn.Module):
             in_channels=c1, out_channels=c2, kernel_size=k,
             stride=s, padding=auto_pad(k, s if ctrpad else 1, d), groups=g, dilation=d
         )
-        self.conv = nn.Sequential(OrderedDict(
-            conv=nn.Conv2d(**self.cfg_, bias=False),
-            bn=BatchNorm(c2)
-        ))
+        super().__init__(**self.cfg_, bias=False)
+        self.bn = BatchNorm(c2)
         self.act = act() if act else nn.Identity()
 
     def forward(self, x):
-        return self.act(self.conv(x))
+        return self.act(self.bn(super().forward(x)))
 
     @classmethod
     def reparam(cls, model: nn.Module):
         for m in filter(lambda m: isinstance(m, cls) and not m.deploy, model.modules()):
-            kernel = m.conv.conv.weight.data
-            bn_w, bn_b = m.conv.bn.unpack(detach=True)
+            kernel = m.weight.data.clone()
+            bn_w, bn_b = m.bn.unpack(detach=True)
             # 合并 nn.Conv 与 BatchNorm
-            m.conv = nn.Conv2d(**m.cfg_, bias=True)
-            m.conv.weight.data, m.conv.bias.data = kernel * bn_w.view(-1, 1, 1, 1), bn_b
+            m.weight.data, m.bias = kernel * bn_w.view(-1, 1, 1, 1), nn.Parameter(bn_b, requires_grad=True)
+            m.bn = nn.Identity()
 
 
 @register_module('c1,c2')
 class RepConv(nn.Module):
     ''' :param k: 卷积核尺寸, 0 表示恒等映射'''
-    deploy = property(lambda self: isinstance(self.m, nn.Conv2d))
+    deploy = property(lambda self: isinstance(self.rep, nn.Conv2d))
 
     def __init__(self, c1, c2, k=(0, 1, 3), s=1, g=1, d=1,
                  act: Optional[nn.Module] = nn.ReLU):
         super().__init__()
-        self.m = nn.ModuleList()
+        self.rep = nn.ModuleList()
         assert len(k) > 1, 'RepConv with a single branch is illegal'
         for k in sorted(k):
             # Identity
             if k == 0:
                 assert c1 == c2, 'Failed to add the identity mapping branch'
-                self.m.append(BatchNorm(c2, s=s))
+                self.rep.append(BatchNorm(c2, s=s))
             # nn.Conv2d + BatchNorm
             elif k > 0:
                 assert k & 1, f'The convolution kernel size {k} must be odd'
-                self.m.append(Conv(c1, c2, k=k, s=s, g=g, d=d, act=None, ctrpad=False))
+                self.rep.append(Conv(c1, c2, k=k, s=s, g=g, d=d, act=None, ctrpad=False))
             else:
                 raise AssertionError(f'Wrong kernel size {k}')
         # Activation
         self.act = act() if act else nn.Identity()
 
     def forward(self, x):
-        return self.act(self.m(x) if self.deploy else sum_(tuple(m(x) for m in self.m)))
+        return self.act(self.rep(x) if self.deploy else sum_(tuple(m(x) for m in self.rep)))
 
     @classmethod
     def reparam(cls, model: nn.Module):
         Conv.reparam(model)
         # 查询模型的所有子模型, 对 RepConv 进行合并
         for m in filter(lambda m: isinstance(m, cls) and not m.deploy, model.modules()):
-            src, cfg = m.m[-1].conv.weight, m.m[-1].cfg_
+            src, cfg = m.rep[-1].weight, m.rep[-1].cfg_
             conv = nn.Conv2d(**cfg, bias=True).to(src)
-            mlist, m.m = m.m, conv
+            mlist, m.rep = m.rep, conv
             (c2, c1g, k, _), g = conv.weight.shape, conv.groups
             # nn.Conv2d 参数置零
             nn.init.constant_(conv.weight, 0)
@@ -112,7 +108,6 @@ class RepConv(nn.Module):
                     conv.weight.data[..., k // 2, k // 2] += torch.eye(c1g).repeat(g, 1).to(src) * w[:, None]
                 # Conv
                 else:
-                    branch = branch.conv
                     p = (k - branch.kernel_size[0]) // 2
                     w, b = branch.weight.data, branch.bias.data
                     conv.weight.data += F.pad(w, (p,) * 4)
@@ -135,18 +130,18 @@ class ELA(nn.Module):
     def __init__(self, c1, c2, e=0.5, n=3):
         super().__init__()
         c_ = max(4, int(c2 * e))
-        self.conv1 = Conv(c1, c_, 1)
-        self.conv2 = Conv(c1, c_, 1)
-        self.model = nn.ModuleList(
+        self.ela1 = Conv(c1, c_, 1)
+        self.ela2 = Conv(c1, c_, 1)
+        self.elan = nn.ModuleList(
             nn.Sequential(Conv(c_, c_, 3),
                           Conv(c_, c_, 3)) for _ in range(n)
         )
-        self.tail = Conv(c_ * (n + 2), c2, 1)
+        self.elap = Conv(c_ * (n + 2), c2, 1)
 
     def forward(self, x):
-        y = [self.conv1(x), self.conv2(x)]
-        for m in self.model: y.append(m(y[-1]))
-        return self.tail(torch.cat(y, 1))
+        y = [self.ela1(x), self.ela2(x)]
+        for m in self.elan: y.append(m(y[-1]))
+        return self.elap(torch.cat(y, 1))
 
 
 @register_module('c1,c2', 'n')
@@ -156,19 +151,19 @@ class CspOSA(nn.Module):
         super().__init__()
         c_ = max(4, int(c2 * e))
         n = max(2, n)
-        self.conv1 = Conv(c1, c_ * 2, 1)
-        self.conv2 = Conv(c1, c_ * 2, 1)
-        self.conv3 = Conv(c_ * 2, c_, 3)
-        self.model = nn.ModuleList(
+        self.osa1 = Conv(c1, c_ * 2, 1)
+        self.osa2 = Conv(c1, c_ * 2, 1)
+        self.osa3 = Conv(c_ * 2, c_, 3)
+        self.osan = nn.ModuleList(
             Conv(c_, c_, 3) for _ in range(n - 1)
         )
-        self.tail = Conv(c_ * (n + 4), c2, 1)
+        self.osap = Conv(c_ * (n + 4), c2, 1)
 
     def forward(self, x):
-        y = [self.conv1(x), self.conv2(x)]
-        y.append(self.conv3(y[-1]))
-        for m in self.model: y.append(m(y[-1]))
-        return self.tail(torch.cat(y, 1))
+        y = [self.osa1(x), self.osa2(x)]
+        y.append(self.osa3(y[-1]))
+        for m in self.osan: y.append(m(y[-1]))
+        return self.osap(torch.cat(y, 1))
 
 
 @register_module('c1,c2', 'n')
@@ -177,7 +172,7 @@ class Hourglass(nn.Module):
     def __init__(self, c1, c2, eb=.75, ec=1.125, upmode='nearest', n=3):
         super().__init__()
         c_ = make_divisible(c2 * eb, divisor=4)
-        self.conv = Conv(c1, c_, 1)
+        self.hgc = Conv(c1, c_, 1)
         c1t = make_divisible(c_ * ec ** np.arange(n + 1), divisor=2)
         c2t = make_divisible(logspace(c2, c1t[-1], n + 1), divisor=2)
         # 核心部分的参数
@@ -198,7 +193,7 @@ class Hourglass(nn.Module):
         self.upsample = partial(F.interpolate, scale_factor=2, mode=upmode)
 
     def forward(self, x):
-        xcache = [self.conv(x)]
+        xcache = [self.hgc(x)]
         # top to bottom
         for m in self.t2b: xcache.append(m(xcache[-1]))
         xcache[0] = x
@@ -216,13 +211,13 @@ class Bottleneck(nn.Module):
     def __init__(self, c1, c2, s=1, g=1, d=1, e=0.5):
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
-        self.conv1 = Conv(c1, c_, 1)
-        self.conv2 = Conv(c_, c2, 3, s, g, d, act=None)
-        self.ds = nn.Identity() if c1 == c2 and s == 1 else Conv(c1, c2, 1, s, act=None)
-        self.act = self.conv1.act
+        self.btn1 = Conv(c1, c_, 1)
+        self.btn2 = Conv(c_, c2, 3, s, g, d, act=None)
+        self.downs = nn.Identity() if c1 == c2 and s == 1 else Conv(c1, c2, 1, s, act=None)
+        self.act = self.btn1.act
 
     def forward(self, x):
-        return self.act(self.ds(x) + self.conv2(self.conv1(x)))
+        return self.act(self.downs(x) + self.btn2(self.btn1(x)))
 
 
 @register_module('c1')
@@ -249,9 +244,9 @@ class FastAttention(nn.Module):
         super().__init__()
         self.local = k != 0
         if self.local:
-            self.m = RepConv(c1, c1, k=(0, k), g='dw')
+            self.fvit = RepConv(c1, c1, k=(0, k), g='dw')
         else:
-            self.m = nn.ModuleList([
+            self.fvit = nn.ModuleList([
                 BatchNorm(c1),
                 MultiheadAttn(c1, nhead=1)
             ])
@@ -262,10 +257,10 @@ class FastAttention(nn.Module):
 
     def forward(self, x):
         if self.local:
-            x = self.m(x)
+            x = self.fvit(x)
         else:
-            x = self.m[0](x)
-            x = x + vec2img(self.m[1](img2vec(x)))
+            x = self.fvit[0](x)
+            x = x + vec2img(self.fvit[1](img2vec(x)))
         return self.ffn(x)
 
 
@@ -276,16 +271,16 @@ class SPPF(nn.Module):
     def __init__(self, c1, c2, k=5, e=0.5, n=3):  # equivalent to SPP(k=(5, 9, 13))
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
-        self.conv1 = Conv(c1, c_, 1)
-        self.conv2 = Conv(c_ * (n + 1), c2, 1)
         self.n = n
-        self.m = partial(F.max_pool2d, kernel_size=k, stride=1, padding=auto_pad(k))
+        self.spp1 = Conv(c1, c_, 1)
+        self.spp2 = Conv(c_ * (n + 1), c2, 1)
+        self.maxp = partial(F.max_pool2d, kernel_size=k, stride=1, padding=auto_pad(k))
 
     def forward(self, x):
-        x = [self.conv1(x)]
+        x = [self.spp1(x)]
         for _ in range(self.n):
-            x.append(self.m(x[-1]))
-        return self.conv2(torch.cat(x, dim=1))
+            x.append(self.maxp(x[-1]))
+        return self.spp2(torch.cat(x, dim=1))
 
 
 class Shortcut(nn.Module):
@@ -323,7 +318,7 @@ class SEReLU(nn.Module):
     def __init__(self, c1, r=16):
         super().__init__()
         c_ = max(4, c1 // r)
-        self.m = nn.Sequential(
+        self.se = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(c1, c_, 1, bias=True),
             nn.ReLU(),
@@ -333,7 +328,7 @@ class SEReLU(nn.Module):
         self.act = nn.ReLU()
 
     def forward(self, x):
-        return self.act(x * self.m(x))
+        return self.act(x * self.se(x))
 
 
 class Upsample(nn.Upsample):
@@ -462,8 +457,8 @@ class MixerLayer(nn.Module):
                  act: Optional[nn.Module] = QuickGELU):
         super().__init__()
         self.ln1 = nn.LayerNorm(c1)
-        self.ln2 = nn.LayerNorm(c1)
         self.mlp1 = Mlp(p, e=ep, drop=drop, act=act)
+        self.ln2 = nn.LayerNorm(c1)
         self.mlp2 = Mlp(c1, e=ec, drop=drop, act=act)
 
     def forward(self, x):
