@@ -83,13 +83,11 @@ class ParamUtilization:
             i = torch.argsort(norm)
             norm = norm[i]
             weight = weight[i]
-            # 计算余弦相似度, 修改为上三角矩阵
+            # 计算余弦相似度
             cos = torch.cosine_similarity(weight, weight[:, None], dim=-1, eps=1e-6).abs() - torch.eye(c2)
-            sin = torch.sqrt(1 - torch.square(cos))
-            # 小权重向量分解: 与大权重向量同方向、正交的部分
-            # 信息损失 (取最小): 正交部分的二范数 与 大权重向量的相对大小
-            norm_loss = sin * norm[:, None] / norm
-            score = torch.tensor([norm_loss[i, i:].min() for i in range(c2)])
+            # 信息损失 (取最小): (1 - 余弦值) * norm 相对大小
+            norm_loss = (1 - cos) * norm[:, None] / norm
+            score = torch.tensor([norm_loss[i, i:].min() for i in range(c2 - 1)])
             info['score'] = cls._round(torch.sort(score)[0])
             return info
 
@@ -137,7 +135,7 @@ class ParamUtilization:
         ymax = max(map(max, result['score']))
         # 对神经网络中的层进行分组
         k2i = lambda k: sep.join(k.split(sep)[:group_lv + 1])
-        groups = sorted({k2i(k) for k in result.index})
+        groups = tuple({k2i(k) for k in result.index})
         colors = rand_colors(len(groups))
         # 分页读取 result
         for i in tqdm(range(int(np.ceil(len(result) / limit))), desc='exporting plots'):

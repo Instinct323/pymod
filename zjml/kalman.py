@@ -38,7 +38,7 @@ class KalmenFilter:
         # 先验估计: x = F @ x
         mean = self._motion_tran @ mean
         # 先验估计协方差: P = F @ P @ F.T + Q
-        covariance = self._motion_tran @ covariance @ self._motion_tran.T + np.diag(np.square(std))
+        covariance = np.linalg.multi_dot([self._motion_tran, covariance, self._motion_tran.T]) + np.diag(np.square(std))
         return mean, covariance
 
     def project(self, mean, covariance):
@@ -47,7 +47,7 @@ class KalmenFilter:
         std = np.array([weight_pos, weight_pos, 1e-1, weight_pos])
         # Pos and Vel -> Pos: x = H @ x
         projected_mean = self._update_mat @ mean
-        projected_cov = self._update_mat @ covariance @ self._update_mat.T + np.diag(np.square(std))
+        projected_cov = np.linalg.multi_dot([self._update_mat, covariance, self._update_mat.T]) + np.diag(np.square(std))
         return projected_mean, projected_cov
 
     def update(self, measurement, mean, covariance):
@@ -59,7 +59,7 @@ class KalmenFilter:
             (covariance @ self._update_mat.T).T, check_finite=False).T
         # 最优估计: x = x + (y - x) @ K.T
         new_mean = mean + (measurement - projected_mean) @ kalman_gain.T
-        new_cov = covariance - kalman_gain @ projected_cov @ kalman_gain.T
+        new_cov = covariance - np.linalg.multi_dot([kalman_gain, projected_cov, kalman_gain.T])
         return new_mean, new_cov
 
 

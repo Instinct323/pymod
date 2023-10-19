@@ -18,16 +18,24 @@ def git_push(*repositories,
 class PythonEnv:
 
     @staticmethod
-    def install(pack, uninstall=False, upgrade=False):
+    def install(pkg, uninstall=False, upgrade=False):
         main = 'uninstall -y' if uninstall else ('install' + upgrade * ' --upgrade')
-        os.system(f'pip {main} --no-cache-dir {pack}')
+        os.system(f'pip {main} --no-cache-dir {pkg}')
 
     @staticmethod
     def load_requirements(file='requirements.txt'):
         os.system(f'pip install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
 
-    @staticmethod
-    def jupyter(root=WORKDIR, cfg=False):
+    @classmethod
+    def jupyter(cls, root=WORKDIR, cfg=False, reinstall=False):
+        if reinstall:
+            tar = ('jupyter', 'jupyter-client', 'jupyter-console', 'jupyter-core',
+                   'jupyterlab-pygments', 'jupyterlab-widgets', 'notebook==6.1.0',
+                   'jupyter_contrib_nbextensions')
+            for pkg in tar: cls.install(pkg, uninstall=True)
+            for pkg in tar: cls.install(pkg)
+            os.system('jupyter contrib nbextension install --user')
+
         os.chdir(str(root))
         os.system('jupyter notebook' + cfg * ' --generate-config')
 
@@ -54,9 +62,9 @@ class CondaEnv(PythonEnv):
         os.system(f'conda create -n {name} python=={version}')
 
     @staticmethod
-    def install(pack, uninstall=False, upgrade=False):
+    def install(pkg, uninstall=False, upgrade=False):
         main = 'uninstall -y' if uninstall else ('upgrade' if upgrade else 'install')
-        os.system(f'conda {main} {pack}')
+        os.system(f'conda {main} {pkg}')
 
     @staticmethod
     def clean():
@@ -92,13 +100,6 @@ if __name__ == '__main__':
     PythonEnv.modify_env()
 
     env = PythonEnv()
-    CondaEnv.modify_env()
-    # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
+    git_push(r'D:\Workbench\mod', r'D:\Information\Notes', r'D:\Information\Notes\info', r'D:\Workbench\Library')
     env.jupyter()
-    git_push(
-        r'D:\Workbench\mod',
-        r'D:\Information\Notes',
-        r'D:\Information\Notes\info',
-        r'D:\Workbench\Library'
-    )

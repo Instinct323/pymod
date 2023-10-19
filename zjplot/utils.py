@@ -20,7 +20,8 @@ logging.basicConfig(format='%(message)s', level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 
-def rand_colors(n=1, cmap=rainbow):
+def rand_colors(n=1, cmap=rainbow, seed=0):
+    np.random.seed(seed)
     if cmap:
         ret = cmap[:min(n, len(cmap))]
         if len(ret) < n:
