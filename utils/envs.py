@@ -26,7 +26,7 @@ class PythonEnv:
         os.system(f'pip install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
 
     @staticmethod
-    def jupyter(root='.', cfg=False):
+    def jupyter(root='D:/Workbench', cfg=False):
         os.chdir(str(root))
         os.system('jupyter notebook' + cfg * ' --generate-config')
 
@@ -93,6 +93,7 @@ if __name__ == '__main__':
     env = PythonEnv()
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
+    env.jupyter()
     git_push(
         r'D:\Workbench\mod',
         r'D:\Information\Notes',
