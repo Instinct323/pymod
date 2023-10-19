@@ -4,6 +4,7 @@ from pathlib import Path
 
 PYPATH = Path('D:/Workbench/Library/envs/cv')
 CONDAPATH = Path('D:/Software/Anaconda3')
+WORKDIR = Path('D:/Workbench')
 
 
 def git_push(*repositories,
@@ -26,7 +27,7 @@ class PythonEnv:
         os.system(f'pip install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
 
     @staticmethod
-    def jupyter(root='D:/Workbench', cfg=False):
+    def jupyter(root=WORKDIR, cfg=False):
         os.chdir(str(root))
         os.system('jupyter notebook' + cfg * ' --generate-config')
 
