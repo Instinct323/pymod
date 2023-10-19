@@ -70,8 +70,8 @@ class CondaEnv(PythonEnv):
                   '--set show_channel_urls yes'):
             os.system(f'conda config {p}')
 
-    @staticmethod
-    def modify_env(env_path: Path = PYPATH,
+    @classmethod
+    def modify_env(cls, env_path: Path = PYPATH,
                    conda_path: Path = CONDAPATH):
         super().modify_env(env_path)
         import warnings
@@ -92,9 +92,9 @@ if __name__ == '__main__':
     PythonEnv.modify_env()
 
     env = PythonEnv()
+    CondaEnv.modify_env()
     # env.jupyter(r'D:\Information\Python\Work_Space')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
-    env.install('jupyter-notebook')
     env.jupyter()
     git_push(
         r'D:\Workbench\mod',
