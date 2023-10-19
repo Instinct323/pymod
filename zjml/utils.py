@@ -86,3 +86,47 @@ class PCA:
     def __repr__(self):
         contri = tuple(map(lambda x: round(x, 3), self.contri))
         return f'{type(self).__name__}{contri}'
+
+
+class _eigen:
+    ''' 特征值分解'''
+    __ref__ = [PCA]
+
+    def __init__(self, A):
+        self.A = A
+        self.lam, self.x = np.linalg.eig(A)
+
+    def desc(self):
+        print('Ax - λx:', np.abs(self.A @ self.x - self.lam * self.x).sum())
+        print('A - xλx^{-1}:', np.abs(self.A - self.x * self.lam @ np.linalg.inv(self.x)).sum())
+        print('norm (each col)', np.linalg.norm(self.x, axis=0, keepdims=True))
+
+    def __repr__(self):
+        return f'λ: {self.lam}\n'\
+               f'x: {self.x}\n'
+
+
+class _svd:
+    ''' 奇异值分解'''
+
+    def __init__(self, A):
+        self.A = A
+        self.U, self.S, self.Vt = np.linalg.svd(A)
+
+    def desc(self):
+        print('A - USV^T:', np.abs(self.A - self.U * self.S @ self.Vt).sum())
+        print('UU^T:', self.U @ self.U.T)
+        print('VV^T: ', self.Vt.T @ self.Vt)
+
+    def __repr__(self):
+        return f'U: {self.U}\n'\
+               f'S: {self.S}\n'\
+               f'Vt: {self.Vt}\n'
+
+
+if __name__ == '__main__':
+    np.set_printoptions(3, suppress=True)
+
+    A = np.random.random([5, 5])
+    s = _svd(A)
+    s.desc()
