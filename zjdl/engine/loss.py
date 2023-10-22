@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -152,7 +153,8 @@ class ContrastiveLoss(nn.Module):
         measure = self.measure(x, x[:, None]) * (1 - torch.eye(B)).to(x)
         # 每个样本匹配 g 个样本
         topk = torch.argsort(measure, dim=-1, descending=True)[:, :self.g].to(x)
-        return (topk % gs == (torch.arange(B)[:, None].to(x) % gs)).float().mean().item()
+        match = (topk % gs == (torch.arange(B)[:, None].to(x) % gs)).sum().item()
+        return np.array([match, topk.numel()])
 
 
 if __name__ == '__main__':
