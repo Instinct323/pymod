@@ -148,6 +148,7 @@ class ContrastiveLoss(nn.Module):
         return - torch.log(p / (n + p.detach())).mean()
 
     def accuracy(self, x):
+        ''' :return: 正样本数, 总样本数'''
         B = int(x.size(0))
         gs = self.gs(x)
         measure = self.measure(x, x[:, None]) * (1 - torch.eye(B)).to(x)
