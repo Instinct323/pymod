@@ -12,7 +12,7 @@ def git_push(*repositories,
     for repo in repositories:
         os.chdir(repo), print(repo.center(50, '-'))
         for cmd in ('git status', 'git add .',
-                    f'git commit -m "{msg}"', 'git push origin master'): os.system(cmd)
+                    f'git commit -m "{msg}"', 'git push -u origin master'): os.system(cmd)
 
 
 class PythonEnv:
