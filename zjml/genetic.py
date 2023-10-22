@@ -20,18 +20,11 @@ class GeneticOpt:
                  well_radio: float = 0.05,
                  cross_proba: float = 0.4,
                  var_proba: float = 0.3):
-        self._n_unit = n_unit
-        self._n_gene = n_gene
+        self.n_unit = n_unit
+        self.n_gene = n_gene
         self._well_radio = well_radio
         self._cross_proba = cross_proba
         self._var_proba = var_proba
-
-    def _random_section(self) -> tuple:
-        ''' 产生随机区间'''
-        gene_idx = list(range(self._n_gene))
-        l = np.random.choice(gene_idx)
-        r = np.random.choice(gene_idx[l:])
-        return l, r
 
     def new_unit(self, size: int) -> np.ndarray:
         ''' 初始化染色体群体
@@ -46,7 +39,9 @@ class GeneticOpt:
     def variation(self, unit: np.ndarray) -> np.ndarray:
         ''' 基因突变
             :return: [n_gene, ]'''
-        l, r = self._random_section()
+        gene_idx = np.arange(self.n_gene)
+        l = random.choice(gene_idx)
+        r = random.choice(gene_idx[l:])
         np.random.shuffle(unit[l: r + 1])
         return unit
 
@@ -59,39 +54,39 @@ class GeneticOpt:
             prefix: str = 'GA_fit') -> np.ndarray:
         ''' :param epochs: 训练轮次
             :param patience: 允许搜索无进展的次数'''
-        self.group = self.new_unit(self._n_unit)
+        cur_group = self.new_unit(self.n_unit)
         pbar = trange(epochs)
         last_fitness, angry = - np.inf, 0
         # 最优个体数, 随机选取数
-        n_well = max(2, round(self._n_unit * self._well_radio))
-        n_choose = self._n_unit - n_well
+        n_well = max(2, round(self.n_unit * self._well_radio))
+        n_choose = self.n_unit - n_well
         for _ in pbar:
-            self.group = np.unique(self.group, axis=0)
+            cur_group = np.unique(cur_group, axis=0)
             # 计算每个个体的适应度并排序
-            fitness = self.fitness(self.group)
+            fitness = self.fitness(cur_group)
             order = np.argsort(fitness)[::-1]
-            self.group, fitness = self.group[order], fitness[order]
+            cur_group, fitness = cur_group[order], fitness[order]
             # 收敛检测
             angry = 0 if fitness[0] > last_fitness else angry + 1
             last_fitness = fitness[0]
             if angry == patience: break
             # 保留一定数量的个体
-            new_group = self.group[:n_well]
+            new_group = cur_group[:n_well]
             pbar.set_description((f'%-10s' + '%-10.4g') % (prefix, fitness[0]))
-            fitness -= fitness.min()
-            # 根据适应度, 使用轮盘赌法进行筛选
-            proba = fitness / fitness.sum()
-            # 交叉遗传 / 基因突变
+            # 使用轮盘赌法进行筛选
+            proba = fitness - fitness.min()
+            proba = proba / proba.sum()
             for pc, pv in np.random.random([n_choose, 2]):
-                unit = random.choices(self.group, weights=proba)[0]
+                unit = random.choices(cur_group, weights=proba)[0]
+                # 交叉遗传 / 基因突变
                 if pc <= self._cross_proba:
-                    unit = self.cross(unit.copy(), random.choices(self.group, weights=proba)[0].copy())
+                    unit = self.cross(unit.copy(), random.choices(cur_group, weights=proba)[0].copy())
                 if pv <= self._var_proba:
                     unit = self.variation(unit.copy())
                 # 拼接新个体
                 new_group = np.concatenate([new_group, unit[None]])
-            self.group = new_group
-        return self.group[0]
+            cur_group = new_group
+        return cur_group[0]
 
 
 if __name__ == '__main__':
@@ -101,11 +96,11 @@ if __name__ == '__main__':
     class ShortestPath(GeneticOpt):
 
         def init_adj(self):
-            # 初始化邻接表
-            self.pos = np.random.random([self._n_gene, 2]) * 10
-            self.adj = np.zeros([self._n_gene] * 2, dtype=DTYPE)
-            for i in range(self._n_gene):
-                for j in range(i + 1, self._n_gene):
+            # 初始化邻接矩阵
+            self.pos = np.random.random([self.n_gene, 2]) * 10
+            self.adj = np.zeros([self.n_gene] * 2, dtype=DTYPE)
+            for i in range(self.n_gene):
+                for j in range(i + 1, self.n_gene):
                     self.adj[i][j] = self.adj[j][i] = \
                         np.sqrt(((self.pos[i] - self.pos[j]) ** 2).sum())
 
@@ -113,18 +108,17 @@ if __name__ == '__main__':
             ''' 初始化染色体群体'''
             group = []
             for _ in range(size):
-                unit = list(range(self._n_gene))
+                unit = list(range(self.n_gene))
                 np.random.shuffle(unit)
                 group += [unit]
             return np.array(group, dtype=np.int32)
 
         def fitness(self, group):
             ''' 适应度函数 (max -> best)'''
-            return - np.array([sum(self.adj[unit[i]][unit[(i + 1) % self._n_gene]]
-                                   for i in range(self._n_gene)) for unit in group])
+            group = np.concatenate([group, group[:, :1]], axis=-1)
+            return - self.adj[group[:, :-1], group[:, 1:]].sum(axis=-1)
 
 
-    np.random.seed(0)
     ga = ShortestPath(80, 15, cross_proba=0, var_proba=0.6)
     ga.init_adj()
     unit = ga.fit(500)
