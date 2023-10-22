@@ -77,12 +77,12 @@ class GeneticOpt:
             proba = fitness - fitness.min()
             proba = proba / proba.sum()
             for pc, pv in np.random.random([n_choose, 2]):
-                unit = random.choices(cur_group, weights=proba)[0]
+                unit = random.choices(cur_group, weights=proba)[0].copy()
                 # 交叉遗传 / 基因突变
                 if pc <= self._cross_proba:
-                    unit = self.cross(unit.copy(), random.choices(cur_group, weights=proba)[0].copy())
+                    unit = self.cross(unit, random.choices(cur_group, weights=proba)[0].copy())
                 if pv <= self._var_proba:
-                    unit = self.variation(unit.copy())
+                    unit = self.variation(unit)
                 # 拼接新个体
                 new_group = np.concatenate([new_group, unit[None]])
             cur_group = new_group
