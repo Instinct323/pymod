@@ -56,39 +56,46 @@ class ParamUtilization:
         return list(map(lambda i: round(i, cls.decimals), x.tolist()))
 
     @classmethod
+    def _parse_kernel(cls, weight, info):
+        c2, *not_1d = weight.shape
+        # 如果是 n×n 卷积核, 由里到外计算 卷积核核环 的平均范数
+        if len(not_1d) == 3 and not_1d[-1] != 1 and not_1d[-1] == not_1d[-2]:
+            wc = np.linalg.norm(weight, 2, axis=(0, 1))
+            k_size, norm_k = not_1d[-1], []
+            # 外核左上角元素的 横纵坐标
+            for i in range((k_size - 1) // 2, -1, -1):
+                # 外核、内核 的核尺寸
+                k1 = k_size - i * 2
+                k2 = max(0, k1 - 2)
+                # 计算平均范数
+                norm_k.append(np.abs((wc[i:i + k1, i:i + k1]).sum() / (k1 ** 2 - k2 ** 2)).item())
+                wc[i:-i, i:-i] *= 0
+            norm_k = np.array(norm_k, dtype=np.float32)
+            info['norm-kernel'] = cls._round(norm_k / (norm_k.mean() + 1e-6))
+
+    @classmethod
     def _parse_weight(cls, weight) -> dict:
-        weight = weight.float().cpu()
+        weight = weight.float().cpu().numpy()
         c2, *not_1d = weight.shape
         if not_1d:
             info = {'c2': c2}
-            # 如果是 n×n 卷积核, 由里到外计算 卷积核核环 的平均范数
-            if len(not_1d) == 3 and not_1d[-1] != 1 and not_1d[-1] == not_1d[-2]:
-                wc = torch.norm(weight, dim=(0, 1))
-                k_size, norm_k = not_1d[-1], []
-                # 外核左上角元素的 横纵坐标
-                for i in range((k_size - 1) // 2, -1, -1):
-                    # 外核、内核 的核尺寸
-                    k1 = k_size - i * 2
-                    k2 = max(0, k1 - 2)
-                    # 计算平均范数
-                    norm_k.append(((wc[i:i + k1, i:i + k1]).sum() / (k1 ** 2 - k2 ** 2)).abs().item())
-                    wc[i:-i, i:-i] *= 0
-                norm_k = torch.tensor(norm_k, dtype=torch.float32)
-                info['norm-kernel'] = cls._round(norm_k / (norm_k.mean() + 1e-6))
-            weight = weight.view(c2, -1)
+            cls._parse_kernel(weight, info)
+            weight = weight.reshape(c2, -1)
             # 计算权重向量二范数 norm
-            norm = torch.norm(weight, dim=-1)
-            info['norm-mean'] = norm.mean().item()
+            norm = np.linalg.norm(weight, 2, axis=-1)
             # 根据 norm, 对 weight, norm 进行排序
-            i = torch.argsort(norm)
+            i = np.argsort(norm)
             norm = norm[i]
             weight = weight[i]
-            # 计算余弦相似度
-            cos = torch.cosine_similarity(weight, weight[:, None], dim=-1, eps=1e-6).abs() - torch.eye(c2)
+            # 对权重向量单位化, 以内积作为余弦相似度
+            vec = weight / norm[:, None]
+            cos = np.abs(vec @ vec.T) - np.eye(c2)
             # 信息损失 (取最小): (1 - 余弦值) * norm 相对大小
             norm_loss = (1 - cos) * norm[:, None] / norm
-            score = torch.tensor([norm_loss[i, i:].min() for i in range(c2 - 1)])
-            info['score'] = cls._round(torch.sort(score)[0])
+            score = np.array([norm_loss[i, i:].min() for i in range(c2)])
+            # y = np.linalg.svd(weight)[1]
+            # y /= y[0]
+            info['score'] = cls._round(np.sort(score)[:-1])
             return info
 
     @classmethod
@@ -135,7 +142,7 @@ class ParamUtilization:
         ymax = max(map(max, result['score']))
         # 对神经网络中的层进行分组
         k2i = lambda k: sep.join(k.split(sep)[:group_lv + 1])
-        groups = tuple({k2i(k) for k in result.index})
+        groups = sorted({k2i(k) for k in result.index})
         colors = rand_colors(len(groups))
         # 分页读取 result
         for i in tqdm(range(int(np.ceil(len(result) / limit))), desc='exporting plots'):

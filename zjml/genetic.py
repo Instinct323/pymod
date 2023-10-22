@@ -80,9 +80,9 @@ class GeneticOpt:
             fitness -= fitness.min()
             # 根据适应度, 使用轮盘赌法进行筛选
             proba = fitness / fitness.sum()
-            choose_idx = np.random.choice(unit_idx[:len(self.group)], size=n_choose, p=proba)
+            i = np.random.choice(unit_idx[:len(self.group)], size=n_choose, p=proba)
             # 交叉遗传 / 基因突变
-            for unit, (pc, pv) in zip(self.group[choose_idx], np.random.random([n_choose, 2])):
+            for unit, (pc, pv) in zip(self.group[i], np.random.random([n_choose, 2])):
                 if pc <= self._cross_proba:
                     unit = self.cross(unit, self.group[np.random.choice(unit_idx[:len(self.group)], p=proba)])
                 if pv <= self._var_proba:

@@ -88,21 +88,29 @@ class PCA:
         return f'{type(self).__name__}{contri}'
 
 
-class _eigen:
+class _eig:
     ''' 特征值分解'''
     __ref__ = [PCA]
 
     def __init__(self, A):
         self.A = A
         self.lam, self.x = np.linalg.eig(A)
+        self.sort()
+        self.lam = np.diag(self.lam)
+
+    def sort(self):
+        order = np.argsort(self.lam)[::-1]
+        self.lam = self.lam[order]
+        self.x = self.x[:, order]
 
     def desc(self):
-        print('Ax - λx:', np.abs(self.A @ self.x - self.lam * self.x).sum())
-        print('A - xλx^{-1}:', np.abs(self.A - self.x * self.lam @ np.linalg.inv(self.x)).sum())
+        print('Ax - xλ:', np.abs(self.A @ self.x - self.x @ self.lam).sum())
+        print('A - xλx^{-1}:', np.abs(self.A - self.x @ self.lam @ np.linalg.inv(self.x)).sum())
         print('norm (each col)', np.linalg.norm(self.x, axis=0, keepdims=True))
+        print()
 
     def __repr__(self):
-        return f'λ: {self.lam}\n'\
+        return f'λ: {self.lam}\n' \
                f'x: {self.x}\n'
 
 
@@ -111,22 +119,30 @@ class _svd:
 
     def __init__(self, A):
         self.A = A
-        self.U, self.S, self.Vt = np.linalg.svd(A)
+        self.U, S, self.Vt = np.linalg.svd(A)
+        # 将 S 变换为对角阵
+        self.S = np.zeros_like(A)
+        self.S[:len(S), :len(S)] = np.diag(S)
 
     def desc(self):
-        print('A - USV^T:', np.abs(self.A - self.U * self.S @ self.Vt).sum())
-        print('UU^T:', self.U @ self.U.T)
-        print('VV^T: ', self.Vt.T @ self.Vt)
+        print(f'UU^T {self.U.shape}:', self.U @ self.U.T)  # 仅在 U 为方阵时成立
+        print(f'VV^T {self.Vt.shape}:', self.Vt.T @ self.Vt)
+        print('A - USV^T:', np.abs(self.A - self.U @ self.S @ self.Vt).sum())
+
+        lam = min(map(_eig, [self.A @ self.A.T, self.A.T @ self.A]), key=lambda x: len(x.lam)).lam
+        print('S - sqrt(λ):', np.abs(np.diag(self.S) - np.sqrt(np.diag(lam))).sum())
+        print()
 
     def __repr__(self):
-        return f'U: {self.U}\n'\
-               f'S: {self.S}\n'\
+        return f'U: {self.U}\n' \
+               f'S: {self.S}\n' \
                f'Vt: {self.Vt}\n'
 
 
 if __name__ == '__main__':
     np.set_printoptions(3, suppress=True)
 
-    A = np.random.random([5, 5])
+    A = np.random.random([4, 3])
     s = _svd(A)
     s.desc()
+    print(s)
