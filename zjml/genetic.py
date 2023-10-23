@@ -17,7 +17,7 @@ class GeneticOpt:
     def __init__(self,
                  n_unit: int,
                  n_gene: int,
-                 well_radio: float = 0.05,
+                 well_radio: float = 0.2,
                  cross_proba: float = 0.4,
                  var_proba: float = 0.3):
         self.n_unit = n_unit
