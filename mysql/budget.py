@@ -3,17 +3,20 @@ import numpy as np
 from utils import *
 
 str2date = lambda s: pd.PeriodIndex(s, freq='M')
-MONTHLY = get_table('budget.monthly')
-for k in ('start', 'end'): MONTHLY[k] = str2date(MONTHLY[k])
+# 计算的起始日期
+start, end = str2date(['2024-03', '2027-12'])
+# 当前存款, 每月开销
+fund = 5.5
+livcost = 1.5
 
 
-def surplus(fund=5.5, livcost=-1.5, show=False):
-    alldate = set(MONTHLY['start']) | set(MONTHLY['end'])
-    drange = pd.period_range(min(alldate), max(alldate))
+def surplus(show=False):
+    monthly = get_table('budget.monthly')
+    for k in ('start', 'end'): monthly[k] = str2date(monthly[k])
 
-    ret = pd.Series(livcost, index=drange)
+    ret = pd.Series(- livcost, index=pd.period_range(start, end))
     ret[0] += fund
-    for i, (s, e, v, detail) in MONTHLY.iterrows():
+    for i, (s, e, v, detail) in monthly.iterrows():
         ret += ((ret.index >= s) & (ret.index <= e)) * float(v)
 
     if show:
@@ -46,12 +49,11 @@ def prepare(*plans):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    if 1:
-        fund = surplus(show=True).cumsum()
-        print(fund)
-
-    else:
+    if 0:
         prepare(
             ('2024-03', '2024-08', 14.0, '学费, 生活费, 宿舍用品, 备用资金'),
             ('2024-09', None, 48.0, '还贷')
         )
+
+    fund = surplus(show=True).cumsum()
+    print(fund)

@@ -28,4 +28,5 @@ values ('2024-03', '2024-08', -0.7, '房租 (e.g., 民治五和城中村)'),
 
 select *
 from monthly
+# where '2024-03' between start and end
 order by start, end, value;
