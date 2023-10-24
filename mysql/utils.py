@@ -2,9 +2,8 @@ import pandas as pd
 import pymysql
 
 CONNECT = pymysql.connect(host='localhost',
-                       user='root',
-                       password='20010323',
-                       database='budget')
+                          user='root',
+                          password='20010323')
 CURSOR = CONNECT.cursor()
 
 

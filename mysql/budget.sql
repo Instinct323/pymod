@@ -11,8 +11,8 @@ create table monthly
     value  decimal(10, 2) comment '收支 (k/month)',
     detail char(30) comment '详细说明' not null,
 
-    constraint s check ( start regexp '\\d{4}-\\d{2}'),
-    constraint e check ( end regexp '\\d{4}-\\d{2}')
+    constraint s check (start regexp '\\d{4}-\\d{2}'),
+    constraint e check (end regexp '\\d{4}-\\d{2}')
 );
 
 # 收入项

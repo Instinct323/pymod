@@ -39,15 +39,15 @@ class PythonEnv:
         os.chdir(str(root))
         os.system('jupyter notebook' + cfg * ' --generate-config')
 
-    @staticmethod
-    def config():
+    @classmethod
+    def config(cls):
         for k, v in (('timeout', 6000),
                      ('index-url', 'https://pypi.tuna.tsinghua.edu.cn/simple'),
                      ('trusted-host', 'pypi.tuna.tsinghua.edu.cn')):
             os.system(f'pip config set global.{k} {v}')
 
-    @staticmethod
-    def modify_env(env_path: Path = PYPATH):
+    @classmethod
+    def modify_env(cls, env_path: Path = PYPATH):
         os.environ['PATH'] = ';'.join(map(
             str, [env_path, env_path / 'bin', env_path / 'Scripts',
                   env_path / 'Library/bin', env_path / 'Library/usr/bin', env_path / 'Library/mingw-w64/bin',
@@ -70,8 +70,8 @@ class CondaEnv(PythonEnv):
     def clean():
         os.system('conda clean -ay')
 
-    @staticmethod
-    def config():
+    @classmethod
+    def config(cls):
         super().config()
         for p in ('--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/',
                   '--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/',
