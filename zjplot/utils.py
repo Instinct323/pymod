@@ -3,6 +3,9 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 
+logging.basicConfig(format='%(message)s', level=logging.INFO)
+LOGGER = logging.getLogger(__name__)
+
 # matplotlib 颜色常量
 red = 'orangered'
 orange = 'orange'
@@ -14,10 +17,14 @@ purple = 'mediumpurple'
 pink = 'violet'
 rainbow = [red, orange, yellow, green, cyan, blue, purple, pink]
 
-plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']
+# fontdict: 小五号宋体
+SIMSUN = {'fontsize': 9, 'family': 'SimSun'}
 
-logging.basicConfig(format='%(message)s', level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
+plt.rcParams.update({
+    'font.family': 'Times New Roman',  # 绘制文本的字体系列
+    'font.size': 9,  # 文本大小 (小五号)
+    'mathtext.fontset': 'stix'  # 数学文本渲染
+})
 
 
 def rand_colors(n=1, cmap=rainbow, seed=0):
@@ -117,4 +124,7 @@ def hotmap(array, fig=None, pos=0, fformat='%f', cmap='Blues', size=10, title=No
 
 
 if __name__ == '__main__':
-    print(rand_colors(10))
+    plt.title('Wise-IoU')
+    plt.ylabel('中文: 小五号宋体', fontdict=SIMSUN)
+    plt.xlabel(r'Wise-IoU: $\alpha_i$')
+    plt.show()

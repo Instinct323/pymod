@@ -32,6 +32,7 @@ def prepare(*plans):
         tmp = surplus()[s:]
         s, e = str2date([s, e])
         # 计算最快筹备月, 逐月转账
+        total = min(total, tmp.cumsum().max())
         e = tmp.index[(tmp.cumsum() >= total).argmax()]
         tmp = tmp[:e]
         tmp[e] = total - tmp[s:e - 1].sum()
@@ -49,11 +50,18 @@ def prepare(*plans):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
+    score = 3.554 / 5 * 30 + 80 * 0.3
+    # 国赛: 蓝桥 * 3, 2023 数模
+    # 省赛: 2022 数模
+    # 校赛: 2022 数模, 2022 众盈杯
+    # 院赛: 2022 计算机仿真, 2022 大数据应用
+    score += 0.4 * (10 * 4 + 5 * 1 + 3 * 4)
+    print(f'南科大奖学金分数: {score}')
+
     if 0:
         prepare(
             ('2024-03', '2024-08', 14.0, '学费, 生活费, 宿舍用品, 备用资金'),
             ('2024-09', None, 48.0, '还贷')
         )
 
-    fund = surplus(show=True).cumsum()
-    print(fund)
+    print(surplus(show=True).cumsum())

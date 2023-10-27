@@ -119,9 +119,9 @@ class _svd:
 
     def __init__(self, A):
         self.A = A
-        self.U, S, self.Vt = np.linalg.svd(A)
+        self.U, S, self.Vt = np.linalg.svd(A, full_matrices=False)
         # 将 S 变换为对角阵
-        self.S = np.zeros_like(A)
+        self.S = np.zeros([self.U.shape[1], self.Vt.shape[0]])
         self.S[:len(S), :len(S)] = np.diag(S)
 
     def desc(self):
@@ -142,7 +142,7 @@ class _svd:
 if __name__ == '__main__':
     np.set_printoptions(3, suppress=True)
 
-    A = np.random.random([4, 3])
+    A = np.random.random([5, 3])
     s = _svd(A)
-    s.desc()
     print(s)
+    s.desc()
