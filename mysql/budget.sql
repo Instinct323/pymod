@@ -18,7 +18,7 @@ create table monthly
 # 收入项
 insert into monthly
 values ('2024-03', '2024-07', 0.4, '贫困补贴'),
-       ('2024-03', '2024-08', 4.0, '实验室补贴'),
+       ('2024-03', '2024-08', 3.36, '实验室补贴'),
 
        ('2024-09', '2025-08', 2 + 0.5 + 0.6, '基本补贴'),
        ('2024-12', '2024-12', 4.5, '学业奖学金'),
@@ -39,4 +39,4 @@ values ('2024-03', '2024-08', -0.7, '房租 (e.g., 民治五和城中村)'),
 select *
 from monthly
 # where '2024-03' between start and end
-order by start, end, value;
+order by start, detail, end;

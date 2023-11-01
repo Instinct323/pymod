@@ -1,10 +1,11 @@
 import heapq
 import itertools as it
 import math
+import operator
 import random
 
 
-class Disjoint_Set:
+class DisjointSet:
     ''' 并查集'''
 
     def __init__(self, length):
@@ -36,6 +37,106 @@ class Disjoint_Set:
 
     def __repr__(self):
         return str(self._pre)
+
+
+class SegmentTree:
+    ''' :param oper: 二元运算函数
+        :param v0: 满足 oper(x, v0) = x 的值
+
+        :ivar index: 数组元素在二叉树的结点索引
+        :ivar tree: 以二叉树形式存储的聚合值'''
+
+    def __init__(self, arr, oper=operator.add, v0=0):
+        self.arr = arr
+        self.oper = oper
+        self.v0 = v0
+        self.index = [-1] * len(self)
+        # 从根结点开始建树
+        self.tree = 4 * len(self) * [self.v0]
+        self.build(0, 0, len(self) - 1)
+        # 计算存储树所需要的数组长度
+        self.tree = self.tree[:max(self.index) + 1]
+
+    def __len__(self):
+        return len(self.arr)
+
+    def _slice_handler(self, i: slice, func, *args, **kwargs):
+        self._l, self._r = i.start, i.stop - 1
+        ret = func(*args, **kwargs)
+        for k in ('_l', '_r'): delattr(self, k)
+        return ret
+
+    def __setitem__(self, i, v):
+        if isinstance(i, int):
+            # 修改数组值
+            node = self.index[i]
+            self.arr[i] = self.tree[node] = v
+        raise NotImplementedError
+
+    def __getitem__(self, i):
+        return self.arr[i] if isinstance(i, int) else \
+            self._slice_handler(i, self.query, 0, 0, len(self) - 1)
+
+    def get_child(self, node, s, e):
+        mid = (s + e) // 2
+        # 在二叉树中的结点索引, 区间起点, 区间终点
+        return (
+            (2 * node + 1, 2 * node + 2),
+            (s, mid + 1), (mid, e)
+        )
+
+    def build(self, node, s, e):
+        # __init__ 隐式调用
+        if s == e:
+            # 存储叶结点索引
+            self.index[s] = node
+            self.tree[node] = self.arr[s]
+        else:
+            # 聚合左右孩子结点
+            self.tree[node] = self.oper(
+                *map(self.build, *self.get_child(node, s, e))
+            )
+        return self.tree[node]
+
+    def query(self, node, s, e):
+        # __getitem__ 隐式调用
+        # 当前区间 \subseteq 查询区间
+        if self._l <= s and e <= self._r: return self.tree[node]
+        # 当前区间 \cap 查询区间 = \emptyset
+        if e < self._l or self._r < s: return self.v0
+        # 当前区间 \cap 查询区间 \neq \emptyset
+        return self.oper(
+            *map(self.query, *self.get_child(node, s, e))
+        )
+
+
+class PdrChecker:
+    ''' hash 算法判断回文串
+        :param hashv: 字符串的 hash 值对应的列表
+        :param base: max(hashv) + 1
+
+        :example:
+        >>> hashv = [ord(c) - 97 for c in "racecar"]
+        >>> checker = PdrChecker(hashv, 26)
+        >>> checker[1:6]
+        True'''
+
+    def __init__(self, hashv, base):
+        self.base = base
+        # 正/逆序 hash 序列
+        self.hseq = self.get_seq(hashv)
+        self.hseq_r = self.get_seq(hashv[::-1])
+
+    def get_seq(self, hashv):
+        seq = [0] * (len(hashv) + 1)
+        for i in range(len(hashv)):
+            seq[i + 1] = seq[i] * self.base + hashv[i]
+        return seq
+
+    def __getitem__(self, item: slice):
+        s, e = item.start, item.stop
+        gain = self.base ** (e - s)
+        return self.hseq[e] - self.hseq[s] * gain == self.hseq_r[- s - 1] - self.hseq_r[- e - 1] * gain
 
 
 def rem_theorem(mods, rems, lcm_fcn=math.prod):
@@ -223,20 +324,36 @@ def next_perm(seq):
     ''' 找到下个字典序
         e.g.: 8 3 7 6 5 4 2 1
                 |       |    '''
-    n, l = len(seq), -1
-    for i in range(n - 2, -1, -1):
-        # 找到顺序区的右边界
-        if seq[i] < seq[i + 1]:
-            l = i
-            break
-    if l == -1: return None
-    for r in range(n - 1, l, -1):
+    n = len(seq)
+    filt1 = lambda i: seq[i] >= seq[i + 1]
+    try:
+        l = next(it.dropwhile(filt1, range(n - 2, -1, -1)))
         # 找到交换位
-        if seq[l] < seq[r]:
-            seq[l], seq[r] = seq[r], seq[l]
-            # 逆转逆序区
-            seq[l + 1:] = reversed(seq[l + 1:])
-            return seq
+        filt2 = lambda r: seq[l] >= seq[r]
+        r = next(it.dropwhile(filt2, range(n - 1, l, -1)))
+        seq[l], seq[r] = seq[r], seq[l]
+        # 逆转逆序区
+        seq[l + 1:] = reversed(seq[l + 1:])
+        return seq
+    except StopIteration:
+        return None
+
+
+def manacher(string):
+    ''' 最长回文串长度'''
+    string = '#'.join(string.join('^$'))
+    center, border = 0, 0
+    # 以对应字符为中心 最长回文串的半径
+    p = [0] * len(string)
+    for i in range(1, len(string) - 1):
+        # 利用回文串的对称性进行赋值
+        p[i] = min(max(0, border - i), p[2 * center - i])
+        # 中心扩展法
+        while string[i - p[i] - 1] == string[i + p[i] + 1]: p[i] += 1
+        # 更新回文串中心, 回文串右端点 ('#')
+        if i + p[i] > border:
+            center, border = i, i + p[i]
+    return max(p)
 
 
 def dijkstra(source, adj):
