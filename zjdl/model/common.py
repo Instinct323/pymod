@@ -169,22 +169,36 @@ class CspOSA(nn.Module):
 @register_module('c1,c2', 'n')
 class Hourglass(nn.Module):
 
-    def __init__(self, c1, c2, eb=.75, ec=1.125, upmode='nearest', n=3):
+    def __init__(self, c1, c2, eb=.75, ec=1.125, agg='Concat', upmode='nearest', n=3):
         super().__init__()
-        c_ = make_divisible(c2 * eb, divisor=4)
-        self.hgc = Conv(c1, c_, 1)
-        c1t = make_divisible(c_ * ec ** np.arange(n + 1), divisor=2)
-        c2t = make_divisible(logspace(c2, c1t[-1], n + 1), divisor=2)
+        n = max(2, n)
+        # 聚合函数
+        agg = eval(agg) if isinstance(agg, str) else agg
+        self.agg = agg()
+        # 通道数分配
+        c_ = make_divisible(c1 * eb, divisor=4)
+        c2t = make_divisible(logspace(c2, c2 * ec ** n, n + 1), divisor=2)
+        c1t = make_divisible(logspace(c_, c2t[-1], n + 1), divisor=2)
         # 核心部分的参数
+        self.hgc = Conv(c1, c_, 1)
         self.t2b = nn.ModuleList()
         self.b2t = nn.ModuleList()
         self.proj = nn.ModuleList()
         for i in range(n):
             (x1, x2), (x3, x4) = c1t[i: i + 2], c2t[i: i + 2]
-            x_ = make_divisible(x1 * eb)
-            self.t2b.append(Conv(x1, x2, s=2))
-            self.b2t.append(Conv(x_ + x4, x3, 1))
-            self.proj.append(Conv(x1 if i else c1, x_, 1))
+            self.t2b.append(Conv(x1, x2, 3, s=2))
+            # Concat
+            if agg is Concat:
+                x_ = make_divisible(x1 * eb)
+                self.b2t.append(Conv(x_ + x4, x3, 1))
+                self.proj.append(Conv(x1 if i else c1, x_, 1))
+            # Shortcut
+            elif agg is Shortcut:
+                self.b2t.append(Conv(x4, x3, 1))
+                self.proj.append(Conv(x1 if i else c1, x4, 1))
+            # error
+            else:
+                raise TypeError('Unsupported aggregate function')
         # 瓶颈部分的参数
         self.proj.append(nn.Sequential(
             Conv(c1t[-1], c1t[-1], 3),
@@ -201,7 +215,7 @@ class Hourglass(nn.Module):
         # bottom to top
         x = xcache[-1]
         for i, m in reversed(tuple(enumerate(self.b2t))):
-            x = m(torch.cat([self.upsample(x), xcache[i]], dim=1))
+            x = m(self.agg([self.upsample(x), xcache[i]]))
         return x
 
 

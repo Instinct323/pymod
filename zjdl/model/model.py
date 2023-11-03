@@ -123,7 +123,7 @@ class YamlModel(nn.Module):
 
     def profile(self, x=None, repeat=5):
         x = self.example_input() if x is None else x
-        information = torch.zeros(3)
+        information = np.zeros(3)
         print(f"\n    {'time (ms)':>10s} {'GFLOPS':>10s} {'params':>10s}  module")
         for m, x in self.forward_feature(x, profile=True):
             # 测试该模块的性能
@@ -134,7 +134,7 @@ class YamlModel(nn.Module):
             flops = thop.profile(m, (x,), verbose=False)[0] / 1e9
             print(f'{m.i:>3} {cost * 1e3:10.2f} {flops / max(1e-9, cost):10.2f} {m.np:10.0f}  {m.t}')
             # 完成性能测试
-            information += torch.tensor([cost, flops, m.np])
+            information += cost, flops, m.np
         # 输出模型的性能测试结果
         cost, flops, params = information
         print(f'    {cost * 1e3:10.2f} {flops / cost:10.2f} {int(params):10}  Total')

@@ -1,22 +1,22 @@
 fixed_layers: [ ]
 depth_multiple: 1.0
-width_multiple: 1.0
+width_multiple: 2.0
 img_size: 224
 drop_pos: [ ]
 
 architecture:
   # [from, number, module, args]
   [ [ -1, 1, Conv, [ 32, 3 ] ],
-    [ -1, 3, Hourglass, [ 64 ] ],
+    [ -1, 3, Hourglass, [ 32, 0.75, 1.25, Concat ] ],
+    [ -1, 3, Hourglass, [ 32, 0.75, 1.25, Shortcut ] ],
 
-    # [ -2, 1, nn.MaxPool2d, [ 2, 2 ] ],
-    [ -2, 5, CspOSA, [ 64 ] ],
+    # [ -1, 1, nn.MaxPool2d, [ 2, 2 ] ],
+    [ -1, 4, ELA, [ 32 ] ],
+    [ -1, 4, CspOSA, [ 32 ] ],
 
-    [ -1, 1, Conv, [ 128, 3 ] ],
-
-    [ -1, 1, Conv, [ 128, 7 ] ],
-    [ -1, 1, Conv, [ 128, 5 ] ],
-    [ -1, 1, Conv, [ 128, 3 ] ],
-    [ -1, 1, Conv, [ 128, 1 ] ],
-    [ -1, 1, MobileOne, [ 128 ] ],
+    [ -1, 1, Conv, [ 32, 7 ] ],
+    [ -1, 1, Conv, [ 32, 5 ] ],
+    [ -1, 1, Conv, [ 32, 3 ] ],
+    [ -1, 1, Conv, [ 32, 1 ] ],
+    [ -1, 1, MobileOne, [ 32 ] ],
   ]
