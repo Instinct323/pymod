@@ -106,6 +106,7 @@ class TCP_Socket(socket.socket):
         while self._port <= 65535:
             try:
                 self.bind((self.host, self._port))
+                self.listen(1)
                 break
             except OSError as reason:
                 # 如果端口号不可用
@@ -145,7 +146,6 @@ class TCP_Socket(socket.socket):
         # 服务端: 等待客户端的连接请求
         else:
             self._bind()
-            self.listen(1)
             LOGGER.info(f'Server {self._user(self.getsockname())} is logged in')
             try:
                 # 记录 TCP 连接对象

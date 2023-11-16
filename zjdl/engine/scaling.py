@@ -65,7 +65,7 @@ class ModelScaling:
         LOGGER.info('\n' + str(self.plans[:epochs]))
         for epoch in range(len(result), epochs):
             d, w, r, f = self.plans.iloc[epoch]
-            LOGGER.info(f'\n{type(self).__name__} epoch {epoch + 1}: d={d}  w={w}  r={r:.0f}')
+            LOGGER.info(f'\n{__class__.__name__} epoch {epoch + 1}: d={d}  w={w}  r={r:.0f}')
             # 修改配置文件
             cfg = copy.deepcopy(self.cfg)
             cfg.update(self.plans.iloc[epoch].to_dict())

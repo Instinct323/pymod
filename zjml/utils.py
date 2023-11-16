@@ -85,7 +85,7 @@ class PCA:
 
     def __repr__(self):
         contri = tuple(map(lambda x: round(x, 3), self.contri))
-        return f'{type(self).__name__}{contri}'
+        return f'{__class__.__name__}{contri}'
 
 
 class _eig:

@@ -19,12 +19,13 @@ rainbow = [red, orange, yellow, green, cyan, blue, purple, pink]
 
 # fontdict: 小五号宋体
 SIMSUN = {'fontsize': 9, 'family': 'SimSun'}
+plt.rcParams['font.sans-serif'] = 'Microsoft YaHei'
 
-plt.rcParams.update({
-    'font.family': 'Times New Roman',  # 绘制文本的字体系列
-    'font.size': 9,  # 文本大小 (小五号)
-    'mathtext.fontset': 'stix'  # 数学文本渲染
-})
+# plt.rcParams.update({
+#     'font.family': 'Times New Roman',  # 绘制文本的字体系列
+#     'font.size': 9,  # 文本大小 (小五号)
+#     'mathtext.fontset': 'stix'  # 数学文本渲染
+# })
 
 
 def rand_colors(n=1, cmap=rainbow, seed=0):
@@ -41,6 +42,17 @@ def figure3d():
     figure = plt.subplot(projection='3d')
     tuple(getattr(figure, f'set_{i}label')(i) for i in 'xyz')
     return figure
+
+
+def pie_kwd(labels, decimal=2):
+    ''' 饼图的关键字参数
+        :param labels: 标签
+        :param decimal: 百分数精度'''
+    return dict(labels=labels,
+                colors=rand_colors(len(labels)),
+                autopct=lambda x: f'{round(x, decimal):.2f}%',
+                shadow=False,
+                explode=(0.05,) * len(labels))
 
 
 def std_coord(*args, zero_p=True):

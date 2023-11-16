@@ -130,7 +130,7 @@ class InertiaOpt:
                 # 修改超参数字典
                 hyp = self.hyp.copy()
                 hyp[key] = current * pace + lower_lim
-                LOGGER.info(f'\n{type(self).__name__} epoch {epoch}: '
+                LOGGER.info(f'\n{__class__.__name__} epoch {epoch}: '
                             f'Change <{key}> from {self.hyp[key]:.4g} to {hyp[key]:.4g}\n')
                 # 计算适应度
                 fit = fitness(hyp, epoch)
@@ -227,7 +227,7 @@ class BayesOpt:
                 low, high, step = self.meta[k]
                 getattr(tr, f'suggest_{type(step).__name__}')(name=k, low=low, high=high, step=step)
             self.save_or_load(save=True)
-            LOGGER.info(f'\n{type(self).__name__} epoch {epoch}: {tr.params}')
+            LOGGER.info(f'\n{__class__.__name__} epoch {epoch}: {tr.params}')
             # 创建新的超参数字典
             hyp = self.hyp.copy()
             hyp.update(tr.params)

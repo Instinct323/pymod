@@ -196,7 +196,7 @@ if __name__ == '__main__':
         trans = CoordSys_3d.trans
 
         # 绕 y 轴相对旋转 20°, 再绝对平移
-        csys = CoordSys_3d().rela_tf(rot(20, 'y')).abs_tf(trans(dx=-1, dy=2, dz=-2))
+        csys = CoordSys_3d().rela_tf(rot(pitch=20)).abs_tf(trans(dx=-1, dy=2, dz=-2))
         print(csys)
         # 以 z 轴为主轴, 绘制空心圆柱
         cylinder(fig, csys=csys, R=5, r=4, h=3, cmap='Set3', alpha=0.5)
@@ -222,7 +222,7 @@ if __name__ == '__main__':
         csys = CoordSys_3d()
         csys.plot_coord_sys(linewidth=5, length=1)
 
-        csys = csys.abs_tf(trans(dx=1, dy=1, dz=1)).rela_tf(rot(45, 'y'))
+        csys = csys.abs_tf(trans(dx=1, dy=1, dz=1)).rela_tf(rot(pitch=45))
         csys.plot_coord_sys(linewidth=5, labels='noa', colors=[orange, yellow, pink])
 
         plt.legend()

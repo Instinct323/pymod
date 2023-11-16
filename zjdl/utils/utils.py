@@ -144,7 +144,7 @@ class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
     def lazy_obj(self, fget, **fld_kwd):
         f_load_dump = {
             'json': self.json, 'yaml': self.yaml,
-            'csv': self.csv, 'xls': self.excel,
+            'csv': self.csv, 'xlsx': self.excel,
             'pt': self.torch
         }.get(self.suffix[1:], self.binary)
         # 根据 load/dump 方法载入数据

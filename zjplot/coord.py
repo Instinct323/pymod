@@ -1,11 +1,11 @@
-from typing import Union
-
 import matplotlib.pyplot as plt
 import numpy as np
 
+from scipy.spatial.transform import Rotation
+
 
 class _CoordSys_nd:
-    dtype = np.float16
+    dtype = np.float32
     dim = None
     # 位置, 各个轴的方向向量
     position = property(lambda self: self.s[:self.dim, -1])
@@ -21,11 +21,11 @@ class _CoordSys_nd:
 
     def abs_tf(self, tf):
         ''' 绝对变换'''
-        return type(self)(tf @ self.s)
+        return __class__(tf @ self.s)
 
     def rela_tf(self, tf):
         ''' 相对变换'''
-        return type(self)(self.s @ tf)
+        return __class__(self.s @ tf)
 
     def apply(self, *coords) -> tuple:
         ''' 局部坐标值 -> 全局坐标值'''
@@ -74,24 +74,27 @@ class CoordSys_3d(_CoordSys_nd):
 
     @classmethod
     def trans(cls, dx: float = 0., dy: float = 0., dz: float = 0.) -> np.ndarray:
-        ''' 齐次变换矩阵: 平移'''
+        ''' 齐次变换矩阵 - 平移'''
         return np.concatenate((np.eye(4, 3, dtype=cls.dtype),
                                np.array((dx, dy, dz, 1))[:, None]), axis=-1)
 
     @classmethod
-    def rot(cls, theta: float, axis: Union[int, str]) -> np.ndarray:
-        ''' 齐次变换矩阵: 旋转'''
-        mat, theta = np.eye(4, dtype=cls.dtype), np.deg2rad(theta)
-        cos, sin = np.cos(theta), np.sin(theta)
-        axis = 'xyz'.index(axis) if isinstance(axis, str) else axis
-        if axis == 0:
-            mat[1: 3, 1: 3] = np.array([[cos, -sin], [sin, cos]])
-        elif axis == 1:
-            mat[:3, :3] = np.array([[cos, 0, sin], [0, 1, 0], [-sin, 0, cos]])
-        elif axis == 2:
-            mat[:2, :2] = np.array([[cos, -sin], [sin, cos]])
-        else:
-            raise AssertionError(f'axis {axis} is out of bounds for 3 dimensions')
+    def rot(cls, yaw=0, pitch=0, roll=0) -> np.ndarray:
+        ''' 齐次变换矩阵 - 旋转
+            :param yaw: 偏航角, 绕 z 轴旋转
+            :param pitch: 俯仰角, 绕 y 轴旋转
+            :param roll: 滚转角, 绕 x 轴旋转
+
+            :example:
+            >>> rpy = [30, 20, 10]
+            >>> rot = CoordSys_3d.rot
+
+            >>> a = rot(*rpy[::-1])
+            >>> b = rot(yaw=rpy[2]) @ rot(pitch=rpy[1]) @ rot(roll=rpy[0])
+            >>> np.square(a - b).sum()
+            8.049117e-15'''
+        mat = np.eye(4, dtype=cls.dtype)
+        mat[:3, :3] = Rotation.from_euler('ZYX', [yaw, pitch, roll], degrees=True).as_matrix()
         return mat
 
 
@@ -101,7 +104,7 @@ if __name__ == '__main__':
 
     csys = CoordSys_3d()
     # 相对变换
-    csys = csys.rela_tf(rot(30, 'y'))
+    csys = csys.rela_tf(rot(pitch=30))
     print(csys)
     # 绝对变换
     csys = csys.abs_tf(trans(dx=2, dy=3, dz=4))

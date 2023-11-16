@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from .utils import LOGGER
+from utils import LOGGER
 
 to_2tuple = lambda x: x if isinstance(x, collections.abc.Iterable) and not isinstance(x, str) else (x,) * 2
 
@@ -117,16 +117,11 @@ class ReceptiveField:
 
 
 if __name__ == '__main__':
-    from model import YamlModel
-    from pathlib import Path
+    from torchvision.models import resnet18
 
-    m = YamlModel(Path('../config/ResNet.yaml'))
-    #
-    # a = torch.rand(1, 3, 8, 8)
-    # a.requires_grad = True
-    # x = m(a)[0, 0, 3, 3]
-    # x.backward()
-    # print(a.grad)
-    with ReceptiveField(m, tar_layer=-6, img_size=256) as r:
-        plt.imshow(r.effective())
+    m = resnet18()
+    state_dict = resnet18(pretrained=True).state_dict()
+
+    with ReceptiveField(m, tar_layer=m.layer3, img_size=256) as r:
+        r.compare(state_dict=state_dict)
     plt.show()

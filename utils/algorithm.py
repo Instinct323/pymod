@@ -157,7 +157,12 @@ def rem_theorem(mods, rems, lcm_fcn=math.prod):
 
 def prime_filter(n):
     ''' 质数筛选 (埃氏筛法)
-        :return: 质数标志 (Check: 10000 以内有 1229)'''
+        :return: 质数标志
+
+        :example:
+        >>> is_prime = prime_filter(10000)
+        >>> is_prime[2:].count(True)
+        1229'''
     is_prime = [True] * (n + 1)
     # 枚举 [2, sqrt(n)]
     for i in range(2, math.isqrt(n) + 1):
@@ -345,14 +350,14 @@ def manacher(string):
     center, border = 0, 0
     # 以对应字符为中心 最长回文串的半径
     p = [0] * len(string)
+    is_same = lambda i0, i1: i0 >= 0 and i1 < len(string) and string[i0] == string[i1]
     for i in range(1, len(string) - 1):
         # 利用回文串的对称性进行赋值
-        p[i] = min(max(0, border - i), p[2 * center - i])
+        p[i] = min(max(0, border - i), p[max(0, 2 * center - i)])
         # 中心扩展法
-        while string[i - p[i] - 1] == string[i + p[i] + 1]: p[i] += 1
+        while is_same(i - p[i] - 1, i + p[i] + 1): p[i] += 1
         # 更新回文串中心, 回文串右端点 ('#')
-        if i + p[i] > border:
-            center, border = i, i + p[i]
+        if i + p[i] > border: center, border = i, i + p[i]
     return max(p)
 
 

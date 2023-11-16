@@ -36,7 +36,7 @@ class Crosstab:
                 'Recall': self.recall, 'kappa': self.kappa, f'F{beta:.1f}-Score': self.f_score(beta)}
 
     def __add__(self, other):
-        if isinstance(other, type(self)):
+        if isinstance(other, __class__):
             self.data += other.data
             return self
         types = tuple(map(lambda x: type(x).__name__, (self, other)))

@@ -15,7 +15,7 @@ class Result(pd.DataFrame):
             if self.file.is_file() else super().__init__(columns=title)
         # 检查项目是否复用
         if project in self.__exist__:
-            raise AssertionError(f'Multiple <{type(self).__name__}> are used in {project}')
+            raise AssertionError(f'Multiple <{__class__.__name__}> are used in {project}')
         self.__exist__.append(project)
 
     def record(self, metrics, i: int = None):

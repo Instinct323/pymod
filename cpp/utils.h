@@ -45,7 +45,7 @@ public:
     void load(dType &obj) {
         fstream f = this->open(ios::in);
         if (f) {
-            f.read((char *) &obj, sizeof(obj));
+            f.read(reinterpret_cast<char *>(&obj), sizeof(obj));
             f.close();
         }
     }
