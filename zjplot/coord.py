@@ -21,11 +21,11 @@ class _CoordSys_nd:
 
     def abs_tf(self, tf):
         ''' 绝对变换'''
-        return __class__(tf @ self.s)
+        return type(self)(tf @ self.s)
 
     def rela_tf(self, tf):
         ''' 相对变换'''
-        return __class__(self.s @ tf)
+        return type(self)(self.s @ tf)
 
     def apply(self, *coords) -> tuple:
         ''' 局部坐标值 -> 全局坐标值'''
@@ -109,3 +109,9 @@ if __name__ == '__main__':
     # 绝对变换
     csys = csys.abs_tf(trans(dx=2, dy=3, dz=4))
     print(csys)
+
+    d = [2, 3, 4, 1]
+    # 对 空间点 进行变换
+    print(csys.s @ d)
+    # 对 齐次坐标系 进行变换
+    print(csys.s @ trans(*d[:3]))

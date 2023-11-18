@@ -26,7 +26,7 @@ def laida_bound(data):
 
 
 def adjusted_r_squared(pred, target, n_features):
-    ''' 拟合优度: 校正决定系数 R^2'''
+    ''' :return: 校正决定系数 R^2'''
     n_samples = pred.size
     tss = np.square(target - target.mean()).sum()
     rss = np.square(pred - target).sum()
