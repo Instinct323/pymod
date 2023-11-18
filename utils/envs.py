@@ -100,6 +100,6 @@ if __name__ == '__main__':
     PythonEnv.modify_env()
 
     env = PythonEnv()
-    env.install('pdpdbox')
+    env.install('pdpbox -i https://pypi.tuna.tsinghua.edu.cn/simple')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
     git_push(r'D:\Workbench\mod', r'D:\Information\Notes', r'D:\Information\Notes\info', r'D:\Workbench\Library')
