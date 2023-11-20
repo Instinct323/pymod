@@ -100,6 +100,8 @@ if __name__ == '__main__':
     PythonEnv.config()
     PythonEnv.modify_env()
 
+    CondaEnv.config()
+
     env = PythonEnv()
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
     git_push(r'D:\Workbench\mod', r'D:\Information\Notes', r'D:\Information\Notes\info', r'D:\Workbench\Library')
