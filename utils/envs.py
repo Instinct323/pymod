@@ -44,7 +44,7 @@ class PythonEnv:
         for k, v in (('timeout', 6000),
                      ('index-url', 'https://pypi.tuna.tsinghua.edu.cn/simple'),
                      ('trusted-host', 'pypi.tuna.tsinghua.edu.cn')):
-            os.system(f'pip config set global.{k} {v}')
+            print(f'pip config set global.{k} {v}')
 
     @classmethod
     def modify_env(cls, env_path: Path = PYPATH):
@@ -76,7 +76,7 @@ class CondaEnv(PythonEnv):
         for p in ('--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/',
                   '--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/',
                   '--set show_channel_urls yes'):
-            os.system(f'conda config {p}')
+            print(f'conda config {p}')
 
     @classmethod
     def modify_env(cls, env_path: Path = PYPATH,
@@ -97,9 +97,9 @@ class CondaEnv(PythonEnv):
 
 if __name__ == '__main__':
     os.chdir(os.getenv('dl'))
+    PythonEnv.config()
     PythonEnv.modify_env()
 
     env = PythonEnv()
-    env.install('scikit-misc')
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
     git_push(r'D:\Workbench\mod', r'D:\Information\Notes', r'D:\Information\Notes\info', r'D:\Workbench\Library')

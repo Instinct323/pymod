@@ -69,11 +69,11 @@ def std_coord(*args, zero_p=True):
 
 def boxplot(dataset, labels=None, colors=None):
     ''' 绘制箱线图'''
-    bp = plt.boxplot(dataset, labels=labels)
+    bp = plt.boxplot(dataset, labels=labels, patch_artist=True)
     for i, color in enumerate(
             colors if colors else rand_colors(len(bp['boxes']))):
         bp['boxes'][i].set(color=color, linewidth=1.5)
-        bp['medians'][i].set(color=color, linewidth=2.1)
+        bp['medians'][i].set(color='white', linewidth=2.1)
     return bp
 
 
