@@ -8,6 +8,10 @@ MAINTAINER TongZJ
 ENV INCLUDE=/usr/include
 ENV INCLUDE_L=/usr/local/include
 
+# cpp-install
+COPY cpp-install.bash /usr/bin/cpp-install
+RUN chmod +x /usr/bin/cpp-install
+
 # Eigen
 RUN apt-get install -y libeigen3-dev
 RUN cp -r $INCLUDE/eigen3/Eigen $INCLUDE
@@ -16,29 +20,35 @@ RUN cp -r $INCLUDE/eigen3/Eigen $INCLUDE
 ARG TMP=/tmp/ceres
 RUN apt-get install -y libgoogle-glog-dev libgflags-dev libatlas-base-dev libsuitesparse-dev
 RUN git clone -b 2.1.0 https://github.com/ceres-solver/ceres-solver $TMP
-RUN mkdir $TMP/build; cd $TMP/build; cmake ..; make; make install
+RUN cpp-install $TMP
 
 # g2o
 ARG TMP=/tmp/g2o
 RUN apt-get install -y libspdlog-dev libsuitesparse-dev qtdeclarative5-dev qt5-qmake libqglviewer-dev-qt5
 RUN git clone -b 20201223_git https://github.com/RainerKuemmerle/g2o $TMP
-RUN mkdir $TMP/build; cd $TMP/build; cmake ..; make; make install
+RUN cpp-install $TMP
+
+# Pangolin
+ARG TMP=/tmp/Pangolin
+RUN apt-get install -y libglew-dev libboost-dev libboost-thread-dev libboost-filesystem-dev
+RUN git clone https://github.com/stevenlovegrove/Pangolin $TMP
+RUN cpp-install $TMP
 
 # OpenCV
 ARG TMP=/tmp/opencv
 RUN apt-get install -y libgtk2.0-dev libjpeg-dev libopenexr-dev libtbb-dev
 RUN git clone https://github.com/opencv/opencv $TMP
-RUN mkdir $TMP/build; cd $TMP/build; cmake ..; make; make install
+RUN cpp-install $TMP
 RUN cp -r $INCLUDE_L/opencv4/opencv2 $INCLUDE_L
 
 # fmt
 ARG TMP=/tmp/fmt
 RUN git clone https://github.com/fmtlib/fmt $TMP
-RUN mkdir $TMP/build; cd $TMP/build; cmake ..; make; make install
+RUN cpp-install $TMP
 
 # Sophus
 ARG TMP=/tmp/Sophus
 RUN git clone https://github.com/strasdat/Sophus $TMP
-RUN mkdir $TMP/build; cd $TMP/build; cmake ..; make; make install
+RUN cpp-install $TMP
 
 WORKDIR /home/tongzj
