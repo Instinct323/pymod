@@ -19,6 +19,7 @@ jupyter
 netron
 openpyxl
 optuna
+pyyaml
 scikit-learn
 thop
 timm

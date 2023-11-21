@@ -117,25 +117,6 @@ def try_except(func):
     return handler
 
 
-def select_file(handler, glob_pats=('*.pdf',), wo_app=True):
-    from PyQt5.QtWidgets import QFileDialog, QApplication
-    # 请执行 sys.exit(0) 退出程序
-    if wo_app: app = QApplication(sys.argv)
-    dialog = QFileDialog()
-    file = dialog.getOpenFileName(caption='Select file',
-                                  filter=('; '.join(glob_pats).join('()') if glob_pats else None))[0]
-    if file: return handler(Path(file))
-
-
-def select_dir(handler, wo_app=True):
-    from PyQt5.QtWidgets import QFileDialog, QApplication
-    # 请执行 sys.exit(0) 退出程序
-    if wo_app: app = QApplication(sys.argv)
-    dialog = QFileDialog()
-    dire = dialog.getExistingDirectory(None, 'Select directory')
-    if dire: return handler(Path(dire))
-
-
 class Path(WindowsPath if os.name == 'nt' else PosixPath, _path):
 
     def fsize(self, unit: str = 'B'):
