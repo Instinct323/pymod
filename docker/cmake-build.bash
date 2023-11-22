@@ -1,10 +1,8 @@
 #!/bin/bash
-# cpp-install <git-repo>
+# cmake-build <repo-path>
 
 mkdir $1/build
 cd $1/build
 
 cmake ..
 make
-make install
-rm -rf $1
