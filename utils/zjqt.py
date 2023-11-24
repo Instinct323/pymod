@@ -16,7 +16,7 @@ head = lambda text: f'<html><head/><body><p><span style=" font-size:12pt; ' \
                     f'font-weight:600; cor:#0da7ef;">{text}</span></p></body></html>'
 
 
-def select_file(handler, glob_pats=('*.py',), w_app=True):
+def select_file(handler, glob_pats=('*.*',), w_app=True):
     from PyQt5.QtWidgets import QFileDialog, QApplication
     # 请执行 sys.exit(0) 退出程序
     if not w_app: app = QApplication(sys.argv)
@@ -71,6 +71,7 @@ class Window(QMainWindow):
         select.triggered.connect(partial(select_file, print))
 
     def plot(self):
+        self.fig.clear()
         fig = self.fig.add_subplot()
         # 在此进行绘图
         x = np.random.normal(0, 1, 1000)

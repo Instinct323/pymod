@@ -10,12 +10,8 @@ RUN echo 'tongzj:20010323' | chpasswd
 
 # apt-get
 RUN apt-get update
-RUN apt-get install -y wget unzip
+RUN apt-get install -y wget unzip tree
 WORKDIR /home/tongzj
-
-# C++ toolchain
-RUN apt-get install -y build-essential gdb net-tools
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y cmake
 
 # Git
 RUN apt-get install -y git
@@ -27,5 +23,18 @@ RUN apt-get install -y openssh-server
 RUN mkdir /var/run/sshd
 RUN sed -ri 's/^PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
+
+# C++ toolchain
+RUN apt-get install -y build-essential gdb net-tools
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y cmake
+
+# CMake
+ARG BIN=/usr/bin
+
+COPY cmake-build.bash $BIN/cmake-build
+RUN chmod +x $BIN/cmake-build
+
+COPY cmake-install.bash $BIN/cmake-install
+RUN chmod +x $BIN/cmake-build
 
 CMD /usr/sbin/sshd -D

@@ -8,15 +8,6 @@ MAINTAINER TongZJ
 ENV INCLUDE=/usr/include
 ENV INCLUDE_L=/usr/local/include
 
-# cmake
-ARG BIN=/usr/bin
-
-COPY cmake-build.bash $BIN/cmake-build
-RUN chmod +x $BIN/cmake-build
-
-COPY cmake-install.bash $BIN/cmake-install
-RUN chmod +x $BIN/cmake-build
-
 # Eigen
 RUN apt-get install -y libeigen3-dev
 RUN cp -r $INCLUDE/eigen3/Eigen $INCLUDE
