@@ -7,7 +7,7 @@ def make_index(image_dir):
         txt = image_dir.parent / (folder.stem + '.txt')
         with open(txt, 'w') as f:
             for file in tqdm(list(folder.iterdir()), desc=txt.name):
-                file = './' + str(file).replace('\\', '/')
+                file = file.absolute().as_posix()
                 f.write(f'{file}\n')
 
 

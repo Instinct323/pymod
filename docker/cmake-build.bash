@@ -1,5 +1,5 @@
 #!/bin/bash
-# cmake-build <repo-path>
+# cmake-build.bash <repo-path>
 
 mkdir $1/build
 cd $1/build

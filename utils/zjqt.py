@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
 # 普通左对齐文本html设置: 12 号左对齐黑体
 common_l = lambda text: f'<html><head/><body><p><span style=" font-size:12pt; ' \
@@ -39,9 +38,13 @@ class PltFigure(plt.Figure):
 
     def __init__(self):
         super().__init__()
-        self.QWidget = FigureCanvasQTAgg(self)
+        from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+        self.widget = FigureCanvasQTAgg(self)
         # 函数重命名
         self.show = self.canvas.draw
+
+    def subplot(self, *args, **kwargs) -> plt.Axes:
+        return self.add_subplot(*args, **kwargs)
 
 
 class Window(QMainWindow):
@@ -72,10 +75,11 @@ class Window(QMainWindow):
 
     def plot(self):
         self.fig.clear()
-        fig = self.fig.add_subplot()
         # 在此进行绘图
-        x = np.random.normal(0, 1, 1000)
-        fig.hist(x, bins=50)
+        for i in range(4):
+            fig = self.fig.subplot(2, 2, i + 1)
+            x = np.random.normal(0, 1, 1000)
+            fig.hist(x, bins=50)
         # ---------------
         self.fig.show()
 
@@ -84,7 +88,7 @@ class Window(QMainWindow):
 
     def layout(self):
         lay = QVBoxLayout(self.central)
-        lay.addWidget(self.fig.QWidget)
+        lay.addWidget(self.fig.widget)
 
 
 if __name__ == '__main__':

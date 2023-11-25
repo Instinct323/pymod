@@ -1,7 +1,7 @@
 #!/bin/bash
-# cmake-install <repo-path>
+# cmake-install.bash <repo-path>
 
-cmake-build $1
+cmake-build.bash $1
 cd $1/build
 
 make install
