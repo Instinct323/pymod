@@ -3,10 +3,16 @@ import os
 from pathlib import Path
 
 workdir = Path('D:/Workbench')
-
-pip = r'D:\Workbench\Library\envs\cv\Scripts\pip'
-conda = r'D:\Software\Anaconda3\condabin\conda'
 execute = os.system
+
+if os.name == 'nt':
+    # Window
+    pip = r'D:\Workbench\Library\envs\cv\Scripts\pip'
+    conda = r'D:\Software\Anaconda3\condabin\conda'
+else:
+    # Linux
+    pip = r'/home/slam602/.conda/envs/torch/bin/pip'
+    conda = r'/opt/miniconda/bin/conda'
 
 
 def git_push(*repositories,
@@ -52,7 +58,7 @@ class PythonEnv:
 class CondaEnv(PythonEnv):
 
     @staticmethod
-    def create(name, version=(3, 8, 10)):
+    def create(name, version=(3, 8, 15)):
         version = '.'.join(map(str, version))
         execute(f'{conda} create -n {name} python=={version}')
 
@@ -63,7 +69,7 @@ class CondaEnv(PythonEnv):
 
     @staticmethod
     def clean():
-        execute('{conda} clean -ay')
+        execute(f'{conda} clean -ay')
 
     @classmethod
     def config(cls):

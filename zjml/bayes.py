@@ -18,6 +18,8 @@ class BayerOpt:
             self.study.add_trials(pickle.loads(file.read_bytes()))
         elif best:
             self.study.enqueue_trial(best)
+        # 函数重命名
+        self.dataframe = self.study.trials_dataframe
 
     def __call__(self, func, n_trials):
         for i in range(n_trials):
