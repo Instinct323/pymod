@@ -1,3 +1,5 @@
+import pandas as pd
+
 from mod.zjdl.utils.utils import *
 
 
@@ -87,10 +89,9 @@ def get_train_data(project, weighted=False, csv=True):
                        'Recall', 'AP-50', 'AP']
     )
     if not weighted:
-        with open(project / 'hyp.yaml') as yl:
-            hyp = yaml.load(yl.read(), Loader=yaml.Loader)
+        hyp = (project / 'hyp.yaml').yaml()
         # 使用权值将损失值还原
-        for key in df.columns[:3]: df[key] /= hyp[key]
+        for key in df.columns[:3]: df[key] /= hyp.get(key, 1)
     # 将各个指标化成百分数
     for key in df.columns[3:]: df[key] *= 100
     if csv: df.to_csv(project / f'{project.name}.csv')
@@ -236,3 +237,8 @@ class Comparator:
             plt.title(key)'''
         self._ap_diff([-0.7, 0.3])
         plt.show()
+
+
+if __name__ == '__main__':
+    df = get_train_data(Path(r'D:/Workbench/data'))
+    print(df['AP'][-5:].mean())
