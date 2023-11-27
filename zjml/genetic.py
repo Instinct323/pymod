@@ -3,8 +3,6 @@ import random
 import numpy as np
 from tqdm import trange
 
-DTYPE = np.float16
-
 
 class GeneticOpt:
     ''' 遗传算法
@@ -98,7 +96,7 @@ if __name__ == '__main__':
         def init_adj(self):
             # 初始化邻接矩阵
             self.pos = np.random.random([self.n_gene, 2]) * 10
-            self.adj = np.zeros([self.n_gene] * 2, dtype=DTYPE)
+            self.adj = np.zeros([self.n_gene] * 2, dtype=np.float16)
             for i in range(self.n_gene):
                 for j in range(i + 1, self.n_gene):
                     self.adj[i][j] = self.adj[j][i] = \
