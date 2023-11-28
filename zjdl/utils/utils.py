@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import sys
 from pathlib import WindowsPath, PosixPath, Path as _path
 
 import cv2

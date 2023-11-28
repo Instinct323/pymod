@@ -1,25 +1,30 @@
 import pickle
+from functools import partial
 from pathlib import Path
 
 import optuna
 
 
 class BayerOpt:
+    best = property(lambda self: self.study.best_params)
 
     def __init__(self,
                  file: Path,
                  direction: str = 'maximize',
-                 best: dict = None):
+                 nextp: dict = None):
         self.study = optuna.create_study(direction=direction)
         self.file = file
-        self.best = best
-        # 加载已完成的试验, 如果文件不存在则尝试最优参数
+        # 加载已完成的试验
         if file.is_file():
             self.study.add_trials(pickle.loads(file.read_bytes()))
-        elif best:
-            self.study.enqueue_trial(best)
+        # 加载一组指定参数
+        if nextp:
+            self.study.enqueue_trial(nextp)
         # 函数重命名
-        self.dataframe = self.study.trials_dataframe
+        self.dataframe = partial(
+            self.study.trials_dataframe,
+            attrs=("datetime_start", "duration", "params", "value")
+        )
 
     def __call__(self, func, n_trials):
         for i in range(n_trials):
