@@ -1,4 +1,4 @@
-import functools
+from functools import partial
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -43,11 +43,12 @@ def kernel_func(x1, x2=None, kernel='rbf', args=(1,)):
     raise ValueError(f'Unknown kernel function {kernel}')
 
 
-class KernelRegression:
+# from sklearn.kernel_ridge import KernelRidge
+class KernelRegressor:
 
     def __init__(self, x, y, kernel='rbf', args=(1,)):
         self.y = y
-        self.kf = functools.partial(kernel_func, x2=x, kernel=kernel, args=args)
+        self.kf = partial(kernel_func, x2=x, kernel=kernel, args=args)
 
     def predict(self, x):
         k = self.kf(x)
@@ -61,10 +62,11 @@ if __name__ == '__main__':
     x = (np.random.random([100, 1]) - 0.5) * 10
     y = np.sin(x).flatten()
 
-    kr = KernelRegression(x, y, args=(0.5,))
+    plt.scatter(x.flatten(), y)
+
+    kr = KernelRegressor(x, y, args=(0.5,))
     x_ = np.linspace(x.min(), x.max(), 100)
     fx = kr.predict(x_[:, None])
 
-    plt.scatter(x.flatten(), y)
     plt.plot(x_, fx)
     plt.show()

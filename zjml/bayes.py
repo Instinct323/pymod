@@ -6,7 +6,7 @@ import optuna
 
 
 class BayerOpt:
-    best = property(lambda self: self.study.best_params)
+    best = property(lambda self: self.study.best_trial)
 
     def __init__(self,
                  file: Path,
@@ -23,7 +23,7 @@ class BayerOpt:
         # 函数重命名
         self.dataframe = partial(
             self.study.trials_dataframe,
-            attrs=("datetime_start", "duration", "params", "value")
+            attrs=('datetime_start', 'duration', 'params', 'value')
         )
 
     def __call__(self, func, n_trials):

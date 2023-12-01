@@ -78,16 +78,13 @@ def prune_dataset(image_dir, label_dir, cls_pool=None, min_n_boxes=1):
             temp.rename(txt)
 
 
-def get_train_data(project, weighted=False, csv=True):
+def get_train_data(project, weighted=True, csv=True):
     ''' 解析 YOLOv7 result.txt (需修改)'''
     with open(project / 'results.txt') as f:
         data = [list(map(eval, line.split()[2: -3])) for line in f.readlines()]
     data = list(map(lambda x: x[:3] + x[-4:], data))
     # 为数据附加列标签
-    df = pd.DataFrame(
-        data, columns=['box', 'obj', 'cls', 'Precision',
-                       'Recall', 'AP-50', 'AP']
-    )
+    df = pd.DataFrame(data, columns=['box', 'obj', 'cls', 'Precision', 'Recall', 'AP-50', 'AP'])
     if not weighted:
         hyp = (project / 'hyp.yaml').yaml()
         # 使用权值将损失值还原
