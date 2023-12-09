@@ -1,4 +1,6 @@
 import logging
+import string
+from itertools import product
 from pathlib import Path
 
 import cv2
@@ -8,17 +10,37 @@ logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 
-def img2str(img, rows=20, char='#$@&GU?^.   '):
-    img = cv2.imread(str(img), flags=cv2.IMREAD_GRAYSCALE)
-    if isinstance(img, np.ndarray):
-        scale = rows / img.shape[0] * np.array([1, 2.8])
-        # 得到新的尺寸
-        new_shape = np.round(np.array(img.shape) * scale).astype(np.int32)
-        img = (cv2.resize(img, new_shape[::-1]) / 256 * len(char)).astype(np.int32)
-        stream = np.array(list(char))[img]
-        # 拼接字符串
-        stream = map(lambda seq: ''.join(seq).rstrip(), stream)
-        return '\n'.join(stream)
+class AsciiArt:
+
+    def __init__(self, char='#$@&GU?^.    '):
+        self.lut = np.linspace(0, len(char), 256, dtype=np.uint8)
+        self.char = np.array(list(char + ' '))
+
+    def __call__(self, img, rows=20):
+        img = cv2.imread(str(img), flags=cv2.IMREAD_GRAYSCALE)
+        if isinstance(img, np.ndarray):
+            scale = rows / img.shape[0] * np.array([1, 2.8])
+            # 得到新的尺寸
+            new_shape = np.round(np.array(img.shape) * scale).astype(np.int32)
+            img = cv2.resize(img, new_shape[::-1])
+            stream = self.char[cv2.LUT(img, self.lut)]
+            # 拼接字符串
+            stream = map(lambda seq: ''.join(seq).rstrip(), stream)
+            return '\n'.join(stream)
+
+
+class DictOrder:
+
+    def __init__(self, length=10, skip=13, char=string.ascii_lowercase):
+        self.skip = skip
+        self.iter = product(char, repeat=length)
+
+    def __iter__(self):
+        def generator():
+            for i, char in enumerate(self.iter):
+                if i % self.skip == 0: yield ''.join(char)
+
+        return generator()
 
 
 class Artist:
@@ -28,7 +50,7 @@ class Artist:
         :param pad_width: 隐藏图像的侧边距'''
 
     def __init__(self, img, material=None, shape=[2, 3],
-                 dpi=1000, pad_width=0.05, pad_value=255):
+                 dpi=1280, pad_width=0.05, pad_value=255):
         # 对前景图像进行分割, 并读取隐藏图像的素材包
         self.stride = dpi
         self.cells = self.partition(img, shape)
@@ -74,7 +96,8 @@ class Artist:
             for i in np.arange(len(material)):
                 # 取出素材包路径
                 folder, material[i] = material[i], []
-                for file in folder.iterdir():
+                for j, file in zip(DictOrder(), folder.iterdir()):
+                    file = file.rename(file.parent / f'{j}{file.suffix}')
                     img, check = self.imread(file)
                     # 进行边界填充并进行尺寸变换
                     if check:
@@ -119,6 +142,6 @@ class Artist:
 if __name__ == '__main__':
     import os
 
-    os.chdir(Path(os.getenv('dl')))
+    os.chdir(Path(r'D:\Workbench\data\tmp'))
 
-    Artist(Path('main.png'), material=Path('mat'), shape=[2, 2])
+    Artist(Path('1.jpg'), material=Path('mat'), shape=[2, 3])
