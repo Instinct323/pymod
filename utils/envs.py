@@ -11,8 +11,8 @@ if os.name == 'nt':
     conda = r'D:\Software\Anaconda3\condabin\conda'
 else:
     # Linux
-    pip = r'/home/slam602/.conda/envs/torch/bin/pip'
-    conda = r'/opt/miniconda/bin/conda'
+    pip = '/home/slam602/.conda/envs/torch/bin/pip'
+    conda = '/opt/miniconda/bin/conda'
 
 
 def git_push(*repositories,
