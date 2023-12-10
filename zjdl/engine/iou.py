@@ -13,13 +13,13 @@ class IouLoss(nn.Module):
             False: non-monotonic FM
         }'''
     momentum = 1e-2
-    alpha = 1.9
-    delta = 3
-    polyf = [0., 1., 0.]
+    alpha = 2.0
+    delta = 2.8
+    polyf = [0.5, 1.0, 0.4]
 
     def __init__(self, ltype='WIoU', monotonous=False):
         super().__init__()
-        assert ltype.endswith('IoU') and getattr(self, f'_{ltype}', None), f'The loss function {ltype} does not exist'
+        assert getattr(self, f'_{ltype}', None), f'The loss function {ltype} does not exist'
         self.ltype = ltype
         self.monotonous = monotonous
 
@@ -69,10 +69,10 @@ class IouLoss(nn.Module):
         delattr(self, '_fget')
         return ret if ret_iou else ret[0]
 
-    def _scaled_loss(self, loss):
+    def _scaled_loss(self, loss, iou=None):
         if isinstance(self.monotonous, bool):
             div = (self._polyf * self.iou_mean ** torch.arange(3).to(self.iou_mean)).sum()
-            beta = self['iou'].detach() / div
+            beta = (self['iou'].detach() if iou is None else iou) / div
 
             if self.monotonous:
                 loss *= beta.sqrt()

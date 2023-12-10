@@ -27,7 +27,7 @@ class BayerOpt:
         )
 
     def __call__(self, func, n_trials):
-        for i in range(n_trials):
+        for i in range(len(self.study.trials), n_trials):
             self.study.optimize(func, 1)
             self.file.write_bytes(pickle.dumps(self.study.trials))
             # print('Automatically saved.')

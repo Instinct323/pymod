@@ -18,7 +18,7 @@ class BatchNorm(nn.BatchNorm2d):
         self.s = s
 
     def forward(self, x):
-        return super().forward(x[..., ::self.s, ::self.s])
+        return super().forward(x if self.s == 1 else x[..., ::self.s, ::self.s])
 
     def unpack(self, detach=False):
         mean, bias = self.running_mean, self.bias

@@ -38,7 +38,7 @@ class LOCAL:
 def auto_pad(k, s=1, d=1):
     # (k - 1) // 2 * d: 使卷积中心位移到图像的 [0, 0]
     # (s - 1) // 2: 使卷积中心位移到 [s/2, s/2]
-    return (k - 1) // 2 * d - (s - 1) // 2
+    return max(0, (k - 1) // 2 * d - (s - 1) // 2)
 
 
 def vec2img(x):
