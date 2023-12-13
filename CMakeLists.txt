@@ -1,3 +1,4 @@
+include_directories("/usr/local/include")
 
 # 指定 C++ 11
 set(CMAKE_CXX_STANDARD 11)

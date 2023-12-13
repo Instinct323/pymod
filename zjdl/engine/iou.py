@@ -5,26 +5,21 @@ from torch import nn
 
 
 class IouLoss(nn.Module):
-    ''' :param n: Number of batches per training epoch
-        :param t: The epoch when mAP's ascension slowed significantly
-        :param monotonous: {
+    ''' :param monotonous: {
             None: origin
             True: monotonic FM
             False: non-monotonic FM
         }'''
     momentum = 1e-2
-    alpha = 2.0
-    delta = 2.8
-    polyf = [0.5, 1.0, 0.4]
+    alpha = 1.7
+    delta = 2.7
 
     def __init__(self, ltype='WIoU', monotonous=False):
         super().__init__()
         assert getattr(self, f'_{ltype}', None), f'The loss function {ltype} does not exist'
         self.ltype = ltype
         self.monotonous = monotonous
-
         self.register_buffer('iou_mean', torch.tensor(1.))
-        self.register_buffer('_polyf', torch.tensor(self.polyf, dtype=torch.float32), persistent=False)
 
     def __getitem__(self, item):
         if callable(self._fget[item]):
@@ -71,8 +66,7 @@ class IouLoss(nn.Module):
 
     def _scaled_loss(self, loss, iou=None):
         if isinstance(self.monotonous, bool):
-            div = (self._polyf * self.iou_mean ** torch.arange(3).to(self.iou_mean)).sum()
-            beta = (self['iou'].detach() if iou is None else iou) / div
+            beta = (self['iou'].detach() if iou is None else iou) / self.iou_mean
 
             if self.monotonous:
                 loss *= beta.sqrt()
@@ -137,7 +131,6 @@ if __name__ == '__main__':
 
     torch.manual_seed(0)
     iouloss = IouLoss(ltype='WIoU').cuda()
-    iouloss.momentum = 1e-2
     print(iouloss)
 
     for i in range(5):

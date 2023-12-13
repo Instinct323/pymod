@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 using namespace std;
 
@@ -13,6 +14,28 @@ using namespace std;
 void use_utf8() {
     system("chcp 65001");
 }
+
+
+/**
+ * @brief 计时器
+ */
+class Timer {
+
+public:
+    Timer() {
+        t0 = chrono::steady_clock::now();
+    }
+
+protected:
+    chrono::steady_clock::time_point t0;
+
+    friend ostream &operator<<(ostream &os, const Timer &obj) {
+        chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
+        chrono::duration<double> time_used = chrono::duration_cast<chrono::duration<double>>(t1 - obj.t0);
+        os << time_used.count();
+        return os;
+    }
+};
 
 
 /**

@@ -63,15 +63,14 @@ class Window(QMainWindow):
         self.setStatusBar(QStatusBar())
         self.setMenuBar(QMenuBar())
 
-        file = self.menuBar().addMenu('file')
-        select = file.addAction('select')
+        file = self.menuBar().addAction('file')
 
         # matplot
         self.fig = PltFigure()
 
         # 调用布局函数, 并连接信号与槽
         self.layout()
-        select.triggered.connect(partial(select_file, print))
+        file.triggered.connect(partial(select_file, print))
 
     def plot(self):
         self.fig.clear()

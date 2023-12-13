@@ -6,11 +6,10 @@ from typing import Union, Callable, Sequence
 
 import pandas as pd
 from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
 
 from .bbox import *
 from .imgtf import *
-from .utils import LOGGER, Path
+from .utils import LOGGER, Path, IMG_FORMAT
 
 
 def ObjectArray(iter):
@@ -240,6 +239,31 @@ class MosaicDataset(_BaseDataset):
         # 翻转, 其它增强
         flip = self.flip.get_param()
         return self.flip.apply(self.aug(img4), **flip), self.labeltf.flip(img4, labels, **flip)
+
+
+class CocoDetect:
+
+    def __new__(cls, root, aughyp):
+        cache_t = (root / 'train.cache').lazy_obj(cls.make_index,
+                                                  imgdir=root / 'images/train2017',
+                                                  labeldir=root / 'labels/train2017')
+        train = MosaicDataset(ImagePool(*cache_t), aughyp=aughyp.yaml())
+        cache_v = (root / 'val.cache').lazy_obj(cls.make_index,
+                                                imgdir=root / 'images/val2017',
+                                                labeldir=root / 'labels/val2017')
+        val = MosaicDataset(ImagePool(*cache_v))
+        return train, val
+
+    @staticmethod
+    def make_index(imgdir: Path,
+                   labeldir: Path):
+        img = imgdir.collect_file(formats=IMG_FORMAT)
+        label = []
+        for f in tqdm(img, 'Loading labels'):
+            f = labeldir / f'{f.stem}.txt'
+            v = np.array(list(map(float, f.read_text().split()))).reshape(-1, 5)
+            label.append(v)
+        return img, label
 
 
 if __name__ == '__main__':
