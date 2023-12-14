@@ -16,7 +16,7 @@ class EmaModel:
                  decay: float = .999):
         self.__model = model
         # 冻结 ema 的所有参数, 并将参数加入 model
-        model.ema = copy.deepcopy(model).eval()
+        model.ema = copy.deepcopy(model)
         for p in self.ema.parameters(): setattr(p, 'requires_grad', False)
         # 记录 EMA 的次数
         self.ema.register_buffer('ema_t', torch.tensor([0], dtype=torch.int64))
@@ -24,6 +24,7 @@ class EmaModel:
 
     @torch.no_grad()
     def __call__(self, *args, **kwargs):
+        self.ema.eval()
         return self.ema(*args, **kwargs)
 
     @torch.no_grad()

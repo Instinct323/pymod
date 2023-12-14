@@ -9,6 +9,7 @@ if os.name == 'nt':
     # Window
     pip = r'D:\Workbench\Library\envs\cv\Scripts\pip'
     conda = r'D:\Software\Anaconda3\condabin\conda'
+    jupyter = r'D:\Workbench\Library\envs\cv\Scripts\jupyter'
 else:
     # Linux
     pip = '/home/slam602/.conda/envs/torch/bin/pip'
@@ -42,10 +43,10 @@ class PythonEnv:
                    'jupyter_contrib_nbextensions')
             for pkg in tar: cls.install(pkg, uninstall=True)
             for pkg in tar: cls.install(pkg)
-            execute('jupyter contrib nbextension install --user')
+            execute(f'{jupyter} contrib nbextension install --user')
 
         os.chdir(str(root))
-        execute('jupyter notebook' + cfg * ' --generate-config')
+        execute(f'{jupyter} notebook' + cfg * ' --generate-config')
 
     @classmethod
     def config(cls):
@@ -84,5 +85,4 @@ if __name__ == '__main__':
     os.chdir(os.getenv('dl'))
 
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
-    PythonEnv.jupyter()
     git_push(r'D:\Workbench\mod', r'D:\Information\Notes', r'D:\Information\Notes\info', r'D:\Workbench\Library')

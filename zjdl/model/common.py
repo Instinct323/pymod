@@ -368,10 +368,11 @@ class DropBlock(nn.Module):
                  }[self.scheme]()
         return self._dp_tar * scale
 
-    def __init__(self, k=5, drop=0.1):
+    def __init__(self, k=5, drop=0.1, norm=True):
         super().__init__()
         self.register_buffer('cnt', torch.tensor([0], dtype=torch.int64))
         self.k = k
+        self.norm = norm
         assert self.k & 1, 'The k should be odd'
         self._dp_tar = drop
 
@@ -403,7 +404,9 @@ class DropBlock(nn.Module):
                 dmask, kernel_size=self.k, stride=1, padding=self.k // 2
             ) if self.k > 1 else dmask)
             # Standardization in the channel dimension
-            x *= np.prod(x.shape[-2:]) / kmask.sum(dim=(2, 3), keepdims=True) * kmask
+            x *= kmask
+            if self.norm:
+                x *= np.prod(x.shape[-2:]) / kmask.sum(dim=(2, 3), keepdims=True)
         return x
 
 

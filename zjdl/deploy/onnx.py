@@ -2,7 +2,6 @@
 
 import numpy as np
 import onnxruntime as ort
-import torch.onnx
 
 
 def onnx_simplify(src, new=None):
@@ -36,6 +35,7 @@ class OnnxModel(ort.InferenceSession):
 
     @classmethod
     def from_torch(cls, model, args, dst, **export_kwd):
+        import torch.onnx
         args = (args,) if isinstance(args, torch.Tensor) else args
         torch.onnx.export(model, args, dst, opset_version=11, **export_kwd)
         return cls(dst)
