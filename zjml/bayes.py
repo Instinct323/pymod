@@ -18,18 +18,28 @@ class BayerOpt:
         if file.is_file():
             self.study.add_trials(pickle.loads(file.read_bytes()))
         # 加载一组指定参数
-        if nextp:
-            self.study.enqueue_trial(nextp)
+        if nextp: self.enqueue(nextp)
         # 函数重命名
         self.dataframe = partial(
             self.study.trials_dataframe,
             attrs=('datetime_start', 'duration', 'params', 'value')
         )
 
-    def __call__(self, func, n_trials):
-        for i in range(len(self.study.trials), n_trials):
+    def enqueue(self, params):
+        self.study.enqueue_trial(params)
+        self.save()
+
+    def save(self):
+        self.file.write_bytes(pickle.dumps(self.study.trials))
+
+    def __len__(self):
+        return len(tuple(filter(lambda t: t.value, self.study.trials)))
+
+    def __call__(self, func, n_trials=None):
+        for i in range(len(self),
+                       len(self.study.trials) if n_trials is None else n_trials):
             self.study.optimize(func, 1)
-            self.file.write_bytes(pickle.dumps(self.study.trials))
+            self.save()
             # print('Automatically saved.')
 
 

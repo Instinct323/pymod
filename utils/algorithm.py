@@ -158,7 +158,6 @@ def rem_theorem(mods, rems, lcm_fcn=math.prod):
 def prime_filter(n):
     ''' 质数筛选 (埃氏筛法)
         :return: 质数标志
-
         :example:
         >>> is_prime = prime_filter(10000)
         >>> is_prime[2:].count(True)

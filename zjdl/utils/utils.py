@@ -33,27 +33,6 @@ def colorstr(msg, *setting):
     return ''.join(colors[x] for x in setting) + str(msg) + colors['end']
 
 
-def check_running_status():
-    ''' 通过临时文件, 保证当前程序只在一个进程中被执行'''
-    import psutil
-    # 根据所运行的 py 文件生成程序标识
-    exeid = (Path.cwd() / Path(__file__).name).resolve().as_posix().split(':')[-1].replace('/', '')
-    f = (Path(os.getenv('tmp')) / f'py-{exeid}').with_suffix('.txt')
-    # 读取文件, 并判断是否已有进程存在
-    cur = psutil.Process()
-    if f.is_file():
-        try:
-            _pid, time = f.read_text().split()
-            other = psutil.Process(int(_pid))
-        except:
-            other, time = cur, cur.create_time() + 1
-        # 退出: 文件所描述的进程仍然存在
-        if other.create_time() == float(time):
-            raise RuntimeError(f'The current program has been executed in process {other.pid}')
-    # 继续: 创建文件描述当前进程
-    f.write_text(' '.join(map(str, [cur.pid, cur.create_time()])))
-
-
 class timer:
 
     def __init__(self, repeat: int = 1, avg: bool = True):

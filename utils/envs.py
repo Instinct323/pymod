@@ -10,6 +10,7 @@ if os.name == 'nt':
     pip = r'D:\Workbench\Library\envs\cv\Scripts\pip'
     conda = r'D:\Software\Anaconda3\condabin\conda'
     jupyter = r'D:\Workbench\Library\envs\cv\Scripts\jupyter'
+    pyinstaller = r'D:\Workbench\Library\envs\cv\Scripts\pyinstaller'
 else:
     # Linux
     pip = '/home/slam602/.conda/envs/torch/bin/pip'
