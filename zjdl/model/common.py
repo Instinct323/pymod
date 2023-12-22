@@ -171,7 +171,6 @@ class Hourglass(nn.Module):
 
     def __init__(self, c1, c2, eb=.75, ec=1.125, agg='Concat', upmode='nearest', n=3):
         super().__init__()
-        n = max(2, n)
         # 聚合函数
         agg = eval(agg) if isinstance(agg, str) else agg
         self.agg = agg()
