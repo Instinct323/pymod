@@ -138,8 +138,8 @@ class ParamUtilization:
         limit = limit if limit else len(result)
         plt.rcParams['figure.dpi'] = 300
         plt.rcParams['figure.figsize'] = [.8 + 0.46 * (limit + 1), 6.4]
-        ymin = min(map(min, result['score']))
-        ymax = max(map(max, result['score']))
+        ymin = result['score'].apply(min).min()
+        ymax = result['score'].apply(max).max()
         # 对神经网络中的层进行分组
         k2i = lambda k: sep.join(k.split(sep)[:group_lv + 1])
         groups = sorted({k2i(k) for k in result.index})
@@ -147,6 +147,7 @@ class ParamUtilization:
         # 分页读取 result
         for i in tqdm(range(int(np.ceil(len(result) / limit))), desc='exporting plots'):
             tmp = result.iloc[i * limit: (i + 1) * limit]
+            plt.clf()
             plt.ylabel('score')
             # 根据分组分配颜色
             violinplot(tmp['score'], labels=list(tmp.index),
