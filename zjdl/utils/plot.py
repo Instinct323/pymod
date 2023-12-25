@@ -139,7 +139,7 @@ class ParamUtilization:
         from mod.zjplot import rand_colors, violinplot
         # 创建项目目录, 输出 csv
         project.mkdir(parents=True, exist_ok=True)
-        (project / 'pu.csv').csv(result)
+        result.to_csv(project / 'pu.csv')
         if filt: result = result.loc[filter(filt, result.index)]
         # 绘图相关参数设定
         limit = limit if limit else len(result)
