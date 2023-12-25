@@ -3,36 +3,37 @@ import copy
 import torch
 import torch.nn.functional as F
 from torch import nn
+from .model import is_parallel
 
 
 class EmaModel:
     ''' Mean teachers are better role models
         通过学生的 state_dict 保存 / 加载参数'''
-    ema = property(lambda self: self.__model.ema)
 
     def __init__(self,
                  model: nn.Module,
                  bp_times: int = 2000,
                  decay: float = .999):
-        self.__model = model
+        self.__model = model.module if is_parallel(model) else model
         # 冻结 ema 的所有参数, 并将参数加入 model
-        model.ema = copy.deepcopy(model)
-        for p in self.ema.parameters(): setattr(p, 'requires_grad', False)
+        self.__ema = self.__model.ema = copy.deepcopy(self.__model)
+        for p in self.__ema.parameters(): setattr(p, 'requires_grad', False)
         # 记录 EMA 的次数
-        self.ema.register_buffer('ema_t', torch.tensor([0], dtype=torch.int64))
-        self.decay = lambda: decay * (1 - torch.exp(-self.ema.ema_t * 10 / bp_times).item())
+        self.__ema.register_buffer('ema_t', torch.tensor([0], dtype=torch.int64))
+        self.decay = lambda: decay * (1 - torch.exp(-self.__ema.ema_t * 10 / bp_times).item())
+        self.forward = self.__ema
 
     @torch.no_grad()
     def __call__(self, *args, **kwargs):
-        self.ema.eval()
-        return self.ema(*args, **kwargs)
+        self.forward.eval()
+        return self.forward(*args, **kwargs)
 
     @torch.no_grad()
     def update(self):
-        self.ema.ema_t += 1
+        self.__ema.ema_t += 1
         d = self.decay()
         # Exponential moving average weight
-        state_t, state_s = self.ema.state_dict(), self.__model.state_dict()
+        state_t, state_s = self.__ema.state_dict(), self.__model.state_dict()
         for k, v in state_t.items():
             if v.dtype.is_floating_point:
                 v *= d
@@ -42,3 +43,7 @@ class EmaModel:
         self.update()
         loss = F.mse_loss(self(x), y)
         return loss - loss.detach()
+
+    def DP(self):
+        self.forward = self.forward if is_parallel(self.forward) else nn.DataParallel(self.forward)
+        return self

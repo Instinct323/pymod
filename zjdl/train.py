@@ -27,9 +27,9 @@ DATA = Path('data')
 BATCH_SIZE = 1000
 
 if __name__ == '__main__':
-    m = YamlModel(CFG)
-    m.profile()
-    ema = EmaModel(m, bp_times=50)
+    m = YamlModel(CFG).DP()
+    # m.profile()
+    ema = EmaModel(m, bp_times=50).DP()
 
     # 读取数据集
     dl = partial(DataLoader, batch_size=BATCH_SIZE, shuffle=True)

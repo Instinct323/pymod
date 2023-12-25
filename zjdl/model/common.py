@@ -129,7 +129,7 @@ class ELA(nn.Module):
 
     def __init__(self, c1, c2, e=0.5, n=3):
         super().__init__()
-        c_ = max(4, int(c2 * e))
+        c_ = make_divisible(c2 * e, divisor=4)
         self.ela1 = Conv(c1, c_, 1)
         self.ela2 = Conv(c1, c_, 1)
         self.elan = nn.ModuleList(
@@ -149,7 +149,7 @@ class CspOSA(nn.Module):
 
     def __init__(self, c1, c2, e=0.5, n=4):
         super().__init__()
-        c_ = max(4, int(c2 * e))
+        c_ = make_divisible(c2 * e, divisor=4)
         n = max(2, n)
         self.osa1 = Conv(c1, c_ * 2, 1)
         self.osa2 = Conv(c1, c_ * 2, 1)
@@ -223,7 +223,7 @@ class Bottleneck(nn.Module):
 
     def __init__(self, c1, c2, s=1, g=1, d=1, e=0.5):
         super().__init__()
-        c_ = int(c2 * e)  # hidden channels
+        c_ = make_divisible(c2 * e, divisor=4)
         self.btn1 = Conv(c1, c_, 1)
         self.btn2 = Conv(c_, c2, 3, s, g, d, act=None)
         self.downs = nn.Identity() if c1 == c2 and s == 1 else Conv(c1, c2, 1, s, act=None)
@@ -283,7 +283,7 @@ class SPPF(nn.Module):
 
     def __init__(self, c1, c2, k=5, e=0.5, n=3):  # equivalent to SPP(k=(5, 9, 13))
         super().__init__()
-        c_ = int(c2 * e)  # hidden channels
+        c_ = make_divisible(c2 * e, divisor=4)
         self.n = n
         self.spp1 = Conv(c1, c_, 1)
         self.spp2 = Conv(c_ * (n + 1), c2, 1)

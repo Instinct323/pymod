@@ -92,3 +92,7 @@ def set_groups(self: nn.Conv2d, g: int, strict: bool = True):
         # 原地修改权重
         self.groups = g
         self.weight = nn.Parameter(w)
+
+
+if __name__ == '__main__':
+    print(make_divisible(5))

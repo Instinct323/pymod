@@ -10,6 +10,10 @@ import yaml
 from .common import *
 
 
+def is_parallel(model):
+    return type(model) in (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel)
+
+
 def fstring(*args, length=10, decimals=2, axis=-1):
     ''' :param axis: 对称轴, >= axis 的字符串左对齐'''
     axis %= len(args)
@@ -224,6 +228,12 @@ class YamlModel(nn.Module):
         if redundantp: LOGGER.warning(f'Redundant parameter: {", ".join(redundantp)}')
         super().load_state_dict(state_dict, strict=False)
         return self
+
+    def DP(self):
+        return nn.parallel.DataParallel(self)
+
+    def DDP(self, *args, **kwargs):
+        return nn.parallel.DistributedDataParallel(self, *args, **kwargs)
 
     def parse_architecture(self, ch_divisor=4):
         print('\n%3s %17s %2s %9s  %-15s %-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))
