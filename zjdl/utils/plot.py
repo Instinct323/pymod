@@ -129,11 +129,18 @@ class ParamUtilization:
         return result
 
     @classmethod
-    def export(cls, result, project, show=False, group_lv=1, sep='.', limit=25, **vplot_kwd):
+    def export(cls, result, project, filt=None, show=False, group_lv=1, sep='.', limit=25, **vplot_kwd):
+        ''' :param result: parse 方法输出的结果
+            :param project: 项目目录
+            :param filt: 过滤器, 筛选输出的 module
+            :param show: 是否显示图像
+            :param group_lv: module 进行分组的层级
+            :param vplot_kwd: violinplot 的参数'''
         from mod.zjplot import rand_colors, violinplot
         # 创建项目目录, 输出 csv
         project.mkdir(parents=True, exist_ok=True)
         (project / 'pu.csv').csv(result)
+        if filt: result = result.loc[filter(filt, result.index)]
         # 绘图相关参数设定
         limit = limit if limit else len(result)
         plt.rcParams['figure.dpi'] = 300

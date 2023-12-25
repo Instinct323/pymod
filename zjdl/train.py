@@ -27,14 +27,14 @@ DATA = Path('data')
 BATCH_SIZE = 1000
 
 if __name__ == '__main__':
+    m = YamlModel(CFG)
+    m.profile()
+    ema = EmaModel(m, bp_times=50)
+
     # 读取数据集
     dl = partial(DataLoader, batch_size=BATCH_SIZE, shuffle=True)
     dataset = MNIST(root=DATA, train=True, download=True, transform=transforms.ToTensor())
     trainset, valset = random_split(dataset, [50000, 10000], generator=torch.Generator().manual_seed(0))
-
-    # 加载模型
-    m = YamlModel(CFG)
-    ema = EmaModel(m, bp_times=50)
     trainset, valset = map(dl, (trainset, valset))
 
     # 启动训练器

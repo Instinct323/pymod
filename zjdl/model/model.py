@@ -10,8 +10,13 @@ import yaml
 from .common import *
 
 
-def abs_idx(idx: Union[int, list], n: int):
-    return [i % n for i in ([idx] if isinstance(idx, int) else idx)]
+def fstring(*args, length=10, decimals=2, axis=-1):
+    ''' :param axis: 对称轴, >= axis 的字符串左对齐'''
+    axis %= len(args)
+    lut = {int: f'%{length}d', float: f'%{length}.{decimals}f'}
+    fstr = [lut.get(type(i), f'%{length}s') for i in args]
+    for i in range(axis, len(args)): fstr[i] = '%-' + fstr[i][1:]
+    return ' '.join(fstr) % args
 
 
 def switch_branch(state_dict, branch='ema'):
@@ -78,28 +83,6 @@ class YamlModel(nn.Module):
             for i in eval(f'i[{slc}]'): self.freeze(i)
         self.init_param(), self.eval()
 
-    def init_param(self):
-        for m in self.modules():
-            # fan_in: 输入结点数
-            # fan_out: 输出结点数
-            if isinstance(m, nn.Linear):
-                nn.init.trunc_normal_(m.weight, std=.02)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            # LayerNorm
-            elif isinstance(m, nn.LayerNorm):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-            # BatchNorm
-            elif isinstance(m, nn.BatchNorm2d):
-                m.eps = 1e-3
-                m.momentum = 0.03
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-            # Activation
-            elif isinstance(m, (nn.ReLU, nn.LeakyReLU)):
-                m.inplace = False
-
     def example_input(self, b=1):
         return torch.rand([b, self.cfg['in_channels'], *self.cfg['img_size']])
 
@@ -117,6 +100,7 @@ class YamlModel(nn.Module):
         # imgae: uint8 -> float
         if x.dtype == torch.uint8: x = x.float() / 255
         # 获取所有层的输出并筛选
+        abs_idx = lambda idx, n: [i % n for i in ([idx] if isinstance(idx, int) else idx)]
         tarlayer = abs_idx(tarlayer, n=len(self.main))
         output = next(self.forward_feature(x, max(tarlayer), profile=False))
         return output[-1] if len(tarlayer) == 1 else [output[i] for i in tarlayer]
@@ -124,20 +108,21 @@ class YamlModel(nn.Module):
     def profile(self, x=None, repeat=5):
         x = self.example_input() if x is None else x
         information = np.zeros(3)
-        print(f"\n    {'time (ms)':>10s} {'GFLOPS':>10s} {'params':>10s}  module")
+        print('\n' + fstring('', 'time (ms)', 'FLOPs', 'params', 'module'))
         for m, x in self.forward_feature(x, profile=True):
             # 测试该模块的性能
             t0 = time.time()
             for _ in range(repeat): m(x)
-            cost = (time.time() - t0) / repeat
-            # GFLOPs
-            flops = thop.profile(m, (x,), verbose=False)[0] / 1e9
-            print(f'{m.i:>3} {cost * 1e3:10.2f} {flops / max(1e-9, cost):10.2f} {m.np:10.0f}  {m.t}')
+            cost = (time.time() - t0) / repeat * 1e3
+            # GFLOPs, params
+            flops = int(thop.profile(m, (x,), verbose=False, report_missing=True)[0])
+            params = sum(p.numel() for p in m.parameters())
+            print(fstring(m.i, cost, flops, params, m.t, decimals=2))
             # 完成性能测试
-            information += cost, flops, m.np
+            information += cost, flops, params
         # 输出模型的性能测试结果
         cost, flops, params = information
-        print(f'    {cost * 1e3:10.2f} {flops / cost:10.2f} {int(params):10}  Total')
+        print(fstring('', float(cost), int(flops), int(params), '--Total--'))
         return information
 
     def pop(self, index):
@@ -175,6 +160,28 @@ class YamlModel(nn.Module):
         model.profile = profile
         print('The runtime can be obtained using TorchScript\'s function <profile>')
         return model
+
+    def init_param(self):
+        for m in self.modules():
+            # fan_in: 输入结点数
+            # fan_out: 输出结点数
+            if isinstance(m, nn.Linear):
+                nn.init.trunc_normal_(m.weight, std=.02)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            # LayerNorm
+            elif isinstance(m, nn.LayerNorm):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            # BatchNorm
+            elif isinstance(m, nn.BatchNorm2d):
+                m.eps = 1e-3
+                m.momentum = 0.03
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            # Activation
+            elif isinstance(m, (nn.ReLU, nn.LeakyReLU)):
+                m.inplace = False
 
     def load_state_dict(self, state_dict, strict=True):
         if strict:
@@ -265,7 +272,7 @@ class YamlModel(nn.Module):
             if i == 0: channels = []
             channels.append(c2)
             # 计算网络层的参数量, 设置网络层属性
-            params = sum([p.numel() for p in module.parameters()])
+            params = sum(p.numel() for p in module.parameters())
             module.i, module.f, module.np, module.t = i, from_, params, type_
             modules.append(module)
             # 保存除 -1 之外的 from 参数到 save 列表 (同时对负数求余)
@@ -274,7 +281,7 @@ class YamlModel(nn.Module):
             if kwargs: args.append(kwargs)
             print('%3s %17s %2s %9.0f  %-15s %-30s' % (i, from_, number, params, type_, args))
         # 输出模型的统计信息
-        params = sum([m.np for m in modules])
+        params = sum(m.np for m in modules)
         mbytes = params * 4 / 1e6
         print(f'\nModel Summary: {len(modules)} layers, {params} parameters, {mbytes:.3f} MB')
         return modules
