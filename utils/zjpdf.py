@@ -27,7 +27,7 @@ def merge_pdf(src: Iterator[Path], dst: Path):
     merger.write(str(dst))
 
 
-def pdf2img(file: Path, suffix='.jpg', root='Project', blowup=15):
+def pdf2img(file: Path, suffix='.png', root='Project', blowup=15):
     ''' :param file: pdf 文件
         :param suffix: 图像后缀名
         :param root: 保存的源目录

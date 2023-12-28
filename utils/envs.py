@@ -7,10 +7,10 @@ execute = os.system
 
 if os.name == 'nt':
     # Window
-    pip = r'D:\Workbench\Library\envs\cv\Scripts\pip'
+    pip = r'D:\Information\Data\envs\cv\Scripts\pip'
     conda = r'D:\Software\Anaconda3\condabin\conda'
-    jupyter = r'D:\Workbench\Library\envs\cv\Scripts\jupyter'
-    pyinstaller = r'D:\Workbench\Library\envs\cv\Scripts\pyinstaller'
+    jupyter = r'D:\Information\Data\envs\cv\Scripts\jupyter'
+    pyinstaller = r'D:\Information\Data\envs\cv\Scripts\pyinstaller'
 else:
     # Linux
     pip = '/home/slam602/.conda/envs/torch/bin/pip'

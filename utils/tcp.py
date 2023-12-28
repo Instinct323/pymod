@@ -77,7 +77,7 @@ class DataIO(Memory):
         self.ns.o_flag = True
 
 
-class TCP_Socket(socket.socket):
+class TcpSocket(socket.socket):
     ''' :param port: 作为服务端时所开放的端口
         :param timeout: 传输数据时的超时时间
         :ivar host: 本机网络的 IPv4 地址
@@ -159,7 +159,7 @@ class TCP_Socket(socket.socket):
 
 
 def chat(input_func, addr=None, timeout=1e-3, exit_code=r'\exit', encoding='utf-8'):
-    with TCP_Socket(timeout=timeout) as tcp:
+    with TcpSocket(timeout=timeout) as tcp:
         try:
             if tcp.connect_auto(addr=addr):
                 LOGGER.info(f'Enter the chat room')
@@ -191,7 +191,7 @@ def transfer_async(dataio, addr=None, timeout=1e-4):
         :param addr: 服务端地址
         :param timeout: 传输数据时的超时时间'''
     t_recv, t_send, t_wait, momentum = (0,) * 3 + (0.1,)
-    with TCP_Socket(timeout=timeout) as tcp:
+    with TcpSocket(timeout=timeout) as tcp:
         try:
             if tcp.connect_auto(addr=addr):
                 LOGGER.info(f'The data transmission channel is enabled')

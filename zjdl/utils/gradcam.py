@@ -55,7 +55,7 @@ def grad_cam(model: nn.Module,
         grayscale_cam = cam(input_tensor=input_tensor, targets=[tar])
         cam_image = show_cam_on_image(bgr_img, grayscale_cam[0], use_rgb=False)
         # 规定文件命名格式
-        get_name = lambda x: f'{tar.i}-{i}-{x}.jpg'
+        get_name = lambda x: f'{tar.i}-{i}-{x}.png'
         imwrite(get_name('cam'), cam_image)
         if gb:
             # Guided backprop

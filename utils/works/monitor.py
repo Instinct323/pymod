@@ -81,7 +81,7 @@ class Monitor:
             if warning:
                 if self.screen_ctrl: set_brightness(0)
                 time.sleep(self.time_interval / 3)
-                cv2.imwrite(str(self.log_path / f'{t}.jpg'), next(self.video))
+                cv2.imwrite(str(self.log_path / f'{t}.png'), next(self.video))
                 if self.screen_ctrl: set_brightness(100)
         # 更新统计值
         update = lambda sta, cur: self._momentum * cur + (1 - self._momentum) * sta

@@ -33,7 +33,7 @@ class Crosstab:
 
     def eval(self, beta=1.):
         return {'Accuracy': self.accuracy, 'Precision': self.precision,
-                'Recall': self.recall, 'kappa': self.kappa, f'F{beta:.1f}-Score': self.f_score(beta)}
+                'Recall': self.recall, 'Kappa': self.kappa, f'F{beta:.1f}-Score': self.f_score(beta)}
 
     def __add__(self, other):
         if isinstance(other, __class__):

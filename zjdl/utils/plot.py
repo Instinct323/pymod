@@ -130,16 +130,23 @@ class ParamUtilization:
 
     @classmethod
     def export(cls, result, project, filt=None, show=False, group_lv=1, sep='.', limit=25, **vplot_kwd):
-        ''' :param result: parse 方法输出的结果
+        ''' :param result: parse 方法输出的结果 / 文件路径
             :param project: 项目目录
             :param filt: 过滤器, 筛选输出的 module
             :param show: 是否显示图像
             :param group_lv: module 进行分组的层级
             :param vplot_kwd: violinplot 的参数'''
-        from mod.zjplot import rand_colors, violinplot
         # 创建项目目录, 输出 csv
         project.mkdir(parents=True, exist_ok=True)
-        result.to_csv(project / 'pu.csv')
+        csv = project / 'pu.csv'
+        if isinstance(result, pd.DataFrame):
+            result.to_csv(csv)
+        else:
+            result = pd.read_csv(csv, index_col=0)
+            trans = lambda x: x if pd.isna(x) else eval(str(x))
+            for k in result.columns:
+                if str(result[k].dtype) == 'object':
+                    result[k] = result[k].apply(trans)
         if filt: result = result.loc[filter(filt, result.index)]
         # 绘图相关参数设定
         limit = limit if limit else len(result)
@@ -162,4 +169,4 @@ class ParamUtilization:
             # 设置上下限, 布局优化
             plt.xlim([0, limit + 1]), plt.ylim(ymin, ymax)
             plt.grid(), plt.tight_layout()
-            plt.show() if show else (plt.savefig(project / f'pu{i}.jpg'), plt.close())
+            plt.show() if show else (plt.savefig(project / f'pu{i}.png'), plt.close())
