@@ -86,4 +86,4 @@ if __name__ == '__main__':
     os.chdir(os.getenv('dl'))
 
     # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
-    git_push(r'D:\Workbench\mod', r'D:\Information\Notes', r'D:\Information\Notes\info', r'D:\Workbench\Library')
+    git_push(r'D:\Workbench\mod', r'D:\Information\Notes', r'D:\Information\Data\Lib')
