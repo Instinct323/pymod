@@ -27,7 +27,7 @@ RUN apt install -y openssh-server && \
 ARG BIN=/usr/local/bin
 COPY *.bash $BIN/
 RUN chmod +x $BIN/*.bash && \
-    apt install -y build-essential cmake gdb net-tools
+    apt install -y build-essential cmake gdb
 
 WORKDIR /home/tongzj
 CMD /usr/sbin/sshd -D

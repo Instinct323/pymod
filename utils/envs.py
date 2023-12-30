@@ -2,19 +2,19 @@ import datetime
 import os
 from pathlib import Path
 
-workdir = Path('D:/Workbench')
 execute = os.system
 
 if os.name == 'nt':
     # Window
-    pip = r'D:\Information\Data\envs\cv\Scripts\pip'
-    conda = r'D:\Software\Anaconda3\condabin\conda'
-    jupyter = r'D:\Information\Data\envs\cv\Scripts\jupyter'
-    pyinstaller = r'D:\Information\Data\envs\cv\Scripts\pyinstaller'
+    ENV = Path('D:/Information/Data/envs/cv')
+    pip = ENV / 'Scripts/pip'
+    jupyter = ENV / 'Scripts/jupyte'
+    conda = Path('D:/Software/Anaconda3/condabin/conda')
 else:
     # Linux
-    pip = '/home/slam602/.conda/envs/torch/bin/pip'
-    conda = '/opt/miniconda/bin/conda'
+    ENV = Path('/home/slam602/.conda/envs/torch')
+    pip = ENV / 'bin/pip'
+    conda = Path('/opt/miniconda/bin/conda')
 
 
 def git_push(*repositories,
@@ -22,10 +22,15 @@ def git_push(*repositories,
     for repo in repositories:
         os.chdir(repo), print(repo.center(50, '-'))
         for cmd in ('git status', 'git add .',
-                    f'git commit -m "{msg}"', 'git push origin master'): execute(cmd)
+                    f'git commit -m "{msg}"', 'git push origin maste'): execute(cmd)
 
 
 class PythonEnv:
+
+    @staticmethod
+    def add_path():
+        new = ';'.join(map(str, (ENV, ENV / 'Scripts'))) + ';'
+        os.environ['PATH'] = new + os.environ['PATH']
 
     @staticmethod
     def install(pkg, uninstall=False, upgrade=False):
@@ -37,16 +42,16 @@ class PythonEnv:
         execute(f'{pip} install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
 
     @classmethod
-    def jupyter(cls, root=workdir, cfg=False, reinstall=False):
+    def jupyter(cls, root='D:/Workbench', cfg=False, reinstall=False):
         if reinstall:
-            tar = ('jupyter', 'jupyter-client', 'jupyter-console', 'jupyter-core',
+            tar = ('jupyte', 'jupyter-client', 'jupyter-console', 'jupyter-core',
                    'jupyterlab-pygments', 'jupyterlab-widgets', 'notebook==6.1.0',
                    'jupyter_contrib_nbextensions')
             for pkg in tar: cls.install(pkg, uninstall=True)
             for pkg in tar: cls.install(pkg)
-            execute(f'{jupyter} contrib nbextension install --user')
+            execute(f'{jupyter} contrib nbextension install --use')
 
-        os.chdir(str(root))
+        os.chdir(root)
         execute(f'{jupyter} notebook' + cfg * ' --generate-config')
 
     @classmethod
@@ -85,5 +90,4 @@ class CondaEnv(PythonEnv):
 if __name__ == '__main__':
     os.chdir(os.getenv('dl'))
 
-    # env.load_requirements(r'D:\Information\Python\mod\requirements.txt')
-    git_push(r'D:\Workbench\mod', r'D:\Information\Notes', r'D:\Information\Data\Lib')
+    git_push('D:/Workbench/mod', 'D:/Information/Notes', 'D:/Information/Data/Lib')

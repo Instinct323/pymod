@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.10)
+project(tongzj)
 
 # 指定 C++ 11
 set(CMAKE_CXX_STANDARD 11)
