@@ -316,25 +316,28 @@ class PyInstArchive:
                     pycFile.write(data)
 
 
-def main():
-    if len(sys.argv) < 2:
-        print('[*] Usage: pyinstxtractor.py <filename>')
+def main(exe):
+    # todo: 不使用命令行参数, 直接传参
+    os.chdir(exe.parent)
+    exe = exe.relative_to(Path.cwd())
 
-    else:
-        arch = PyInstArchive(sys.argv[1])
-        if arch.open():
-            if arch.checkFile():
-                if arch.getCArchiveInfo():
-                    arch.parseTOC()
-                    arch.extractFiles()
-                    arch.close()
-                    print('[*] Successfully extracted pyinstaller archive: {0}'.format(sys.argv[1]))
-                    print('')
-                    print('You can now use a python decompiler on the pyc files within the extracted directory')
-                    return
+    arch = PyInstArchive(exe)
+    if arch.open():
+        if arch.checkFile():
+            if arch.getCArchiveInfo():
+                arch.parseTOC()
+                arch.extractFiles()
+                arch.close()
+                print('[*] Successfully extracted pyinstaller archive: {0}'.format(exe))
+                print('')
+                print('You can now use a python decompiler on the pyc files within the extracted directory')
+                return
 
-            arch.close()
+        arch.close()
 
 
 if __name__ == '__main__':
-    main()
+    from pathlib import Path
+
+    exe = Path(r'D:\Workbench\Lab\Deal\1215-Best\install\dist\AX2.0.exe')
+    main(exe)
