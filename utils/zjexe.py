@@ -8,7 +8,7 @@ from pathlib import Path
 
 import psutil
 
-execute = lambda x: print(x) and os.system(x)
+execute = lambda x: print(x) or os.system(x)
 
 
 class MsgBox:
@@ -69,7 +69,7 @@ class SingletonExecutor:
 
 
 class Installer:
-    cmd = 'pyinstaller'
+    exe = 'pyinstaller'
 
     @staticmethod
     def add_path():
@@ -78,6 +78,7 @@ class Installer:
 
     def __init__(self,
                  main: Path,
+                 console: bool = True,
                  icon: Path = None,
                  paths: list = [],
                  hiddenimports: list = []):
@@ -90,7 +91,7 @@ class Installer:
         self.spec = Path(f'{self.main.stem}.spec').absolute()
         self.exclude = Path('exclude.txt').absolute()
         # 记录打包参数
-        self.options = []
+        self.options = ['-c' if console else '-w']
         if icon:
             self.options.append(f'-i {icon.absolute()}')
         for p in paths:
@@ -98,25 +99,35 @@ class Installer:
         for m in hiddenimports:
             self.options.append(f'--hidden-import {m}')
 
-    def install(self, args='-wF', spec=False):
-        opt = self.spec if spec else ' '.join(map(str, self.options + [args, self.main]))
-        execute(f'{self.cmd} {opt}')
+    def install(self, one_file=True, spec=False):
+        opt = self.spec if spec else ' '.join(map(str, self.options + ['-F' if one_file else '-D', self.main]))
+        execute(f'{self.exe} {opt}')
 
-    def clear(self):
-        for f in ('build', 'dist'):
-            shutil.rmtree(f, ignore_errors=True)
+    def clear(self, build=True, dist=True):
+        fs = []
+        if build: fs.append('build')
+        if dist: fs.append('dist')
+        fs = list(map(Path, fs))
+
+        while True:
+            try:
+                for f in fs:
+                    if f.is_dir():
+                        shutil.rmtree(f, ignore_errors=False)
+                break
+            except PermissionError as e:
+                input(f'\n{e}\nPlease resolve the above error: ')
 
     def load_exclude(self):
         return self.exclude.read_text().split('\n')
 
     def dump_exclude(self, fmts=('dll', 'pyd', 'so')):
-        # one-dir 打包, 检测依赖项
-        self.install('-cD', spec=False)
-        input('Verify that the program is running: ')
-
         src = Path(f'dist/{self.main.stem}/_internal')
         exclude = set()
-
+        # one-dir 打包, 检测依赖项
+        self.install(one_file=False, spec=False)
+        input('\nVerify that the program is running: ')
+        # 尝试删除依赖项
         for fmt in fmts:
             for f in src.rglob(f'*.{fmt}'):
                 try:
@@ -126,9 +137,25 @@ class Installer:
                     print('Remove:', f)
                 except PermissionError:
                     pass
-
+        # 写入 exclude.txt
         exclude = sorted(exclude)
         self.exclude.write_text('\n'.join(map(str, exclude)))
+        # 清理 dist 目录
+        input('\nPlease close the program: ')
+        self.clear(build=False, dist=True)
+
+    def modify_spec(self):
+        with self.spec.open('r') as f:
+            lines = f.readlines()
+        # 在第 3 行插入代码
+        for i, code in enumerate(
+                ('# todo: 读取排除的文件列表',
+                 'from pathlib import Path',
+                 'EXE.my_exclude = Path(\'exclude.txt\').read_text().splitlines()')):
+            lines.insert(i + 2, code + '\n')
+        # 保存文件
+        with self.spec.open('w') as f:
+            f.writelines(lines)
 
     def __repr__(self):
         return f'{type(self).__name__}({self.main}, options={self.options})'
@@ -139,6 +166,12 @@ if __name__ == '__main__':
 
     isl = Installer(Path(r'D:/Workbench/Lab/Deal/1215-Best/AX2.0.py'),
                     icon=Path('D:/Information/Video/icons/pika.ico'))
-    isl.clear()
-    # isl.dump_exclude()
-    print(isl)
+
+    # Step 1: one-dir 打包, 生成 exclude.txt
+    isl.dump_exclude()
+    # Step 2: one-file 打包, 生成 spec 文件
+    isl.install(one_file=True)
+    isl.clear(build=True, dist=True)
+    # Step 3: 修改 spec 文件, 生成最终的 exe 文件
+    isl.modify_spec()
+    isl.install(spec=True)
