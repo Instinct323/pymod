@@ -90,4 +90,5 @@ class CondaEnv(PythonEnv):
 if __name__ == '__main__':
     os.chdir(os.getenv('dl'))
 
-    git_push('D:/Workbench/mod', 'D:/Information/Notes', 'D:/Information/Data/Lib')
+    PythonEnv.install('uncompyle6')
+    # git_push('D:/Workbench/mod', 'D:/Information/Notes', 'D:/Information/Data/Lib')

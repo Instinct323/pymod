@@ -11,6 +11,11 @@ import psutil
 execute = lambda x: print(x) or os.system(x)
 
 
+def pyc2py(pyc):
+    pyc = Path(pyc)
+    execute(f'uncompyle6 {pyc} > {pyc.with_suffix(".py")}')
+
+
 class MsgBox:
 
     @staticmethod
@@ -69,6 +74,7 @@ class SingletonExecutor:
 
 
 class Installer:
+    # 破解: pyinstxtractor, uncompyle6
     exe = 'pyinstaller'
 
     @staticmethod
@@ -140,9 +146,6 @@ class Installer:
         # 写入 exclude.txt
         exclude = sorted(exclude)
         self.exclude.write_text('\n'.join(map(str, exclude)))
-        # 清理 dist 目录
-        input('\nPlease close the program: ')
-        self.clear(build=False, dist=True)
 
     def modify_spec(self):
         with self.spec.open('r') as f:
@@ -163,15 +166,16 @@ class Installer:
 
 if __name__ == '__main__':
     Installer.add_path()
-
     isl = Installer(Path(r'D:/Workbench/Lab/Deal/1215-Best/AX2.0.py'),
                     icon=Path('D:/Information/Video/icons/pika.ico'))
 
     # Step 1: one-dir 打包, 生成 exclude.txt
     isl.dump_exclude()
-    # Step 2: one-file 打包, 生成 spec 文件
-    isl.install(one_file=True)
-    isl.clear(build=True, dist=True)
-    # Step 3: 修改 spec 文件, 生成最终的 exe 文件
-    isl.modify_spec()
-    isl.install(spec=True)
+    if isl.load_exclude():
+        isl.clear(build=False)
+        # Step 2: one-file 打包, 生成 spec 文件
+        isl.install(one_file=True)
+        isl.clear()
+        # Step 3: 修改 spec 文件, 生成最终的 exe 文件
+        isl.modify_spec()
+        isl.install(spec=True)
