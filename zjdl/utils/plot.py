@@ -89,9 +89,10 @@ class ParamUtilization:
             weight = weight[i]
             # 对权重向量单位化, 以内积作为余弦相似度
             vec = weight / norm[:, None]
-            cos = np.abs(vec @ vec.T) - np.eye(c2)
+            cos = (np.abs(vec @ vec.T) - np.eye(c2)).clip(max=1)
+            sin = np.sqrt(1 - cos ** 2)
             # 信息损失 (取最小): (1 - 余弦值) * norm 相对大小
-            norm_loss = (1 - cos) * norm[:, None] / norm
+            norm_loss = sin * norm[:, None] / norm
             score = np.array([norm_loss[i, i:].min() for i in range(c2)])
             # y = np.linalg.svd(weight)[1]
             # y /= y[0]
@@ -136,28 +137,32 @@ class ParamUtilization:
             :param show: 是否显示图像
             :param group_lv: module 进行分组的层级
             :param vplot_kwd: violinplot 的参数'''
+        from mod.zjplot import violinplot, rand_colors
         # 创建项目目录, 输出 csv
         project.mkdir(parents=True, exist_ok=True)
-        csv = project / 'pu.csv'
+        name = project.name
+        csv = project / f'{name}.csv'
         if isinstance(result, pd.DataFrame):
             result.to_csv(csv)
         else:
-            result = pd.read_csv(csv, index_col=0)
+            result = pd.read_csv(result, index_col=0)
             trans = lambda x: x if pd.isna(x) else eval(str(x))
             for k in result.columns:
                 if str(result[k].dtype) == 'object':
                     result[k] = result[k].apply(trans)
-        if filt: result = result.loc[filter(filt, result.index)]
+        # 对神经网络中的层进行分组
+        k2i = lambda k: sep.join(k.split(sep)[:group_lv + 1])
+        groups = list(map(k2i, result.index))
+        for i in range(len(groups) - 1, 0, -1):
+            if groups[i] == groups[i - 1]: groups.pop(i)
+        colors = rand_colors(len(groups))
         # 绘图相关参数设定
+        if filt: result = result.loc[filter(filt, result.index)]
         limit = limit if limit else len(result)
         plt.rcParams['figure.dpi'] = 300
         plt.rcParams['figure.figsize'] = [.8 + 0.46 * (limit + 1), 6.4]
         ymin = result['score'].apply(min).min()
         ymax = result['score'].apply(max).max()
-        # 对神经网络中的层进行分组
-        k2i = lambda k: sep.join(k.split(sep)[:group_lv + 1])
-        groups = sorted({k2i(k) for k in result.index})
-        colors = rand_colors(len(groups))
         # 分页读取 result
         for i in tqdm(range(int(np.ceil(len(result) / limit))), desc='exporting plots'):
             tmp = result.iloc[i * limit: (i + 1) * limit]
@@ -169,4 +174,4 @@ class ParamUtilization:
             # 设置上下限, 布局优化
             plt.xlim([0, limit + 1]), plt.ylim(ymin, ymax)
             plt.grid(), plt.tight_layout()
-            plt.show() if show else (plt.savefig(project / f'pu{i}.png'), plt.close())
+            plt.show() if show else (plt.savefig(project / f'{name}{i}.png'), plt.close())

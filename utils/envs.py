@@ -2,7 +2,7 @@ import datetime
 import os
 from pathlib import Path
 
-execute = os.system
+execute = lambda x: print(x) or os.system(x)
 
 if os.name == 'nt':
     # Window
