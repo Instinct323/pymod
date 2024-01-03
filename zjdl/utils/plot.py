@@ -91,12 +91,12 @@ class ParamUtilization:
             vec = weight / norm[:, None]
             cos = (np.abs(vec @ vec.T) - np.eye(c2)).clip(max=1)
             sin = np.sqrt(1 - cos ** 2)
-            # 信息损失 (取最小): (1 - 余弦值) * norm 相对大小
-            norm_loss = sin * norm[:, None] / norm
-            score = np.array([norm_loss[i, i:].min() for i in range(c2)])
+            # 差异程度 (取最小): 正弦值 * norm 相对大小
+            diff = sin * norm[:, None] / norm
+            score = np.array([diff[i, i:].min() for i in range(c2 - 1)])
             # y = np.linalg.svd(weight)[1]
             # y /= y[0]
-            info['score'] = cls._round(np.sort(score)[:-1])
+            info['score'] = cls._round(np.sort(score))
             return info
 
     @classmethod
