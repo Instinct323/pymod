@@ -82,6 +82,35 @@ class Installer:
         from envs import PythonEnv
         PythonEnv.add_path()
 
+    @staticmethod
+    def check_src(mark="if typecode in ('BINARY', 'EXTENSION'):"):
+        from pathlib import Path
+        from PyInstaller.building import api
+        file = Path(api.__file__)
+
+        with file.open('r') as f:
+            lines = f.readlines()
+            for i in range(len(lines)):
+                # 查找代码的插入位置
+                if lines[i].strip() == mark:
+                    # 查找是否已插入代码
+                    for j in range(i + 1, i + 10):
+                        if "getattr(EXE, 'my_exclude', [])" in lines[j]: return True
+
+                    # 未插入代码
+                    content = [rf"{i + 1:<8d}{mark}",
+                               rf"{i + 2:<12d}# -----------------------------------",
+                               rf"{i + 3:<12d}if dest_name.replace('\\', '/') in getattr(EXE, 'my_exclude', []):",
+                               rf"{i + 4:<16d}print('Skip:', dest_name)",
+                               rf"{i + 5:<16d}continue",
+                               rf"{i + 6:<12d}# -----------------------------------"]
+                    content = '\n'.join(content)
+                    raise RuntimeError(f'Please modify {file} first\n\n{content}')
+
+        # 版本要求: 5.8.0 以上
+        import PyInstaller
+        raise RuntimeError(f'Fail to solve PyInstaller {PyInstaller.__version__}')
+
     def __init__(self,
                  main: Path,
                  console: bool = True,
@@ -128,12 +157,15 @@ class Installer:
         return self.exclude.read_text().split('\n')
 
     def dump_exclude(self, fmts=('dll', 'pyd', 'so')):
+        # 依赖文件所在文件夹 (根据版本确定)
         src = Path(f'dist/{self.main.stem}/_internal')
-        exclude = set()
+        import PyInstaller
+        if int(PyInstaller.__version__[0]) == 5: src = src.parent
         # one-dir 打包, 检测依赖项
         self.install(one_file=False, spec=False)
         input('\nVerify that the program is running: ')
         # 尝试删除依赖项
+        exclude = set()
         for fmt in fmts:
             for f in src.rglob(f'*.{fmt}'):
                 try:
@@ -152,7 +184,7 @@ class Installer:
             lines = f.readlines()
         # 在第 3 行插入代码
         for i, code in enumerate(
-                ('# todo: 读取排除的文件列表',
+                ('# todo: Loads the list of excluded files',
                  'from pathlib import Path',
                  'EXE.my_exclude = Path(\'exclude.txt\').read_text().splitlines()')):
             lines.insert(i + 2, code + '\n')
@@ -166,13 +198,15 @@ class Installer:
 
 if __name__ == '__main__':
     Installer.add_path()
-    isl = Installer(Path(r'D:/Workbench/Lab/Deal/1215-Best/AX2.0.py'),
+    Installer.check_src()
+    isl = Installer(Path('D:/Workbench/idle/pyinstaller/__exp__/exp.py'),
+                    console=True,
                     icon=Path('D:/Information/Video/icons/pika.ico'))
 
     # Step 1: one-dir 打包, 生成 exclude.txt
     isl.dump_exclude()
     if isl.load_exclude():
-        isl.clear(build=False)
+        isl.clear()
         # Step 2: one-file 打包, 生成 spec 文件
         isl.install(one_file=True)
         isl.clear()
