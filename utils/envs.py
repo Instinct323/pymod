@@ -7,13 +7,12 @@ execute = lambda x: print(x) or os.system(x)
 if os.name == 'nt':
     # Window
     ENV = Path('D:/Information/Data/envs/cv')
-    pip = ENV / 'Scripts/pip'
-    jupyter = ENV / 'Scripts/jupyte'
+    SCRIPTS = ENV / 'Scripts'
     conda = Path('D:/Software/Anaconda3/condabin/conda')
 else:
     # Linux
     ENV = Path('/home/slam602/.conda/envs/torch')
-    pip = ENV / 'bin/pip'
+    SCRIPTS = ENV / 'bin'
     conda = Path('/opt/miniconda/bin/conda')
 
 
@@ -29,17 +28,17 @@ class PythonEnv:
 
     @staticmethod
     def add_path():
-        new = ';'.join(map(str, (ENV, ENV / 'Scripts'))) + ';'
+        new = ';'.join(map(str, (ENV, SCRIPTS))) + ';'
         os.environ['PATH'] = new + os.environ['PATH']
 
     @staticmethod
     def install(pkg, uninstall=False, upgrade=False):
         main = 'uninstall -y' if uninstall else ('install' + upgrade * ' --upgrade')
-        execute(f'{pip} {main} --no-cache-dir {pkg}')
+        execute(f'pip {main} --no-cache-dir {pkg}')
 
     @staticmethod
     def load_requirements(file='requirements.txt'):
-        execute(f'{pip} install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
+        execute(f'pip install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html')
 
     @classmethod
     def jupyter(cls, root='D:/Workbench', cfg=False, reinstall=False):
@@ -49,17 +48,17 @@ class PythonEnv:
                    'jupyter_contrib_nbextensions')
             for pkg in tar: cls.install(pkg, uninstall=True)
             for pkg in tar: cls.install(pkg)
-            execute(f'{jupyter} contrib nbextension install --use')
+            execute(f'jupyter contrib nbextension install --use')
 
         os.chdir(root)
-        execute(f'{jupyter} notebook' + cfg * ' --generate-config')
+        execute(f'jupyter notebook' + cfg * ' --generate-config')
 
     @classmethod
     def config(cls):
         for k, v in (('timeout', 6000),
                      ('index-url', 'https://pypi.tuna.tsinghua.edu.cn/simple'),
                      ('trusted-host', 'pypi.tuna.tsinghua.edu.cn')):
-            execute(f'{pip} config set global.{k} {v}')
+            execute(f'pip config set global.{k} {v}')
 
 
 class CondaEnv(PythonEnv):
@@ -89,5 +88,6 @@ class CondaEnv(PythonEnv):
 
 if __name__ == '__main__':
     os.chdir(os.getenv('dl'))
+    PythonEnv.add_path()
 
     git_push('D:/Workbench/mod', 'D:/Information/Notes', 'D:/Information/Data/Lib')

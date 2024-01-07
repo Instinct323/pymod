@@ -98,12 +98,13 @@ class Installer:
                         if "getattr(EXE, 'my_exclude', [])" in lines[j]: return True
 
                     # 未插入代码
+                    sep = '-' * 15
                     content = [rf"{i + 1:<8d}{mark}",
-                               rf"{i + 2:<12d}# -----------------------------------",
+                               rf"{i + 2:<12d}# {sep} ↓ INSERT ↓ {sep}",
                                rf"{i + 3:<12d}if dest_name.replace('\\', '/') in getattr(EXE, 'my_exclude', []):",
                                rf"{i + 4:<16d}print('Skip:', dest_name)",
                                rf"{i + 5:<16d}continue",
-                               rf"{i + 6:<12d}# -----------------------------------"]
+                               rf"{i + 6:<12d}# {sep} ↑ INSERT ↑ {sep}"]
                     content = '\n'.join(content)
                     raise RuntimeError(f'Please modify {file} first\n\n{content}')
 
@@ -165,18 +166,18 @@ class Installer:
         self.install(one_file=False, spec=False)
         input('\nVerify that the program is running: ')
         # 尝试删除依赖项
-        exclude = set()
+        exclude = []
         for fmt in fmts:
             for f in src.rglob(f'*.{fmt}'):
                 try:
                     f.unlink()
                     f = f.relative_to(src)
-                    exclude.add(f.as_posix())
+                    exclude.append(f.as_posix())
                     print('Remove:', f)
                 except PermissionError:
                     pass
         # 写入 exclude.txt
-        exclude = sorted(exclude)
+        exclude.sort()
         self.exclude.write_text('\n'.join(map(str, exclude)))
 
     def modify_spec(self):
@@ -198,12 +199,14 @@ class Installer:
 
 if __name__ == '__main__':
     Installer.add_path()
+    # 校验源代码的修改情况, 否则提供修改建议
     Installer.check_src()
-    isl = Installer(Path('D:/Workbench/idle/pyinstaller/__exp__/exp.py'),
+    isl = Installer(Path(r'D:\Workbench\Lab\Deal\240106-best\test.py'),
                     console=True,
                     icon=Path('D:/Information/Video/icons/pika.ico'))
 
-    # Step 1: one-dir 打包, 生成 exclude.txt
+    isl.install()
+    '''# Step 1: one-dir 打包, 生成 exclude.txt
     isl.dump_exclude()
     if isl.load_exclude():
         isl.clear()
@@ -212,4 +215,4 @@ if __name__ == '__main__':
         isl.clear()
         # Step 3: 修改 spec 文件, 生成最终的 exe 文件
         isl.modify_spec()
-        isl.install(spec=True)
+        isl.install(spec=True)'''

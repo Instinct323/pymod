@@ -339,5 +339,5 @@ def main(exe):
 if __name__ == '__main__':
     from pathlib import Path
 
-    exe = Path(r'D:\Workbench\Lab\Deal\1215-Best\install\dist\AX2.0.exe')
+    exe = Path(r'D:\Information\Download\罗技调用检测，请先运行我.exe')
     main(exe)
