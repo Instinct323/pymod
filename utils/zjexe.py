@@ -205,14 +205,13 @@ if __name__ == '__main__':
                     console=True,
                     icon=Path('D:/Information/Video/icons/pika.ico'))
 
-    isl.install()
-    '''# Step 1: one-dir 打包, 生成 exclude.txt
+    # Step 1: one-dir 打包, 生成 exclude.txt
     isl.dump_exclude()
     if isl.load_exclude():
-        isl.clear()
         # Step 2: one-file 打包, 生成 spec 文件
+        isl.clear(build=False)
         isl.install(one_file=True)
-        isl.clear()
         # Step 3: 修改 spec 文件, 生成最终的 exe 文件
+        isl.clear()
         isl.modify_spec()
-        isl.install(spec=True)'''
+        isl.install(spec=True)

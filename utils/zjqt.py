@@ -49,7 +49,7 @@ class PltFigure(plt.Figure):
 
 class Window(QMainWindow):
 
-    def __init__(self, opacity=0.85):
+    def __init__(self, opacity=1.):
         super().__init__()
         self.central = QWidget()
         self.setCentralWidget(self.central)
@@ -78,7 +78,7 @@ class Window(QMainWindow):
         for i in range(4):
             fig = self.fig.subplot(2, 2, i + 1)
             x = np.random.normal(0, 1, 1000)
-            fig.hist(x, bins=50)
+            fig.hist(x, bins=50, color='orange')
         # ---------------
         self.fig.show()
 
