@@ -6,7 +6,7 @@ execute = lambda x: print(x) or os.system(x)
 
 if os.name == 'nt':
     # Window
-    ENV = Path('D:/Information/Data/envs/cv')
+    ENV = Path('D:/Software/envs/cv')
     SCRIPTS = ENV / 'Scripts'
     conda = Path('D:/Software/Anaconda3/condabin/conda')
 else:
@@ -90,4 +90,4 @@ if __name__ == '__main__':
     os.chdir(os.getenv('dl'))
     PythonEnv.add_path()
 
-    git_push('D:/Workbench/mod', 'D:/Information/Notes', 'D:/Information/Data/Lib')
+    git_push('D:/Workbench/mod', 'D:/Information/Notes', 'D:/Information/Lib')
