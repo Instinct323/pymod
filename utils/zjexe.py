@@ -9,9 +9,9 @@ from pathlib import Path
 import psutil
 
 
-def execute(cmd):
+def execute(cmd, check=True):
     ret = print(cmd) or os.system(cmd)
-    if ret: raise OSError(f'Fail to execute: {cmd}')
+    if check and ret: raise OSError(f'Fail to execute: {cmd}')
 
 
 def find_exe(name):
