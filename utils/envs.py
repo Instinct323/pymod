@@ -8,12 +8,12 @@ if os.name == 'nt':
     # Window
     ENV = Path('D:/Software/envs/cv')
     SCRIPTS = ENV / 'Scripts'
-    conda = Path('D:/Software/Anaconda3/condabin/conda')
+    CONDA = Path('D:/Software/Anaconda3/condabin/conda')
 else:
     # Linux
     ENV = Path('/home/slam602/.conda/envs/torch')
     SCRIPTS = ENV / 'bin'
-    conda = Path('/opt/miniconda/bin/conda')
+    CONDA = Path('/opt/miniconda/bin/conda')
 
 
 def git_push(*repositories,
@@ -66,16 +66,16 @@ class CondaEnv(PythonEnv):
     @staticmethod
     def create(name, version=(3, 8, 15)):
         version = '.'.join(map(str, version))
-        execute(f'{conda} create -n {name} python=={version}')
+        execute(f'{CONDA} create -n {name} python=={version}')
 
     @staticmethod
     def install(pkg, uninstall=False, upgrade=False):
         main = 'uninstall -y' if uninstall else ('upgrade' if upgrade else 'install')
-        execute(f'{conda} {main} {pkg}')
+        execute(f'{CONDA} {main} {pkg}')
 
     @staticmethod
     def clean():
-        execute(f'{conda} clean -ay')
+        execute(f'{CONDA} clean -ay')
 
     @classmethod
     def config(cls):
@@ -83,7 +83,7 @@ class CondaEnv(PythonEnv):
         for p in ('--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/',
                   '--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/',
                   '--set show_channel_urls yes'):
-            execute(f'{conda} config {p}')
+            execute(f'{CONDA} config {p}')
 
 
 if __name__ == '__main__':
