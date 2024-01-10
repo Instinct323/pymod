@@ -93,6 +93,6 @@ class Window(QMainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = Window()
-    window.plot()
     window.show()
+    window.plot()
     sys.exit(app.exec_())

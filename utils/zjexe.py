@@ -8,7 +8,15 @@ from pathlib import Path
 
 import psutil
 
-execute = lambda x: print(x) or os.system(x)
+
+def execute(cmd):
+    ret = print(cmd) or os.system(cmd)
+    if ret: raise OSError(f'Fail to execute: {cmd}')
+
+
+def find_exe(name):
+    for p in psutil.process_iter():
+        if p.name() == name: return p
 
 
 def pyc2py(pyc):
@@ -78,11 +86,6 @@ class Installer:
     exe = 'pyinstaller'
 
     @staticmethod
-    def add_path():
-        from envs import PythonEnv
-        PythonEnv.add_path()
-
-    @staticmethod
     def check_src(mark="if typecode in ('BINARY', 'EXTENSION'):"):
         from pathlib import Path
         from PyInstaller.building import api
@@ -144,7 +147,12 @@ class Installer:
         if build: fs.append('build')
         if dist: fs.append('dist')
         fs = list(map(Path, fs))
-
+        # 关闭正在运行的程序
+        exe = find_exe(self.main.stem + '.exe')
+        if exe:
+            print('Kill:', exe.name())
+            exe.kill(), time.sleep(1)
+        # 尝试删除
         while True:
             try:
                 for f in fs:
@@ -162,9 +170,11 @@ class Installer:
         src = Path(f'dist/{self.main.stem}/_internal')
         import PyInstaller
         if int(PyInstaller.__version__[0]) == 5: src = src.parent
-        # one-dir 打包, 检测依赖项
+        # one-dir 打包
         self.install(one_file=False, spec=False)
-        input('\nVerify that the program is running: ')
+        # 确保程序正在运行
+        while not find_exe(self.main.stem + '.exe'):
+            input('Verify that the program is running: ')
         # 尝试删除依赖项
         exclude = []
         for fmt in fmts:
@@ -198,12 +208,15 @@ class Installer:
 
 
 if __name__ == '__main__':
-    Installer.add_path()
+    from envs import PythonEnv
+
+    PythonEnv.add_path()
+
     # 校验源代码的修改情况, 否则提供修改建议
     Installer.check_src()
-    isl = Installer(Path(r'D:\Workbench\Lab\Deal\240106-best\test.py'),
-                    console=True,
-                    icon=Path('D:/Information/Video/icons/pika.ico'))
+    isl = Installer(Path('D:/Workbench/Repository/pyinstaller/__exp__/zjqt.py'),
+                    console=False,
+                    icon=Path('D:/Information/Source/icon/pika.ico'))
 
     # Step 1: one-dir 打包, 生成 exclude.txt
     isl.dump_exclude()

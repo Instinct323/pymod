@@ -2,7 +2,7 @@ import datetime
 import os
 from pathlib import Path
 
-execute = lambda x: print(x) or os.system(x)
+from zjexe import execute
 
 if os.name == 'nt':
     # Window
