@@ -25,7 +25,7 @@ RUN apt install -y openssh-server && \
 
 # C++ toolchain
 ARG BIN=/usr/local/bin
-COPY *.bash $BIN/
+COPY cpp-bin/*.bash $BIN/
 RUN chmod +x $BIN/*.bash && \
     apt install -y build-essential cmake gdb
 

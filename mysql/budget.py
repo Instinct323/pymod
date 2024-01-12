@@ -1,22 +1,21 @@
 import numpy as np
-
-from utils import *
+import pandas as pd
 
 str2date = lambda s: pd.PeriodIndex(s, freq='M')
 # 计算的起始日期
 start, end = str2date(['2024-03', '2027-12'])
 # 当前存款, 每月开销
-fund = 5.5
+fund = 3.4
 livcost = 1.5
+
+MONTHLY = pd.read_excel(r'D:\Information\Lib\月度收支.xlsx')
+for k in ('start', 'end'): MONTHLY[k] = str2date(MONTHLY[k])
 
 
 def surplus(show=False):
-    monthly = get_table('budget.monthly')
-    for k in ('start', 'end'): monthly[k] = str2date(monthly[k])
-
     ret = pd.Series(- livcost, index=pd.period_range(start, end))
     ret[0] += fund
-    for i, (s, e, v, detail) in monthly.iterrows():
+    for i, (s, e, v, detail) in MONTHLY.iterrows():
         ret += ((ret.index >= s) & (ret.index <= e)) * float(v)
 
     if show:
@@ -41,10 +40,9 @@ def prepare(*plans):
         while e <= tmp.index[-1]:
             e = s + 1
             while e < tmp.index[-1] and diff[e] == 0: e += 1
-            # 执行 SQL 语句, 插入支出项目
-            CURSOR.execute(f"insert into budget.monthly values ('{s}', '{e - 1}', -{tmp[s]}, '{detail}');")
+            # 插入支出项目
+            MONTHLY.loc[len(MONTHLY)] = s, e - 1, -tmp[s], detail
             s = e
-        CONNECT.commit()
 
 
 if __name__ == '__main__':
@@ -58,10 +56,10 @@ if __name__ == '__main__':
     score += 0.4 * (10 * 4 + 5 * 1 + 3 * 4)
     print(f'南科大奖学金分数: {score}')
 
-    if 1:
-        prepare(
-            ('2024-03', '2024-08', 14.0, '学费, 生活费, 宿舍用品, 备用资金'),
-            ('2024-09', None, 48.0, '还贷')
-        )
+    prepare(
+        ('2024-03', '2024-08', 12.0, '学费, 生活费, 宿舍用品, 备用资金'),
+        ('2024-09', None, 48.0, '还贷')
+    )
 
-    print(surplus(show=True).cumsum())
+    print(MONTHLY.sort_values(by='start').reset_index(drop=True))
+    print(surplus(show=True))

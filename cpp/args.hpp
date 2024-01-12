@@ -11,6 +11,6 @@ void processArgs(T arg);
  */
 template<typename T, typename... Args>
 void processArgs(T first, Args... rest) {
-    processArgs(first);
-    processArgs(rest...);
+  processArgs(first);
+  processArgs(rest...);
 }

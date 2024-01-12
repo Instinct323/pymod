@@ -147,13 +147,13 @@ class Installer:
         if build: fs.append('build')
         if dist: fs.append('dist')
         fs = list(map(Path, fs))
-        # 关闭正在运行的程序
-        exe = find_exe(self.main.stem + '.exe')
-        if exe:
-            print('Kill:', exe.name())
-            exe.kill(), time.sleep(1)
         # 尝试删除
         while True:
+            # 关闭正在运行的程序
+            exe = find_exe(self.main.stem + '.exe')
+            if dist and exe:
+                print('Kill:', exe.name())
+                exe.kill(), time.sleep(1)
             try:
                 for f in fs:
                     if f.is_dir():
@@ -219,6 +219,7 @@ if __name__ == '__main__':
                     icon=Path('D:/Information/Source/icon/pika.ico'))
 
     # Step 1: one-dir 打包, 生成 exclude.txt
+    isl.clear(build=False)
     isl.dump_exclude()
     if isl.load_exclude():
         # Step 2: one-file 打包, 生成 spec 文件
