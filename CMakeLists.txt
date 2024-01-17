@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(tongzj)
 
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/docker/cmake)
+
 # 指定 C++ 11
 set(CMAKE_CXX_STANDARD 11)
 # 不同模式下的编译选项
