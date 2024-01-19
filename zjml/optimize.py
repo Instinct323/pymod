@@ -97,9 +97,8 @@ if __name__ == '__main__':
         # x: [bs, 1] -> [bs, 4]
         # a x + b x^2 + c x^3 + d e^x
         x = torch.stack([x, x ** 2, x ** 3, torch.exp(-x)], dim=1)
-        # y: [bs, 4] × [4, ] -> [bs, ]
-        y = x @ variant
-        return y
+        # y: [bs, 4] × [4,] -> [bs,]
+        return x @ variant
 
 
     def loss(variant):
@@ -111,5 +110,4 @@ if __name__ == '__main__':
     print(best_var)
     plt.plot(x, cal_y(best_var, x), c='orange', label='pred')
 
-    plt.legend()
-    plt.show()
+    plt.legend(), plt.show()

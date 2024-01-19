@@ -82,7 +82,7 @@ class SingletonExecutor:
 
 
 class Installer:
-    # 破解: pyinstxtractor, uncompyle6
+    # cite: https://hebitzj.blog.csdn.net/article/details/135430884
     exe = 'pyinstaller'
 
     @staticmethod

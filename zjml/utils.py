@@ -4,6 +4,57 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+class _eig:
+    ''' 特征值分解'''
+    __ref__ = [PCA]
+
+    def __init__(self, A):
+        self.A = A
+        self.lam, self.x = np.linalg.eig(A)
+        self.sort()
+        self.lam = np.diag(self.lam)
+
+    def sort(self):
+        order = np.argsort(self.lam)[::-1]
+        self.lam = self.lam[order]
+        self.x = self.x[:, order]
+
+    def desc(self):
+        print('Ax - xλ:', np.abs(self.A @ self.x - self.x @ self.lam).sum())
+        print('A - xλx^{-1}:', np.abs(self.A - self.x @ self.lam @ np.linalg.inv(self.x)).sum())
+        print('norm (each col)', np.linalg.norm(self.x, axis=0, keepdims=True))
+        print()
+
+    def __repr__(self):
+        return f'λ: {self.lam}\n' \
+               f'x: {self.x}\n'
+
+
+class _svd:
+    ''' 奇异值分解'''
+
+    def __init__(self, A):
+        self.A = A
+        self.U, S, self.Vt = np.linalg.svd(A, full_matrices=False)
+        # 将 S 变换为对角阵
+        self.S = np.zeros([self.U.shape[1], self.Vt.shape[0]])
+        self.S[:len(S), :len(S)] = np.diag(S)
+
+    def desc(self):
+        print(f'UU^T {self.U.shape}:', self.U @ self.U.T)  # 仅在 U 为方阵时成立
+        print(f'VV^T {self.Vt.shape}:', self.Vt.T @ self.Vt)
+        print('A - USV^T:', np.abs(self.A - self.U @ self.S @ self.Vt).sum())
+
+        lam = min(map(_eig, [self.A @ self.A.T, self.A.T @ self.A]), key=lambda x: len(x.lam)).lam
+        print('S - sqrt(λ):', np.abs(np.diag(self.S) - np.sqrt(np.diag(lam))).sum())
+        print()
+
+    def __repr__(self):
+        return f'U: {self.U}\n' \
+               f'S: {self.S}\n' \
+               f'Vt: {self.Vt}\n'
+
+
 def runge_kutta(pdfunc, init, dt, n):
     ''' :param pdfunc: 偏微分函数
         :param init: 初值条件'''
@@ -88,61 +139,51 @@ class PCA:
         return f'{__class__.__name__}{contri}'
 
 
-class _eig:
-    ''' 特征值分解'''
-    __ref__ = [PCA]
+class HexagonalMesh:
+    ''' 六边形网格'''
+    default = np.array(-1, dtype=np.int32)
 
-    def __init__(self, A):
-        self.A = A
-        self.lam, self.x = np.linalg.eig(A)
-        self.sort()
-        self.lam = np.diag(self.lam)
+    def __init__(self, w, h, data=None):
+        self._w, self._h = w, h
+        self.data = self.default[None, None].repeat(h, 0).repeat(w, 1)
+        # 对给定的数据进行裁剪
+        if isinstance(data, np.ndarray):
+            data = data.flatten()[:self.data.size].astype(self.default.dtype)
+            self.data = data.reshape(self.data.shape)
 
-    def sort(self):
-        order = np.argsort(self.lam)[::-1]
-        self.lam = self.lam[order]
-        self.x = self.x[:, order]
-
-    def desc(self):
-        print('Ax - xλ:', np.abs(self.A @ self.x - self.x @ self.lam).sum())
-        print('A - xλx^{-1}:', np.abs(self.A - self.x @ self.lam @ np.linalg.inv(self.x)).sum())
-        print('norm (each col)', np.linalg.norm(self.x, axis=0, keepdims=True))
-        print()
-
-    def __repr__(self):
-        return f'λ: {self.lam}\n' \
-               f'x: {self.x}\n'
-
-
-class _svd:
-    ''' 奇异值分解'''
-
-    def __init__(self, A):
-        self.A = A
-        self.U, S, self.Vt = np.linalg.svd(A, full_matrices=False)
-        # 将 S 变换为对角阵
-        self.S = np.zeros([self.U.shape[1], self.Vt.shape[0]])
-        self.S[:len(S), :len(S)] = np.diag(S)
-
-    def desc(self):
-        print(f'UU^T {self.U.shape}:', self.U @ self.U.T)  # 仅在 U 为方阵时成立
-        print(f'VV^T {self.Vt.shape}:', self.Vt.T @ self.Vt)
-        print('A - USV^T:', np.abs(self.A - self.U @ self.S @ self.Vt).sum())
-
-        lam = min(map(_eig, [self.A @ self.A.T, self.A.T @ self.A]), key=lambda x: len(x.lam)).lam
-        print('S - sqrt(λ):', np.abs(np.diag(self.S) - np.sqrt(np.diag(lam))).sum())
-        print()
+    def neighbor(self):
+        ''' :returns left, right, top-left, top-right, bottom-left, bottom-right'''
+        padh = self.default[None, None].repeat(self._h, 0)
+        padv = self.default[None, None].repeat(self._w + 1, 1)
+        query = np.concatenate([padh, self.data, padh], 1)
+        # 水平相邻
+        reth = np.stack([query[:, :-2], query[:, 2:]])
+        # 竖直相邻
+        query = np.stack([query[i, is_odd: is_odd + self._w + 1]
+                          for i, is_odd in enumerate(map(lambda i: i & 1 ^ 1, range(self._h)))])
+        query = np.concatenate([padv, query, padv], 0)
+        retv = np.stack([query[:-2, :-1], query[:-2, 1:], query[2:, :-1], query[2:, 1:]])
+        return np.concatenate([reth, retv], 0)
 
     def __repr__(self):
-        return f'U: {self.U}\n' \
-               f'S: {self.S}\n' \
-               f'Vt: {self.Vt}\n'
+        stream, length = [], 4
+        # 生成字符串流
+        for row in self.data:
+            stream.append(list(map(str, row)))
+            length = max(length, max(map(len, stream[-1])))
+        # 格式化字符串流
+        sep = ' ' * (length // 2)
+        indent = ' ' * int(0.75 * length)
+        for i, row in enumerate(stream):
+            stream[i] = indent * (i & 1) + sep.join(map(lambda x: x.center(length), row)).rstrip()
+        return '\n'.join(stream)
 
 
 if __name__ == '__main__':
     np.set_printoptions(3, suppress=True)
 
-    A = np.random.random([5, 3])
-    s = _svd(A)
-    print(s)
-    s.desc()
+    hm = HexagonalMesh(5, 5, np.arange(1000))
+    print(hm)
+
+    neighbor = hm.neighbor().transpose(1, 2, 0)
+    print(neighbor)
