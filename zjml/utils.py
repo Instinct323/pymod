@@ -6,7 +6,6 @@ import numpy as np
 
 class _eig:
     ''' 特征值分解'''
-    __ref__ = [PCA]
 
     def __init__(self, A):
         self.A = A
@@ -155,15 +154,21 @@ class HexagonalMesh:
         ''' :returns left, right, top-left, top-right, bottom-left, bottom-right'''
         padh = self.default[None, None].repeat(self._h, 0)
         padv = self.default[None, None].repeat(self._w + 1, 1)
-        query = np.concatenate([padh, self.data, padh], 1)
         # 水平相邻
+        query = np.concatenate([padh, self.data, padh], 1)
         reth = np.stack([query[:, :-2], query[:, 2:]])
         # 竖直相邻
-        query = np.stack([query[i, is_odd: is_odd + self._w + 1]
-                          for i, is_odd in enumerate(map(lambda i: i & 1 ^ 1, range(self._h)))])
+        query = np.stack([query[i, is_even: is_even + self._w + 1]
+                          for i, is_even in enumerate(map(lambda i: i & 1, range(self._h)))])
         query = np.concatenate([padv, query, padv], 0)
         retv = np.stack([query[:-2, :-1], query[:-2, 1:], query[2:, :-1], query[2:, 1:]])
         return np.concatenate([reth, retv], 0)
+
+    def pos(self):
+        xb, yb = np.meshgrid(*map(np.arange, (self._w, self._h)))
+        x = xb + 0.5 * (yb & 1 ^ 1)
+        y = yb * np.sqrt(3) / 2
+        return np.stack([x, y], -1)
 
     def __repr__(self):
         stream, length = [], 4
@@ -175,7 +180,7 @@ class HexagonalMesh:
         sep = ' ' * (length // 2)
         indent = ' ' * int(0.75 * length)
         for i, row in enumerate(stream):
-            stream[i] = indent * (i & 1) + sep.join(map(lambda x: x.center(length), row)).rstrip()
+            stream[i] = indent * (i & 1 ^ 1) + sep.join(map(lambda x: x.center(length), row)).rstrip()
         return '\n'.join(stream)
 
 
@@ -185,5 +190,4 @@ if __name__ == '__main__':
     hm = HexagonalMesh(5, 5, np.arange(1000))
     print(hm)
 
-    neighbor = hm.neighbor().transpose(1, 2, 0)
-    print(neighbor)
+    print(hm.neighbor())
