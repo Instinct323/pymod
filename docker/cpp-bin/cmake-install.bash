@@ -9,5 +9,5 @@ if [ $(id -u) -eq 0 ]; then
   rm -rf $1
 
 else
-  echo "permission denied."
+  echo "error: permission denied."
 fi
