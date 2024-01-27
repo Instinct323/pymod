@@ -300,7 +300,7 @@ class YamlModel(nn.Module):
 if __name__ == '__main__':
     import os
 
-    os.chdir(r'config')
+    os.chdir(r'cfg')
     image = torch.rand([1, 3, 224, 224]).cuda().half()
 
     model1 = YamlModel(Path('ResNet-50.yaml')).eval().cuda().half()

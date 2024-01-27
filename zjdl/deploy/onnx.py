@@ -44,7 +44,7 @@ class OnnxModel(ort.InferenceSession):
 if __name__ == '__main__':
     from pathlib import Path
 
-    file = Path(r'D:\Information\Python\mod\zjdl\config\weights\yolov7.onnx')
+    file = Path(r'D:\Information\Python\mod\zjdl\cfg\weights\yolov7.onnx')
     onnxm = OnnxModel(file)
 
     inp = np.random.random(onnxm.io_shape[0][0])

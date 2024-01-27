@@ -169,7 +169,7 @@ class Transform(list, _augment):
 
 
 if __name__ == '__main__':
-    # cj = Transform(Path('../config/hyp.yaml'))
+    # cj = Transform(Path('../cfg/hyp.yaml'))
 
     img = load_img('../data/dog_cat.jfif', 400)
     img = cv2.warpAffine(img, np.array([[1, 0, 100.],

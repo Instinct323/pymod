@@ -3,7 +3,7 @@ if __name__ == '__main__':
 
     from model.model import *
 
-    cfg = Path('config/cnn/_example.yaml')
+    cfg = Path('cfg/cnn/_example.yaml')
     m = YamlModel(cfg)
     RepConv.reparam(m)
 

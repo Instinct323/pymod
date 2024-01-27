@@ -61,7 +61,7 @@ class VinoModel(ov.CompiledModel):
 if __name__ == '__main__':
     from mod import *
 
-    file = Path(r'D:\Information\Python\mod\zjdl\config\weights\yolov7.onnx')
+    file = Path(r'D:\Information\Python\mod\zjdl\cfg\weights\yolov7.onnx')
     vinom = VinoModel.from_onnx(file, dst=Path('__pycache__'), half=False) \
         if 1 else VinoModel(Path(r'__pycache__\yolov7.xml'))
 

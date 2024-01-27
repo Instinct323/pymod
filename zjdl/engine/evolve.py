@@ -255,5 +255,5 @@ if __name__ == '__main__':
         return - loss
 
 
-    evolve = BayesOpt(Path('__pycache__'), Path('config/hyp.yaml'))
+    evolve = BayesOpt(Path('__pycache__'), Path('cfg/hyp.yaml'))
     print(evolve(fitness, 300))
