@@ -27,5 +27,5 @@ architecture:
 
     [ -1, 1, nn.AdaptiveAvgPool2d, [ 1 ] ],
     [ -1, 1, nn.Conv2d, [ 6, 1 ] ],
-    [ -1, 1, Squeeze, [ ] ]
+    [ -1, 1, Flatten, [ ] ]
   ]

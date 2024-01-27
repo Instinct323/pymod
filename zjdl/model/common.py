@@ -302,12 +302,6 @@ class Shortcut(nn.Module):
         return sum_(x)
 
 
-class Squeeze(nn.Module):
-
-    def forward(self, x):
-        return x[..., 0, 0]
-
-
 class Concat(nn.Module):
     # Concatenate a list of tensors along dimension
     def __init__(self, dim=1):
