@@ -99,9 +99,12 @@ def violinplot(dataset: list, labels=None, colors=None,
 
 
 def regionplot(y, mean, std, y_color=blue,
-               region_color=cyan, region_alpha=.2):
+               region_color=cyan, region_alpha=.2, sample=100):
     ''' 绘制区域图'''
-    x = np.arange(len(y))
+    sample = min(sample, len(y))
+    x = np.linspace(0, len(y) - 1, sample, dtype=np.int32)
+    y, mean, std = y[x], mean[x], std[x]
+
     plt.plot(x, y, color=y_color)
     plt.fill_between(x, mean - std, mean + std, alpha=region_alpha, color=region_color)
 
