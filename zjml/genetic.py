@@ -45,7 +45,8 @@ class GeneticOpt:
                  n_unit: int,
                  cross_proba: float = 0.4,
                  var_proba: float = 0.3,
-                 well_radio: float = 0.2):
+                 well_radio: float = 0.2,
+                 best_unit: ChromosomeBase = None):
         self.chromosome = chromosome
         self.n_unit = n_unit
         self.group = self.new_unit(self.n_unit)
@@ -59,6 +60,8 @@ class GeneticOpt:
 
         assert 0 <= well_radio <= 1, 'well_radio must be in [0, 1]'
         self._well_radio = well_radio
+
+        if isinstance(best_unit, ChromosomeBase): self.group[0] = best_unit
 
     def new_unit(self, size: int) -> list:
         ''' 初始化染色体群体'''
