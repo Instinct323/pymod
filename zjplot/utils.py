@@ -21,6 +21,7 @@ rainbow = [red, orange, yellow, green, cyan, blue, purple, pink]
 SIMSUN = {'fontsize': 9, 'family': 'SimSun'}
 plt.rcParams['font.sans-serif'] = 'Microsoft YaHei'
 
+
 # plt.rcParams.update({
 #     'font.family': 'Times New Roman',  # 绘制文本的字体系列
 #     'font.size': 9,  # 文本大小 (小五号)
@@ -97,6 +98,14 @@ def violinplot(dataset: list, labels=None, colors=None,
     return vp
 
 
+def regionplot(y, mean, std, y_color=blue,
+               region_color=cyan, region_alpha=.2):
+    ''' 绘制区域图'''
+    x = np.arange(len(y))
+    plt.plot(x, y, color=y_color)
+    plt.fill_between(x, mean - std, mean + std, alpha=region_alpha, color=region_color)
+
+
 def bar2d(dataset, xticks=None, labels=None, colors=None, alpha=1):
     x = np.arange(dataset.shape[1])
     bias = np.linspace(-.5, .5, dataset.shape[0] + 2)[1:-1]
@@ -136,7 +145,6 @@ def hotmap(array, fig=None, pos=0, fformat='%f', cmap='Blues', size=10, title=No
 
 
 if __name__ == '__main__':
-    plt.title('Wise-IoU')
-    plt.ylabel('中文: 小五号宋体', fontdict=SIMSUN)
-    plt.xlabel(r'Wise-IoU: $\alpha_i$')
+    y = np.random.random([100, 100])
+    regionplot(y[:, 0], y.mean(0), y.std(0))
     plt.show()

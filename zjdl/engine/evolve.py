@@ -1,6 +1,7 @@
 import logging
 import pickle
 import time
+from functools import wraps
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,6 +16,7 @@ LOGGER = logging.getLogger(__name__)
 
 def try_except(func):
     # try-except function. Usage: @try_except decorator
+    @wraps(func)
     def handler(*args, **kwargs):
         try:
             return func(*args, **kwargs)

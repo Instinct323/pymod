@@ -2,6 +2,7 @@ from typing import Sequence, Optional
 
 import numpy as np
 from tqdm import trange
+import pandas as pd
 
 DTYPE = np.float32
 INF = np.finfo(DTYPE).max
@@ -35,6 +36,11 @@ class ParticleSwarmOpt:
             self.best_fitness = - np.inf
         # 记录不产生最优个体的次数
         self._angry = 0
+        # 生成粒子群
+        self.particle = self.generate(self._n)
+        if isinstance(self.best_unit, np.ndarray): self.particle[0] = self.best_unit
+        self.inertia = np.zeros_like(self.particle)
+        self.log = []
 
     def generate(self, n: int) -> np.ndarray:
         ''' 产生指定规模的群体'''
@@ -59,10 +65,6 @@ class ParticleSwarmOpt:
             :param patience: 允许搜索无进展的次数
             :param inertia_weight: 惯性权值
             :param random_epochs_percent: 随机搜索轮次百分比'''
-        # 生成粒子群
-        self.particle = self.generate(self._n)
-        if isinstance(self.best_unit, np.ndarray): self.particle[0] = self.best_unit
-        self.inertia = np.zeros_like(self.particle)
         # 随机搜索轮次数
         random_epochs = int(random_epochs_percent * epochs)
         pbar = trange(epochs)
@@ -78,10 +80,6 @@ class ParticleSwarmOpt:
             # 移动粒子: 吸引力 + 惯量 * 系数
             self.particle += (move_pace + inertia_weight * self.inertia) * self._lr
             self.inertia = move_pace
-            # 粒子修正, 重叠检测
-            self.revisal()
-            unique = np.unique(self.particle, return_index=True, axis=0)[1]
-            self._particle_filter(unique)
             # 群体补全
             need = self._n - len(self.particle)
             if need:
@@ -90,27 +88,44 @@ class ParticleSwarmOpt:
             # 展示进度
             pbar.set_description((f'%-10s' + '%-10.4g') % (prefix, self.best_fitness))
         pbar.close()
-        return self.best_unit
+        return self.best_unit, pd.DataFrame(self.log, columns=['fit-best', 'fit-mean', 'fit-std', 'n-unique'])
 
-    def _particle_filter(self, cond: np.ndarray) -> None:
-        ''' 粒子筛选'''
+    def _particle_slice(self, cond: np.ndarray) -> None:
+        ''' 粒子切片'''
         self.particle = self.particle[cond]
         self.inertia = self.inertia[cond]
 
+    def _sort_unique(self):
+        self.revisal()
+        # 去除无限值
+        fitness = np.array(self.fitness(self.particle), dtype=DTYPE)
+        cond = np.isfinite(fitness)
+        self._particle_slice(cond)
+        fitness = fitness[cond]
+        # 重叠检测
+        order = np.argsort(fitness)[::-1]
+        for i in range(len(order)):
+            for j in range(i + 1, len(order)):
+                if fitness[order[i]] == fitness[order[j]] and np.all(
+                        self.particle[order[i]] == self.particle[order[j]]):
+                    order[i] = -1
+                    break
+        # 应用排序结果
+        order = order[order != -1]
+        self._particle_slice(order)
+        return fitness[order]
+
     def _fitness_factor(self) -> np.ndarray:
         ''' 适应度因子'''
-        fitness = np.array(self.fitness(self.particle), dtype=DTYPE)
-        fitness[~ np.isfinite(fitness)] = - INF
-        # 局部最优的个体
-        cur_best_index = fitness.argmax()
-        cur_best_fitness = fitness[cur_best_index]
+        fitness = self._sort_unique()
         # 更新全局最优的个体
-        if np.isfinite(cur_best_fitness) and cur_best_fitness > self.best_fitness:
+        if fitness[0] > self.best_fitness:
             self._angry = 0
-            self.best_fitness = cur_best_fitness
-            self.best_unit = self.particle[cur_best_index].copy()
+            self.best_fitness = fitness[0]
+            self.best_unit = self.particle[0].copy()
         else:
             self._angry += 1
+        self.log.append([fitness[0], fitness.mean(), fitness.std(), len(fitness)])
         # 只保留优粒子的适应度
         well_bound = np.sort(fitness)[- self._well_size]
         fitness = np.maximum(np.append(fitness, self.best_fitness) - well_bound, 0)
@@ -150,13 +165,13 @@ if __name__ == '__main__':
     class My_PSO(ParticleSwarmOpt):
 
         def fitness(self, particle):
-            return np.sin(particle).sum(axis=-1) - 1000
+            return np.sin(particle).sum(axis=-1)
 
 
     # 重写粒子群优化器, 并初始化
-    pso = My_PSO(100, coord_info=COORD_RANGE)
-    best = pso.fit(10)
-    print(best)
+    pso = My_PSO(50, coord_info=COORD_RANGE)
+    best, log = pso.fit(10)
+    print(log)
     # 绘制最优解
     plt.scatter(best, np.sin(best), marker='p', c='orange')
     plt.show()

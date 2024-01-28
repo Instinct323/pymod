@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from functools import wraps
 from pathlib import WindowsPath, PosixPath, Path as _path
 
 import cv2
@@ -42,6 +43,7 @@ class timer:
     def __call__(self, func):
         import time
 
+        @wraps(func)
         def handler(*args, **kwargs):
             t0 = time.time()
             for i in range(self.repeat): func(*args, **kwargs)
@@ -59,6 +61,7 @@ class run_once:
     def __call__(self, func):
         import time
 
+        @wraps(func)
         def handler(*args, **kwargs):
             # Try to run it an infinite number of times until it succeeds
             while True:
@@ -76,6 +79,7 @@ class singleton:
     _instance = {}
 
     def __new__(ctx, cls):
+        @wraps(cls)
         def handler(*args, **kwargs):
             if cls not in ctx._instance:
                 ctx._instance[cls] = cls(*args, **kwargs)
@@ -86,6 +90,7 @@ class singleton:
 
 def try_except(func):
     # try-except function. Usage: @try_except decorator
+    @wraps(func)
     def handler(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -231,5 +236,4 @@ class Capture(cv2.VideoCapture):
 
 
 if __name__ == '__main__':
-    p = Path(r'D:\Information\Python\Completed\Shelf\TiaoZhanBei\onnx runner\yolov7.pt')
     print('hello' + colorstr('hi', 'red', 'bold') + 'dddd')
