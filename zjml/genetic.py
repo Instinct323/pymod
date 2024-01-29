@@ -122,12 +122,13 @@ class GeneticOpt:
 
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
+    from mod.zjplot import *
 
-    N_NODE = 25
+    np.random.seed(0)
 
+    N_NODE = 50
     POS = np.random.random([N_NODE, 2]) * 10
-    ADJ = np.zeros([N_NODE] * 2, dtype=np.float16)
+    ADJ = np.zeros([N_NODE] * 2, dtype=np.float32)
     # 初始化邻接矩阵
     for i in range(N_NODE):
         for j in range(i + 1, N_NODE):
@@ -135,9 +136,27 @@ if __name__ == '__main__':
 
 
     class Path(ChromosomeBase):
+        cluster = None
+
+        @classmethod
+        def kmeans(cls):
+            from sklearn.cluster import KMeans
+            k = N_NODE // 10
+            clf = KMeans(n_clusters=k, n_init='auto')
+            clf.fit(ADJ)
+            cls.cluster = [np.where(clf.labels_ == i)[0] for i in range(k)]
+            print('Init cluster.')
 
         def __init__(self, data=None):
-            self.data = data if isinstance(data, np.ndarray) else np.random.permutation(N_NODE)
+            if isinstance(data, np.ndarray):
+                self.data = data
+            else:
+                if self.cluster:
+                    np.random.shuffle(self.cluster)
+                    for i in range(len(self.cluster)): np.random.shuffle(self.cluster[i])
+                    self.data = np.concatenate(self.cluster)
+                else:
+                    self.data = np.random.permutation(N_NODE)
 
         def __eq__(self, other):
             return np.all(self.data == other.data)
@@ -160,8 +179,12 @@ if __name__ == '__main__':
             raise NotImplementedError
 
 
+    Path.kmeans()
     ga = GeneticOpt(Path, 50, cross_proba=0, var_proba=0.6)
-    unit, log = ga.fit(500)
+    unit, log = ga.fit(5000)
+
+    regionplot(log['fit-best'], log['fit-mean'], log['fit-std'])
+    plt.show()
     print(log)
 
     # 绘制最优路径
