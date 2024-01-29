@@ -1,4 +1,3 @@
-import random
 from typing import Type
 
 import numpy as np
@@ -52,11 +51,9 @@ class GeneticOpt:
         self.group = self.new_unit(self.n_unit)
         self.log = []
 
-        assert 0 <= cross_proba <= 1, 'cross_proba must be in [0, 1]'
-        assert 0 <= var_proba <= 1, 'var_proba must be in [0, 1]'
+        assert 0 < cross_proba + var_proba < 1, 'cross_proba + var_proba must be in (0, 1)'
         self._cross_proba = cross_proba
         self._var_proba = var_proba
-        assert cross_proba + var_proba > 0, 'cross_proba + var_proba must be greater than 0'
 
         assert 0 <= well_radio <= 1, 'well_radio must be in [0, 1]'
         self._well_radio = well_radio
@@ -95,7 +92,7 @@ class GeneticOpt:
         n_well = max(2, round(self.n_unit * self._well_radio))
         n_choose = self.n_unit - n_well
         # 轮盘赌法采样
-        f_sample = lambda p: random.choices(self.group, weights=p)[0]
+        f_sample = lambda p: np.random.choice(self.group, p=p)
         for _ in pbar:
             self.group, fitness = self.sort_unique(self.group)
             # 收敛检测
@@ -109,12 +106,13 @@ class GeneticOpt:
             # 使用轮盘赌法进行筛选
             p = fitness - fitness.min()
             p = p / p.sum()
-            for _ in range(n_choose):
-                pc, pv = np.random.random(2)
+            for x in np.random.random(n_choose):
                 unit = f_sample(p)
-                # 交叉遗传 / 基因突变
-                if pc <= self._cross_proba: unit = unit.cross_with(f_sample(p))
-                if pv <= self._var_proba: unit = unit.variation()
+                # 基因突变 / 交叉遗传
+                if x <= self._var_proba:
+                    unit = unit.variation()
+                elif 1 - x <= self._cross_proba:
+                    unit = unit.cross_with(f_sample(p))
                 tmp_group.append(unit)
             self.group = tmp_group
         pbar.close()
@@ -126,7 +124,7 @@ if __name__ == '__main__':
 
     np.random.seed(0)
 
-    N_NODE = 200
+    N_NODE = 100
     POS = np.random.random([N_NODE, 2]) * 10
     ADJ = np.zeros([N_NODE] * 2, dtype=np.float32)
     # 初始化邻接矩阵
@@ -161,12 +159,15 @@ if __name__ == '__main__':
                     # 完全随机的路径序列
                     self.data = np.random.permutation(N_NODE)
 
+            data = np.concatenate([self.data, self.data[:1]])
+            self._dist = ADJ[data[:-1], data[1:]]
+            self._p = self._dist / self._dist.sum()
+
         def __eq__(self, other):
             return np.all(self.data == other.data)
 
         def fitness(self) -> float:
-            data = np.concatenate([self.data, self.data[:1]])
-            return - ADJ[data[:-1], data[1:]].sum()
+            return - self._dist.sum()
 
         def variation(self):
             ''' 基因突变'''
@@ -186,7 +187,19 @@ if __name__ == '__main__':
 
         def cross_with(self, other):
             ''' 交叉遗传'''
-            raise NotImplementedError
+            l = np.random.choice(N_NODE, p=self._p)
+
+            other = other.data.tolist()
+            lo = other.index(self.data[l])
+            ro = other.index(self.data[(l + 1) % N_NODE])
+
+            if not (2 < abs(lo - ro) < N_NODE / 2): return self
+
+            other = other[lo: ro + 1] if lo < ro else other[ro: lo + 1][::-1]
+            return __class__(np.array(
+                [x for x in self.data[:l] if x not in other] +
+                other + [x for x in self.data[l + 2:] if x not in other]
+            ))
 
 
     colors = [blue, purple]
@@ -195,8 +208,8 @@ if __name__ == '__main__':
     for i in range(2):
         if i: Path.kmeans_init()
 
-        ga = GeneticOpt(Path, 50, cross_proba=0, var_proba=0.6)
-        unit, log = ga.fit(10000)
+        ga = GeneticOpt(Path, 50, cross_proba=0.45, var_proba=0.3)
+        unit, log = ga.fit(3000)
 
         # 绘制最优路径
         fig = plt.subplot(1, 3, i + 1)
