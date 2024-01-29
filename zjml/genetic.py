@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
     np.random.seed(0)
 
-    N_NODE = 50
+    N_NODE = 200
     POS = np.random.random([N_NODE, 2]) * 10
     ADJ = np.zeros([N_NODE] * 2, dtype=np.float32)
     # 初始化邻接矩阵
@@ -147,9 +147,9 @@ if __name__ == '__main__':
             cls.cluster = [np.where(clf.labels_ == i)[0] for i in range(k)]
             print('Init cluster.')
 
-            for ct in cls.cluster:
-                plt.scatter(*POS[ct].T)
-            plt.show()
+            # for ct in cls.cluster:
+            #     plt.scatter(*POS[ct].T)
+            # plt.show()
 
         def __init__(self, data=None):
             # self.data = data if isinstance(data, np.ndarray) else np.random.permutation(N_NODE)
@@ -190,18 +190,28 @@ if __name__ == '__main__':
             raise NotImplementedError
 
 
-    Path.kmeans_init()
-    ga = GeneticOpt(Path, 50, cross_proba=0, var_proba=0.6)
-    unit, log = ga.fit(5000)
+    colors = [blue, purple]
+    labels = ['Random', 'Proposed']
 
-    regionplot(log['fit-best'], log['fit-mean'], log['fit-std'])
-    plt.show()
-    print(log)
+    for i in range(2):
+        if i: Path.kmeans_init()
+        ga = GeneticOpt(Path, 50, cross_proba=0, var_proba=0.6)
+        unit, log = ga.fit(20000)
 
-    # 绘制最优路径
-    fig = plt.subplot()
-    for key in 'right', 'top':
-        fig.spines[key].set_color('None')
-    plt.plot(*POS[unit.data].T, c='deepskyblue')
-    plt.scatter(*POS.T, marker='p', c='orange')
+        # 绘制最优路径
+        fig = plt.subplot(1, 3, i + 1)
+        plt.title(labels[i])
+        plt.xticks([], []), plt.yticks([], [])
+        for key in 'right', 'top':
+            fig.spines[key].set_color('None')
+        plt.plot(*POS[unit.data].T, c=colors[i])
+        plt.scatter(*POS.T, marker='p', c='orange')
+
+        # 绘制适应度曲线
+        plt.subplot(1, 3, 3)
+        regionplot(log['fit-best'], log['fit-mean'], log['fit-std'],
+                   y_color=colors[i], region_color=colors[i], label=labels[i])
+
+    plt.subplot(1, 3, 3)
+    plt.legend()
     plt.show()

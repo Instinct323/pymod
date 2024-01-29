@@ -99,13 +99,13 @@ def violinplot(dataset: list, labels=None, colors=None,
 
 
 def regionplot(y, mean, std, y_color=blue,
-               region_color=cyan, region_alpha=.2, sample=100):
+               region_color=blue, region_alpha=.2, label=None, sample=100):
     ''' 绘制区域图'''
     sample = min(sample, len(y))
     x = np.linspace(0, len(y) - 1, sample, dtype=np.int32)
     y, mean, std = y[x], mean[x], std[x]
 
-    plt.plot(x, y, color=y_color)
+    plt.plot(x, y, color=y_color, label=label)
     plt.plot(x, mean, color='white')
     plt.fill_between(x, mean - std, mean + std, alpha=region_alpha, color=region_color)
 
@@ -150,5 +150,6 @@ def hotmap(array, fig=None, pos=0, fformat='%f', cmap='Blues', size=10, title=No
 
 if __name__ == '__main__':
     y = np.random.random([100, 100])
-    regionplot(y[:, 0], y.mean(0), y.std(0))
+    regionplot(y[:, 0], y.mean(0), y.std(0), label='test')
+    plt.legend()
     plt.show()
