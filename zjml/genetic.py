@@ -210,6 +210,7 @@ if __name__ == '__main__':
 
         ga = GeneticOpt(Path, 50, cross_proba=0.45 * i, var_proba=0.3)
         unit, log = ga.fit(2500)
+        unit = np.concatenate([unit.data, unit.data[:1]])
 
         # 绘制最优路径
         fig = plt.subplot(1, 3, i + 1)
@@ -217,7 +218,7 @@ if __name__ == '__main__':
         plt.xticks([], []), plt.yticks([], [])
         for key in 'right', 'top':
             fig.spines[key].set_color('None')
-        plt.plot(*POS[unit.data].T, c=colors[i])
+        plt.plot(*POS[unit].T, c=colors[i])
         plt.scatter(*POS.T, marker='p', c='orange')
 
         # 绘制适应度曲线
