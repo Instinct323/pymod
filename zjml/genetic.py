@@ -175,10 +175,13 @@ if __name__ == '__main__':
             # note: 对数据进行深拷贝, 否则会影响其他个体
             data = self.data.copy()
 
-            if np.random.random() < 0.5:
-                np.random.shuffle(data[l: r + 1])
-            else:
+            tmp = ADJ[data[l - 1], data[r]] + ADJ[data[l], data[(r + 1) % N_NODE]]
+            cur = ADJ[data[l - 1], data[l]] + ADJ[data[r], data[(r + 1) % N_NODE]]
+
+            if tmp < cur:
                 data[l: r + 1] = data[l: r + 1][::-1]
+            else:
+                np.random.shuffle(data[l: r + 1])
             return __class__(data)
 
         def cross_with(self, other):
