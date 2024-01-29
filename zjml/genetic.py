@@ -139,7 +139,7 @@ if __name__ == '__main__':
         cluster = None
 
         @classmethod
-        def kmeans(cls):
+        def kmeans_init(cls):
             from sklearn.cluster import KMeans
             k = round(np.sqrt(N_NODE))
             clf = KMeans(n_clusters=k, n_init='auto')
@@ -153,7 +153,7 @@ if __name__ == '__main__':
             else:
                 if self.cluster:
                     np.random.shuffle(self.cluster)
-                    for i in range(len(self.cluster)): np.random.shuffle(self.cluster[i])
+                    tuple(map(np.random.shuffle, self.cluster))
                     self.data = np.concatenate(self.cluster)
                 else:
                     self.data = np.random.permutation(N_NODE)
@@ -179,7 +179,7 @@ if __name__ == '__main__':
             raise NotImplementedError
 
 
-    Path.kmeans()
+    Path.kmeans_init()
     ga = GeneticOpt(Path, 50, cross_proba=0, var_proba=0.6)
     unit, log = ga.fit(5000)
 
