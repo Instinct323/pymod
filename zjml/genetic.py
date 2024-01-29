@@ -147,10 +147,6 @@ if __name__ == '__main__':
             cls.cluster = [np.where(clf.labels_ == i)[0] for i in range(k)]
             print('Init cluster.')
 
-            # for ct in cls.cluster:
-            #     plt.scatter(*POS[ct].T)
-            # plt.show()
-
         def __init__(self, data=None):
             # self.data = data if isinstance(data, np.ndarray) else np.random.permutation(N_NODE)
             if isinstance(data, np.ndarray):
@@ -195,8 +191,9 @@ if __name__ == '__main__':
 
     for i in range(2):
         if i: Path.kmeans_init()
+
         ga = GeneticOpt(Path, 50, cross_proba=0, var_proba=0.6)
-        unit, log = ga.fit(20000)
+        unit, log = ga.fit(10000)
 
         # 绘制最优路径
         fig = plt.subplot(1, 3, i + 1)
@@ -213,5 +210,6 @@ if __name__ == '__main__':
                    y_color=colors[i], region_color=colors[i], label=labels[i])
 
     plt.subplot(1, 3, 3)
+    plt.title('fitness')
     plt.legend()
     plt.show()
