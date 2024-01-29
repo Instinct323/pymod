@@ -106,6 +106,7 @@ def regionplot(y, mean, std, y_color=blue,
     y, mean, std = y[x], mean[x], std[x]
 
     plt.plot(x, y, color=y_color)
+    plt.plot(x, mean, color='white')
     plt.fill_between(x, mean - std, mean + std, alpha=region_alpha, color=region_color)
 
 
