@@ -147,6 +147,10 @@ if __name__ == '__main__':
             cls.cluster = [np.where(clf.labels_ == i)[0] for i in range(k)]
             print('Init cluster.')
 
+            for ct in cls.cluster:
+                plt.scatter(*POS[ct].T)
+            plt.show()
+
         def __init__(self, data=None):
             # self.data = data if isinstance(data, np.ndarray) else np.random.permutation(N_NODE)
             if isinstance(data, np.ndarray):
