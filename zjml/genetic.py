@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
     np.random.seed(0)
 
-    N_NODE = 80
+    N_NODE = 100
     POS = np.random.random([N_NODE, 2]) * 10
     ADJ = np.zeros([N_NODE] * 2, dtype=np.float32)
     # 初始化邻接矩阵
