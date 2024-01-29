@@ -139,23 +139,26 @@ if __name__ == '__main__':
         cluster = None
 
         @classmethod
-        def kmeans_init(cls):
+        def kmeans_init(cls, k=round(np.sqrt(N_NODE))):
             from sklearn.cluster import KMeans
-            k = round(np.sqrt(N_NODE))
             clf = KMeans(n_clusters=k, n_init='auto')
             clf.fit(ADJ)
+            # 路标点分块
             cls.cluster = [np.where(clf.labels_ == i)[0] for i in range(k)]
             print('Init cluster.')
 
         def __init__(self, data=None):
+            # self.data = data if isinstance(data, np.ndarray) else np.random.permutation(N_NODE)
             if isinstance(data, np.ndarray):
                 self.data = data
             else:
                 if self.cluster:
+                    # 分块随机的路径序列
                     np.random.shuffle(self.cluster)
                     tuple(map(np.random.shuffle, self.cluster))
                     self.data = np.concatenate(self.cluster)
                 else:
+                    # 完全随机的路径序列
                     self.data = np.random.permutation(N_NODE)
 
         def __eq__(self, other):
@@ -171,7 +174,11 @@ if __name__ == '__main__':
             r = np.random.randint(l + 1, N_NODE)
             # note: 对数据进行深拷贝, 否则会影响其他个体
             data = self.data.copy()
-            np.random.shuffle(data[l: r + 1])
+
+            if np.random.random() < 0.5:
+                np.random.shuffle(data[l: r + 1])
+            else:
+                data[l: r + 1] = data[l: r + 1][::-1]
             return __class__(data)
 
         def cross_with(self, other):
