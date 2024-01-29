@@ -141,7 +141,7 @@ if __name__ == '__main__':
         @classmethod
         def kmeans(cls):
             from sklearn.cluster import KMeans
-            k = N_NODE // 10
+            k = round(np.sqrt(N_NODE))
             clf = KMeans(n_clusters=k, n_init='auto')
             clf.fit(ADJ)
             cls.cluster = [np.where(clf.labels_ == i)[0] for i in range(k)]
