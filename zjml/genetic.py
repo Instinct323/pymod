@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
     np.random.seed(0)
 
-    N_NODE = 100
+    N_NODE = 80
     POS = np.random.random([N_NODE, 2]) * 10
     ADJ = np.zeros([N_NODE] * 2, dtype=np.float32)
     # 初始化邻接矩阵
@@ -208,8 +208,8 @@ if __name__ == '__main__':
     for i in range(2):
         if i: Path.kmeans_init()
 
-        ga = GeneticOpt(Path, 50, cross_proba=0.45, var_proba=0.3)
-        unit, log = ga.fit(3000)
+        ga = GeneticOpt(Path, 50, cross_proba=0.45 * i, var_proba=0.3)
+        unit, log = ga.fit(2500)
 
         # 绘制最优路径
         fig = plt.subplot(1, 3, i + 1)
