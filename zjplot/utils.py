@@ -99,7 +99,7 @@ def violinplot(dataset: list, labels=None, colors=None,
 
 
 def regionplot(y, mean, std, y_color=blue,
-               region_color=blue, region_alpha=.2, label=None, sample=100):
+               region_color=None, region_alpha=.2, label=None, sample=100):
     ''' 绘制区域图'''
     sample = min(sample, len(y))
     x = np.linspace(0, len(y) - 1, sample, dtype=np.int32)
@@ -107,7 +107,8 @@ def regionplot(y, mean, std, y_color=blue,
 
     plt.plot(x, y, color=y_color, label=label)
     plt.plot(x, mean, color='white')
-    plt.fill_between(x, mean - std, mean + std, alpha=region_alpha, color=region_color)
+    plt.fill_between(x, mean - std, mean + std,
+                     color=region_color if region_color else y_color, alpha=region_alpha)
 
 
 def bar2d(dataset, xticks=None, labels=None, colors=None, alpha=1):
