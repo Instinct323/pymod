@@ -125,12 +125,9 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     N_NODE = 100
-    POS = np.random.random([N_NODE, 2]) * 10
-    ADJ = np.zeros([N_NODE] * 2, dtype=np.float32)
     # 初始化邻接矩阵
-    for i in range(N_NODE):
-        for j in range(i + 1, N_NODE):
-            ADJ[i][j] = ADJ[j][i] = np.sqrt(((POS[i] - POS[j]) ** 2).sum())
+    POS = np.random.random([N_NODE, 2]) * 10
+    ADJ = np.sqrt(np.square(POS[:, None] - POS).sum(axis=-1))
 
 
     class Path(ChromosomeBase):
@@ -209,7 +206,7 @@ if __name__ == '__main__':
         if i: Path.kmeans_init()
 
         ga = GeneticOpt(Path, 50, cross_proba=0.45 * i, var_proba=0.3)
-        unit, log = ga.fit(2500)
+        unit, log = ga.fit(4000)
         unit = np.concatenate([unit.data, unit.data[:1]])
 
         # 绘制最优路径
