@@ -223,8 +223,7 @@ if __name__ == '__main__':
 
         # 绘制适应度曲线
         plt.subplot(1, 3, 3)
-        regionplot(log['fit-best'], log['fit-mean'], log['fit-std'],
-                   y_color=colors[i], region_color=colors[i], label=labels[i])
+        regionplot(log['fit-best'], log['fit-mean'], log['fit-std'], y_color=colors[i], label=labels[i])
 
     plt.subplot(1, 3, 3)
     plt.title('fitness')
