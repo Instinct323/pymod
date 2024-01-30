@@ -55,7 +55,7 @@ class GeneticOpt:
         self._cross_proba = cross_proba
         self._var_proba = var_proba
 
-        assert 0 <= well_radio <= 1, 'well_radio must be in [0, 1]'
+        assert 0 < well_radio < 1, 'well_radio must be in (0, 1)'
         self._well_radio = well_radio
 
         if isinstance(best_unit, ChromosomeBase): self.group[0] = best_unit
