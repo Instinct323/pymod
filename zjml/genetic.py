@@ -119,6 +119,82 @@ class GeneticOpt:
         return self.group[0], pd.DataFrame(self.log, columns=['fit-best', 'fit-mean', 'fit-std', 'n-unique'])
 
 
+class CircuitPath(ChromosomeBase):
+    n = property(lambda self: len(self.adj))
+    adj = None
+    cluster = None
+
+    @classmethod
+    def kmeans_init(cls):
+        k = round(np.sqrt(len(cls.adj)))
+        # 对邻接矩阵进行聚类
+        from sklearn.cluster import KMeans
+        clf = KMeans(n_clusters=k, n_init='auto')
+        clf.fit(cls.adj)
+        # 路标点分块
+        cls.cluster = [np.where(clf.labels_ == i)[0] for i in range(k)]
+        print('Init cluster.')
+
+    def __init__(self, data=None):
+        # self.data = data if isinstance(data, np.ndarray) else np.random.permutation(self.n)
+        if isinstance(data, np.ndarray):
+            self.data = data
+        else:
+            if self.cluster:
+                # 分块随机的路径序列
+                np.random.shuffle(self.cluster)
+                tuple(map(np.random.shuffle, self.cluster))
+                self.data = np.concatenate(self.cluster)
+            else:
+                # 完全随机的路径序列
+                self.data = np.random.permutation(self.n)
+
+        data = np.concatenate([self.data, self.data[:1]])
+        self._dist = self.adj[data[:-1], data[1:]]
+        self._p = self._dist / self._dist.sum()
+
+    def __eq__(self, other):
+        return np.all(self.data == other.data)
+
+    def fitness(self) -> float:
+        return - self._dist.sum()
+
+    def variation(self):
+        ''' 基因突变'''
+        l = np.random.randint(0, self.n - 1)
+        r = np.random.randint(l + 1, self.n)
+        # note: 对数据进行深拷贝, 否则会影响其他个体
+        data = self.data.copy()
+
+        tmp = self.adj[data[l - 1], data[r]] + self.adj[data[l], data[(r + 1) % self.n]]
+        cur = self.adj[data[l - 1], data[l]] + self.adj[data[r], data[(r + 1) % self.n]]
+
+        if tmp < cur:
+            data[l: r + 1] = data[l: r + 1][::-1]
+        else:
+            np.random.shuffle(data[l: r + 1])
+        return __class__(data)
+
+    def cross_with(self, other):
+        ''' 交叉遗传'''
+        other = other.data.tolist()
+
+        for _ in range(10):
+            l = np.random.choice(self.n, p=self._p)
+
+            lo = other.index(self.data[l])
+            ro = other.index(self.data[(l + 1) % self.n])
+
+            if not (2 < abs(lo - ro) < self.n / 2): continue
+
+            other = other[lo: ro + 1] if lo < ro else other[ro: lo + 1][::-1]
+            return __class__(np.array(
+                [x for x in self.data[:l] if x not in other] +
+                other + [x for x in self.data[l + 2:] if x not in other]
+            ))
+        return self
+
+
 if __name__ == '__main__':
     from mod.zjplot import *
 
@@ -127,86 +203,16 @@ if __name__ == '__main__':
     N_NODE = 100
     # 初始化邻接矩阵
     POS = np.random.random([N_NODE, 2]) * 10
-    ADJ = np.sqrt(np.square(POS[:, None] - POS).sum(axis=-1))
-
-
-    class Path(ChromosomeBase):
-        cluster = None
-
-        @classmethod
-        def kmeans_init(cls, k=round(np.sqrt(N_NODE))):
-            from sklearn.cluster import KMeans
-            clf = KMeans(n_clusters=k, n_init='auto')
-            clf.fit(ADJ)
-            # 路标点分块
-            cls.cluster = [np.where(clf.labels_ == i)[0] for i in range(k)]
-            print('Init cluster.')
-
-        def __init__(self, data=None):
-            # self.data = data if isinstance(data, np.ndarray) else np.random.permutation(N_NODE)
-            if isinstance(data, np.ndarray):
-                self.data = data
-            else:
-                if self.cluster:
-                    # 分块随机的路径序列
-                    np.random.shuffle(self.cluster)
-                    tuple(map(np.random.shuffle, self.cluster))
-                    self.data = np.concatenate(self.cluster)
-                else:
-                    # 完全随机的路径序列
-                    self.data = np.random.permutation(N_NODE)
-
-            data = np.concatenate([self.data, self.data[:1]])
-            self._dist = ADJ[data[:-1], data[1:]]
-            self._p = self._dist / self._dist.sum()
-
-        def __eq__(self, other):
-            return np.all(self.data == other.data)
-
-        def fitness(self) -> float:
-            return - self._dist.sum()
-
-        def variation(self):
-            ''' 基因突变'''
-            l = np.random.randint(0, N_NODE - 1)
-            r = np.random.randint(l + 1, N_NODE)
-            # note: 对数据进行深拷贝, 否则会影响其他个体
-            data = self.data.copy()
-
-            tmp = ADJ[data[l - 1], data[r]] + ADJ[data[l], data[(r + 1) % N_NODE]]
-            cur = ADJ[data[l - 1], data[l]] + ADJ[data[r], data[(r + 1) % N_NODE]]
-
-            if tmp < cur:
-                data[l: r + 1] = data[l: r + 1][::-1]
-            else:
-                np.random.shuffle(data[l: r + 1])
-            return __class__(data)
-
-        def cross_with(self, other):
-            ''' 交叉遗传'''
-            l = np.random.choice(N_NODE, p=self._p)
-
-            other = other.data.tolist()
-            lo = other.index(self.data[l])
-            ro = other.index(self.data[(l + 1) % N_NODE])
-
-            if not (2 < abs(lo - ro) < N_NODE / 2): return self
-
-            other = other[lo: ro + 1] if lo < ro else other[ro: lo + 1][::-1]
-            return __class__(np.array(
-                [x for x in self.data[:l] if x not in other] +
-                other + [x for x in self.data[l + 2:] if x not in other]
-            ))
-
+    ADJ = CircuitPath.adj = np.sqrt(np.square(POS[:, None] - POS).sum(axis=-1))
 
     colors = [blue, purple]
     labels = ['Random', 'Proposed']
 
     for i in range(2):
-        if i: Path.kmeans_init()
+        if i: CircuitPath.kmeans_init()
 
-        ga = GeneticOpt(Path, 50, cross_proba=0.45 * i, var_proba=0.3)
-        unit, log = ga.fit(4000)
+        ga = GeneticOpt(CircuitPath, 50, cross_proba=0.45 * i, var_proba=0.4)
+        unit, log = ga.fit(2000)
         unit = np.concatenate([unit.data, unit.data[:1]])
 
         # 绘制最优路径
