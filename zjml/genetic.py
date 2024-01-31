@@ -200,7 +200,7 @@ if __name__ == '__main__':
 
     np.random.seed(0)
 
-    N_NODE = 200
+    N_NODE = 100
     # 初始化邻接矩阵
     POS = np.random.random([N_NODE, 2]) * 10
     ADJ = TspPath.adj = np.sqrt(np.square(POS[:, None] - POS).sum(axis=-1))
@@ -212,7 +212,7 @@ if __name__ == '__main__':
         if i: TspPath.kmeans_init()
 
         ga = GeneticOpt(TspPath, 50, cross_proba=0.45 * i, var_proba=0.4)
-        unit, log = ga.fit(4000)
+        unit, log = ga.fit(2000)
         unit = np.concatenate([unit.data, unit.data[:1]])
 
         # 绘制最优路径
