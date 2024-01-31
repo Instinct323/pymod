@@ -119,7 +119,7 @@ class GeneticOpt:
         return self.group[0], pd.DataFrame(self.log, columns=['fit-best', 'fit-mean', 'fit-std', 'n-unique'])
 
 
-class CircuitPath(ChromosomeBase):
+class TspPath(ChromosomeBase):
     n = property(lambda self: len(self.adj))
     adj = None
     cluster = None
@@ -203,15 +203,15 @@ if __name__ == '__main__':
     N_NODE = 100
     # 初始化邻接矩阵
     POS = np.random.random([N_NODE, 2]) * 10
-    ADJ = CircuitPath.adj = np.sqrt(np.square(POS[:, None] - POS).sum(axis=-1))
+    ADJ = TspPath.adj = np.sqrt(np.square(POS[:, None] - POS).sum(axis=-1))
 
     colors = [blue, purple]
     labels = ['Random', 'Proposed']
 
     for i in range(2):
-        if i: CircuitPath.kmeans_init()
+        if i: TspPath.kmeans_init()
 
-        ga = GeneticOpt(CircuitPath, 50, cross_proba=0.45 * i, var_proba=0.4)
+        ga = GeneticOpt(TspPath, 50, cross_proba=0.45 * i, var_proba=0.4)
         unit, log = ga.fit(2000)
         unit = np.concatenate([unit.data, unit.data[:1]])
 
