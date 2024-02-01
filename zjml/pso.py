@@ -161,16 +161,16 @@ class RangeOpt(ParticleSwarmOpt):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
+    # 定义 3 个自变量的范围
+    COORD_RANGE = [0, 2], [2, 4], [4, 7]
+
 
     class My_PSO(RangeOpt):
+        coord_range = np.array(COORD_RANGE, dtype=DTYPE)
 
         def fitness(self, particle):
             return np.sin(particle).sum(axis=-1)
 
-
-    # 定义 3 个自变量的范围
-    COORD_RANGE = [0, 2], [2, 4], [4, 7]
-    My_PSO.coord_range = np.array(COORD_RANGE, dtype=DTYPE)
 
     # 绘制正弦函数
     t = np.linspace(0, 7, 100)
