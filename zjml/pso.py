@@ -5,31 +5,28 @@ from tqdm import trange
 import pandas as pd
 
 DTYPE = np.float32
-INF = np.finfo(DTYPE).max
 EPS = np.finfo(DTYPE).eps
 
 
 class ParticleSwarmOpt:
     ''' 粒子群优化器
         :param n: 粒子群规模
-        :param coord_info: 每个坐标的信息 (e.g.,取值范围)
-        :param well_percent: 优粒子百分比
         :param lr: 学习率
+        :param well_radio: 优粒子百分比
         :param best_unit: 已知最优个体'''
 
-    def __init__(self, n: int,
-                 coord_info: Sequence,
-                 well_percent: float = 0.15,
+    def __init__(self,
+                 n: int,
                  lr: float = 1.,
+                 well_radio: float = 0.15,
                  best_unit: Optional[Sequence] = None):
         # 记录系统参数
-        self.coord_info = np.array(coord_info, dtype=DTYPE)
         self._n = n
-        self._well_size = max(2, round(n * well_percent))
+        self._well_size = max(2, round(n * well_radio))
         self._lr = lr
         # 记录最优个体
         if best_unit:
-            self.best_unit = np.array(best_unit, DTYPE)
+            self.best_unit = np.array(best_unit, dtype=DTYPE)
             self.best_fitness = self.fitness(self.best_unit[None])
         else:
             self.best_unit = None
@@ -44,23 +41,21 @@ class ParticleSwarmOpt:
 
     def generate(self, n: int) -> np.ndarray:
         ''' 产生指定规模的群体'''
-        x = np.random.random([n, len(self.coord_info)])
-        return x * (self.coord_info[:, 1] - self.coord_info[:, 0]) + self.coord_info[:, 0]
-
-    def revisal(self):
-        ''' 越界处理'''
-        for j, (amin, amax) in enumerate(self.coord_info):
-            self.particle[:, j] = np.clip(self.particle[:, j], a_min=amin, a_max=amax)
+        raise NotImplementedError
 
     def fitness(self, particle: np.ndarray) -> np.ndarray:
         ''' 适应度函数 (max -> best)'''
         raise NotImplementedError
 
+    def revisal(self):
+        ''' 粒子修正 (e.g., 越界处理)'''
+        return
+
     def fit(self, epochs: int,
-            patience: int = -1,
+            patience: int = np.inf,
             inertia_weight: float = 0.5,
             random_epochs_percent: float = 0.4,
-            prefix='PSO_fit') -> float:
+            prefix='PSO-fit') -> float:
         ''' :param epochs: 训练轮次
             :param patience: 允许搜索无进展的次数
             :param inertia_weight: 惯性权值
@@ -84,7 +79,7 @@ class ParticleSwarmOpt:
             need = self._n - len(self.particle)
             if need:
                 self.particle = np.concatenate([self.particle, self.generate(need)], axis=0)
-                self.inertia = np.concatenate([self.inertia, np.zeros([need, len(self.coord_info)])])
+                self.inertia = np.concatenate([self.inertia, np.zeros([need, self.particle.shape[-1]])], axis=0)
             # 展示进度
             pbar.set_description((f'%-10s' + '%-10.4g') % (prefix, self.best_fitness))
         pbar.close()
@@ -148,11 +143,34 @@ class ParticleSwarmOpt:
         return (direct * influence[..., None]).sum(axis=1)
 
 
+class RangeOpt(ParticleSwarmOpt):
+    ''' 产生给定范围内的粒子群'''
+    coord_range = None
+
+    def generate(self, n: int) -> np.ndarray:
+        ''' 产生指定规模的群体'''
+        x = np.random.random([n, len(self.coord_range)])
+        return x * (self.coord_range[:, 1] - self.coord_range[:, 0]) + self.coord_range[:, 0]
+
+    def revisal(self):
+        ''' 越界处理'''
+        for j, (amin, amax) in enumerate(self.coord_range):
+            self.particle[:, j] = np.clip(self.particle[:, j], a_min=amin, a_max=amax)
+
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
+
+    class My_PSO(RangeOpt):
+
+        def fitness(self, particle):
+            return np.sin(particle).sum(axis=-1)
+
+
     # 定义 3 个自变量的范围
     COORD_RANGE = [0, 2], [2, 4], [4, 7]
+    My_PSO.coord_range = np.array(COORD_RANGE, dtype=DTYPE)
 
     # 绘制正弦函数
     t = np.linspace(0, 7, 100)
@@ -161,15 +179,8 @@ if __name__ == '__main__':
     for bound in set(sum(COORD_RANGE, [])):
         plt.plot([bound] * 2, [-1, 1], color='aqua', linestyle='--')
 
-
-    class My_PSO(ParticleSwarmOpt):
-
-        def fitness(self, particle):
-            return np.sin(particle).sum(axis=-1)
-
-
     # 重写粒子群优化器, 并初始化
-    pso = My_PSO(50, coord_info=COORD_RANGE)
+    pso = My_PSO(50)
     best, log = pso.fit(10)
     print(log)
     # 绘制最优解

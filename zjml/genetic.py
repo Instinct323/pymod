@@ -192,7 +192,7 @@ class TspPath(ChromosomeBase):
                 [x for x in self.data[:l] if x not in other] +
                 other + [x for x in self.data[l + 2:] if x not in other]
             ))
-        return self
+        return self.variation()
 
 
 if __name__ == '__main__':
@@ -200,7 +200,7 @@ if __name__ == '__main__':
 
     np.random.seed(0)
 
-    N_NODE = 100
+    N_NODE = 150
     # 初始化邻接矩阵
     POS = np.random.random([N_NODE, 2]) * 10
     ADJ = TspPath.adj = np.sqrt(np.square(POS[:, None] - POS).sum(axis=-1))
@@ -211,8 +211,8 @@ if __name__ == '__main__':
     for i in range(2):
         if i: TspPath.kmeans_init()
 
-        ga = GeneticOpt(TspPath, 50, cross_proba=0.45 * i, var_proba=0.4)
-        unit, log = ga.fit(2000)
+        ga = GeneticOpt(TspPath, 50, cross_proba=0.4 * i, var_proba=0.3 * (2 - i))
+        unit, log = ga.fit(2500)
         unit = np.concatenate([unit.data, unit.data[:1]])
 
         # 绘制最优路径
