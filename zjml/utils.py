@@ -34,6 +34,28 @@ def adjusted_r_squared(pred, target, n_features):
     return 1 - rss / tss * adjusted
 
 
+class MarkovChain:
+    ''' 马尔科夫链
+        :param T: 转移概率矩阵'''
+
+    def __init__(self, T, check=True):
+        if check:
+            assert np.all(T.shape == (len(T),) * 2), 'Transitional matrix should be square'
+            assert np.abs(T.sum(axis=0) - 1).sum() < 1e-6, 'Sum of each row should be 1'
+        self.T = T
+
+    def steady_state(self):
+        ''' :return: 马氏链稳态概率分布'''
+        u, s, vt = np.linalg.svd(self.T - np.eye(len(self.T)))
+        return vt[-1] / vt[-1].sum()
+
+    def update_state(self, s, t):
+        ''' :param s: 当前状态
+            :param t: 转移次数
+            :return: 新状态概率分布'''
+        return np.linalg.matrix_power(self.T, t) @ s
+
+
 class PolyFun(np.poly1d):
     w = property(lambda self: self.c[::-1])
 
@@ -137,7 +159,13 @@ class HexagonalMesh:
 if __name__ == '__main__':
     np.set_printoptions(3, suppress=True)
 
-    hm = HexagonalMesh(5, 5, np.arange(1000))
-    print(hm)
+    for i in range(10):
+        T = np.random.rand(5, 5)
+        T /= T.sum(axis=0)
 
-    print(hm.neighbor())
+        m = MarkovChain(T)
+        s = m.steady_state()
+
+        print(s)
+        print(m.update_state(s, 10))
+        print()

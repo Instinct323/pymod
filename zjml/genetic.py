@@ -120,6 +120,7 @@ class GeneticOpt:
 
 
 class TspPath(ChromosomeBase):
+    ''' 旅行商问题'''
     n = property(lambda self: len(self.adj))
     adj = None
     cluster = None
