@@ -3,7 +3,10 @@
 # docker exec -it <ctn> bash
 
 FROM centos:7
-MAINTAINER TongZJ
+
+ARG USER=tongzj
+ARG PASSWD='20010323'
+ARG EMAIL='1400721986@qq.com'
 # InComplete
 
 # yum, wget
@@ -11,9 +14,9 @@ RUN yum install -y wget && \
     wget http://mirrors.aliyun.com/repo/Centos-7.repo -P /etc/yum.repos.d
 
 # Git
-RUN yum install -y git && \
-    git config --global user.name 'TongZJ' && \
-    git config --global user.email '1400721986@qq.com'
+RUN apt install -y git && \
+    git config --global user.name $USER && \
+    git config --global user.email $EMAIL
 
 # OpenSSH
 RUN yum install -y openssh-server && \
@@ -21,4 +24,5 @@ RUN yum install -y openssh-server && \
     sed -ri 's/^PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
 
+WORKDIR /home/$USER
 CMD /usr/sbin/sshd -D

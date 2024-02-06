@@ -3,10 +3,13 @@
 # docker exec -it <ctn> bash
 
 FROM ubuntu:18.04
-MAINTAINER TongZJ
 
-RUN useradd -m tongzj && \
-    echo 'tongzj:20010323' | chpasswd
+ARG USER=tongzj
+ARG PASSWD='20010323'
+ARG EMAIL='1400721986@qq.com'
+
+RUN useradd -m $USER && \
+    echo $USER:$PASSWD | chpasswd
 
 # apt
 RUN apt update && \
@@ -14,8 +17,8 @@ RUN apt update && \
 
 # Git
 RUN apt install -y git && \
-    git config --global user.name 'TongZJ' && \
-    git config --global user.email '1400721986@qq.com'
+    git config --global user.name $USER && \
+    git config --global user.email $EMAIL
 
 # OpenSSH
 RUN apt install -y openssh-server && \
@@ -29,5 +32,5 @@ COPY cpp-bin/*.bash $BIN/
 RUN chmod +x $BIN/*.bash && \
     apt install -y build-essential cmake gdb
 
-WORKDIR /home/tongzj
+WORKDIR /home/$USER
 CMD /usr/sbin/sshd -D
