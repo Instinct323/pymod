@@ -1,4 +1,3 @@
-# ------ Python ------
 # Byte-compiled / optimized / DLL files
 __pycache__
 __openvino_cache__
@@ -21,43 +20,3 @@ runs
 *.pt
 *.onnx
 *.pkf
-
-
-# ------ Cpp ------
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-*cmake-build-*
-*.idea
-**build**
-

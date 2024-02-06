@@ -247,7 +247,7 @@ if __name__ == '__main__':
         chat(input_func)
 
     else:
-        from mod.zjplot import rainbow
+        from pymod.zjplot import rainbow
         from tqdm import tqdm
 
         import matplotlib.pyplot as plt

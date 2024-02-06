@@ -1,7 +1,7 @@
 import cv2 as cv
 import mediapipe as mp
 
-from mod.zjdl.utils.utils import Capture
+from pymod.zjdl.utils.utils import Capture
 
 draw_utils = mp.solutions.drawing_utils
 draw_styles = mp.solutions.drawing_styles

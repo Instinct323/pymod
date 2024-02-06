@@ -197,7 +197,7 @@ class TspPath(ChromosomeBase):
 
 
 if __name__ == '__main__':
-    from mod.zjplot import *
+    from pymod.zjplot import *
 
     np.random.seed(0)
 

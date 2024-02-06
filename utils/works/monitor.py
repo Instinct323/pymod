@@ -7,7 +7,7 @@ import numpy as np
 import pyautogui
 import wmi
 
-from mod.zjdl.utils.utils import Capture
+from pymod.zjdl.utils.utils import Capture
 
 
 def set_brightness(value):

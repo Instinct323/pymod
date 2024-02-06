@@ -137,7 +137,7 @@ class ParamUtilization:
             :param show: 是否显示图像
             :param group_lv: module 进行分组的层级
             :param vplot_kwd: violinplot 的参数'''
-        from mod.zjplot import violinplot, rand_colors
+        from pymod.zjplot import violinplot, rand_colors
         # 创建项目目录, 输出 csv
         project.mkdir(parents=True, exist_ok=True)
         name = project.name
