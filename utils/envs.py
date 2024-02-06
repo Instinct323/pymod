@@ -4,16 +4,26 @@ from pathlib import Path
 
 from zjexe import execute
 
-if os.name == 'nt':
+
+def add_path():
+    sep = ';' if os.name == 'nt' else ':'
+    env_path = os.environ['PATH'].split(sep)
+
     # Window
-    ENV = Path('D:/Software/envs/cv')
-    SCRIPTS = ENV / 'Scripts'
-    CONDA = Path('D:/Software/Anaconda3/condabin/conda')
-else:
+    if os.name == 'nt':
+        env = Path('D:/Software/envs/cv')
+        conda = Path('D:/Software/Anaconda3/condabin')
+        ext_path = [env, conda, env / 'Scripts']
+
     # Linux
-    ENV = Path('/home/slam602/.conda/envs/torch')
-    SCRIPTS = ENV / 'bin'
-    CONDA = Path('/opt/miniconda/bin/conda')
+    else:
+        env = Path('/home/slam602/.conda/envs/torch/bin')
+        conda = Path('/opt/miniconda/bin')
+        ext_path = [env, conda]
+
+    ext_path = [str(p) for p in ext_path if str(p) not in env_path]
+    os.environ['PATH'] = sep.join(ext_path + env_path)
+    return ext_path
 
 
 def git_push(*repositories,
@@ -25,11 +35,6 @@ def git_push(*repositories,
 
 
 class PythonEnv:
-
-    @staticmethod
-    def add_path():
-        new = ';'.join(map(str, (ENV, SCRIPTS))) + ';'
-        os.environ['PATH'] = new + os.environ['PATH']
 
     @staticmethod
     def install(pkg, uninstall=False, upgrade=False):
@@ -66,16 +71,16 @@ class CondaEnv(PythonEnv):
     @staticmethod
     def create(name, version=(3, 8, 15)):
         version = '.'.join(map(str, version))
-        execute(f'{CONDA} create -n {name} python=={version}')
+        execute(f'conda create -n {name} python=={version}')
 
     @staticmethod
     def install(pkg, uninstall=False, upgrade=False):
         main = 'uninstall -y' if uninstall else ('upgrade' if upgrade else 'install')
-        execute(f'{CONDA} {main} {pkg}')
+        execute(f'conda {main} {pkg}')
 
     @staticmethod
     def clean():
-        execute(f'{CONDA} clean -ay')
+        execute('conda clean -ay')
 
     @classmethod
     def config(cls):
@@ -83,11 +88,11 @@ class CondaEnv(PythonEnv):
         for p in ('--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/',
                   '--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/',
                   '--set show_channel_urls yes'):
-            execute(f'{CONDA} config {p}')
+            execute(f'conda config {p}')
 
 
 if __name__ == '__main__':
+    add_path()
     os.chdir(os.getenv('dl'))
-    PythonEnv.add_path()
 
     git_push('D:/Workbench/mod', 'D:/Information/Notes', 'D:/Information/Lib')

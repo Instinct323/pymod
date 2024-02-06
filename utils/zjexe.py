@@ -4,7 +4,6 @@ import sys
 import threading
 import time
 from ctypes import windll
-from functools import wraps
 from pathlib import Path
 
 import psutil

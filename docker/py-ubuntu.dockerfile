@@ -32,5 +32,13 @@ RUN wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/$CONDA && \
     rm -f $CONDA
 ENV PATH=/opt/miniconda/bin:$PATH
 
+# Config: pip, conda
+RUN pip config set global.timeout 6000 && \
+    pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip config set global.trusted-host pypi.tuna.tsinghua.edu.cn && \
+    conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/ && \
+    conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/ && \
+    conda config --set show_channel_urls yes
+
 WORKDIR /home/tongzj
 CMD /usr/sbin/sshd -D
