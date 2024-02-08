@@ -95,4 +95,4 @@ if __name__ == '__main__':
     add_path()
     os.chdir(os.getenv('dl'))
 
-    git_push('D:/Workbench/pymod', 'D:/Workbench/cppmod', 'D:/Information/Notes', 'D:/Information/Lib')
+    git_push('D:/Workbench/cppmod', 'D:/Workbench/pymod', 'D:/Information/Notes', 'D:/Information/Lib')
