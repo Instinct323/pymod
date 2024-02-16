@@ -4,7 +4,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 
-class _CoordSys_nd:
+class _SEnd:
     dtype = np.float32
     dim = None
     # 位置, 各个轴的方向向量
@@ -44,7 +44,7 @@ class _CoordSys_nd:
         return str(self.s) + '\n'
 
 
-class CoordSys_2d(_CoordSys_nd):
+class SE2d(_SEnd):
     dim = 2
 
     def apply(self, x: np.ndarray, y: np.ndarray) -> tuple:
@@ -65,7 +65,7 @@ class CoordSys_2d(_CoordSys_nd):
         return (self.rela_tf if relative else self.abs_tf)(mat)
 
 
-class CoordSys_3d(_CoordSys_nd):
+class SE3d(_SEnd):
     dim = 3
 
     def apply(self, x: np.ndarray, y: np.ndarray, z: np.ndarray) -> tuple:
@@ -87,7 +87,7 @@ class CoordSys_3d(_CoordSys_nd):
 
             :example:
             >>> rpy = [30, 20, 10]
-            >>> rot = CoordSys_3d.rot
+            >>> rot = SE3d.rot
 
             >>> a = rot(*rpy[::-1])
             >>> b = rot(yaw=rpy[2]) @ rot(pitch=rpy[1]) @ rot(roll=rpy[0])
@@ -99,19 +99,18 @@ class CoordSys_3d(_CoordSys_nd):
 
 
 if __name__ == '__main__':
-    rot = CoordSys_3d.rot
-    trans = CoordSys_3d.trans
+    import matplotlib.pyplot as plt
 
-    csys = CoordSys_3d()
-    # 相对变换
-    csys = csys.rela_tf(rot(pitch=30))
-    print(csys)
-    # 绝对变换
-    csys = csys.abs_tf(trans(dx=2, dy=3, dz=4))
-    print(csys)
+    rot = SE3d.rot
+    trans = SE3d.trans
 
-    d = [2, 3, 4, 1]
-    # 对 空间点 进行变换
-    print(csys.s @ d)
-    # 对 齐次坐标系 进行变换
-    print(csys.s @ trans(*d[:3]))
+    se = SE3d().abs_tf(rot(30, 20)).abs_tf(trans(1, 2, 3))
+
+    fig = plt.subplot(projection='3d')
+
+    p = np.array([1, 2, 3])
+    for i in range(10):
+        se.s[:3, :3] *= 1.1
+        fig.scatter(*se.apply(*p), c='r')
+
+    plt.show()
