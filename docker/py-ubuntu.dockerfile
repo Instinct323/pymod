@@ -2,18 +2,24 @@
 # docker run -p 22:22 py
 # docker exec -it <ctn> bash
 
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 ARG USER=tongzj
 ARG PASSWD='20010323'
 ARG EMAIL='1400721986@qq.com'
 
+# windows: VcXsrv
+ENV DISPLAY='host.docker.internal:0'
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN useradd -m $USER && \
-    echo $USER:$PASSWD | chpasswd
+    echo $USER:$PASSWD | chpasswd && \
+    echo root:$PASSWD | chpasswd && \
+    usermod -aG sudo $USER
 
 # apt
 RUN apt update && \
-    apt install -y tree unzip wget
+    apt install -y tree unzip wget sudo
 
 # Git
 RUN apt install -y git && \
@@ -24,7 +30,8 @@ RUN apt install -y git && \
 RUN apt install -y openssh-server && \
     mkdir /var/run/sshd && \
     sed -ri 's/^PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
+    sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config && \
+    apt clean
 
 # Miniconda
 ARG CONDA=Miniconda3-py38_23.11.0-2-Linux-x86_64.sh
