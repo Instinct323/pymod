@@ -443,8 +443,8 @@ def prim(source, adj):
         :param source: 源点
         :param adj: 图的邻接表'''
     edges, n = [], len(adj)
-    # 未完成搜索的结点
-    undone = [(w, i) for i, w in adj[source].items()]
+    # 未完成搜索的边
+    undone = list(adj[source].items())
     heapq.heapify(undone)
     # 和树的最小距离, 最近结点, 未完成标志
     info = [[adj[source].get(i, float('inf')), source, True] for i in range(n)]
