@@ -11,23 +11,23 @@ from pymod.zjdl.utils.utils import Capture
 
 
 def set_brightness(value):
-    ''' 调节屏幕亮度: value ∈ [0, 100]'''
+    """ 调节屏幕亮度: value ∈ [0, 100]"""
     # import wmi
-    connect = wmi.WMI(namespace='root/WMI')
+    connect = wmi.WMI(namespace="root/WMI")
     method = connect.WmiMonitorBrightnessMethods()[0]
     method.WmiSetBrightness(value, Timeout=500)
 
 
 class Monitor:
-    ''' 动作捕捉监控
+    """ 动作捕捉监控
         :cvar time_interval: 记录图像的时间间隔
         :cvar sensitivity: 警报的回溯时间
         :cvar screen_ctrl: 屏幕控制
-        :cvar log_path: 异常图像缓存目录'''
+        :cvar log_path: 异常图像缓存目录"""
     time_interval = 1
     sensitivity = 10
     screen_ctrl = False
-    log_path = Path('Log')
+    log_path = Path("Log")
     # 高级常量
     _running_mean = 0.7
     _running_var = 0
@@ -37,8 +37,8 @@ class Monitor:
         self.env()
         self.video = Capture()
         self._momentum = 1 - pow(0.1, self.time_interval / self.sensitivity)
-        print(f'The momentum is set to {self._momentum:.3f}\n')
-        print(('%10s' * 6) % ('Size (MB)', 'r_Mean', 'f_Mean', 'r_Var', 'f_Var', 'Stat'))
+        print(f"The momentum is set to {self._momentum:.3f}\n")
+        print(("%10s" * 6) % ("Size (MB)", "r_Mean", "f_Mean", "r_Var", "f_Var", "Stat"))
         # main
         for i, img in enumerate(self.video):
             t0 = time.time()
@@ -46,42 +46,42 @@ class Monitor:
             float_mean, float_var, stat = self.guard(i + 1, img)
             # 其它信息管理
             size = self.get_size()
-            print(('\r' + '%10.3f' * 5 + '%10s') % (size, self._running_mean, float_mean,
-                                                    self._running_var, float_var, stat), end='')
+            print(("\r" + "%10.3f" * 5 + "%10s") % (size, self._running_mean, float_mean,
+                                                    self._running_var, float_var, stat), end="")
             # 短暂休眠
             res_time = max([0, self.time_interval - (time.time() - t0)])
             if res_time: time.sleep(res_time)
 
     def env(self):
-        ''' 创建缓存目录'''
+        """ 创建缓存目录"""
         for path in [self.log_path]:
             if path.is_dir(): shutil.rmtree(path)
             path.mkdir()
         if self.screen_ctrl: pass
 
     def get_size(self):
-        ''' 获取占用空间信息'''
+        """ 获取占用空间信息"""
         size = sum([file.stat().st_size for file in self.log_path.iterdir()])
         return size / pow(2, 20)
 
     def guard(self, i, img):
-        ''' 根据图像变化警报'''
-        t = time.strftime('-'.join(['%H', '%M', '%S']), time.localtime())
+        """ 根据图像变化警报"""
+        t = time.strftime("-".join(["%H", "%M", "%S"]), time.localtime())
         gray = cv2.cvtColor(img, code=cv2.COLOR_BGR2GRAY) / 255
         mean, var = gray.mean(), gray.var()
         # 计算浮动值
         float_mean = abs(mean - self._running_mean)
         float_var = abs(var - self._running_var)
         # 判断当前状态
-        stat = 'Init'
+        stat = "Init"
         if i >= self.sensitivity * 3:
             warning = float_mean + float_var > self._warn_thresh
-            stat = 'Warn!' if warning else 'OK'
+            stat = "Warn!" if warning else "OK"
             # 警戒状态处理
             if warning:
                 if self.screen_ctrl: set_brightness(0)
                 time.sleep(self.time_interval / 3)
-                cv2.imwrite(str(self.log_path / f'{t}.png'), next(self.video))
+                cv2.imwrite(str(self.log_path / f"{t}.png"), next(self.video))
                 if self.screen_ctrl: set_brightness(100)
         # 更新统计值
         update = lambda sta, cur: self._momentum * cur + (1 - self._momentum) * sta
@@ -95,12 +95,12 @@ def SightSaver(env_range=[.06, .7],
                interval: float = 3,
                stride: int = 5,
                ulimit: int = 100):
-    ''' 屏幕亮度管理
+    """ 屏幕亮度管理
         :param env_range: 启用自适应亮度的环境亮度区间
         :param scr_range: 画面亮度对眼睛的刺激程度
         :param interval: 刷新亮度的间隔
         :param stride: 屏幕亮度的步长
-        :param ulimit: 屏幕亮度的上限'''
+        :param ulimit: 屏幕亮度的上限"""
     mean, momentum = 1., .8
     # 使用 HSV 颜色空间定义的亮度
     get_mean = lambda img: img.max(axis=-1).astype(np.float16).mean() / 255
@@ -117,8 +117,8 @@ def SightSaver(env_range=[.06, .7],
         # f(env) = radio * g(screen)
         radio = f_env(env) / g_scr(screen)
         bright = max([0, min([ulimit, stride * round(steps * radio)])])
-        print('\t\t'.join([f'\rEnv: {env:.3f}', f'Screen: {screen:.3f} / {mean:.3f}',
-                           f'Bright: {bright}']), end='')
+        print("\t\t".join([f"\rEnv: {env:.3f}", f"Screen: {screen:.3f} / {mean:.3f}",
+                           f"Bright: {bright}"]), end="")
         # 设置屏幕亮度
         if bright != cur_br:
             set_brightness(bright)
@@ -131,11 +131,11 @@ def SightSaver(env_range=[.06, .7],
         time.sleep(interval if is_sleep else 0.1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Monitor()
     while True:
         try:
             SightSaver()
         except:
-            print('\nAn exception has occurred, waiting to retry')
+            print("\nAn exception has occurred, waiting to retry")
             time.sleep(60)

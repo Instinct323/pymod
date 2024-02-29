@@ -6,26 +6,26 @@ import jieba
 import jieba.posseg
 import nltk
 
-SYMBOL = set(string.punctuation) | set('~！@#￥%……&*（）——+{}|：“《》？·-=【】、；’，。/')
+SYMBOL = set(string.punctuation) | set("~！@#￥%……&*（）——+{}|：“《》？·-=【】、；’，。/")
 
 
 def chinese(text):
-    return bool(re.search(r'[\u4e00-\u9fa5]', text))
+    return bool(re.search(r"[\u4e00-\u9fa5]", text))
 
 
 class ChineseProcessor:
 
     def __init__(self, root=Path()):
-        self.stopwords = set((root / 'chinese_stopwords.txt').read_text('utf-8').split())
+        self.stopwords = set((root / "chinese_stopwords.txt").read_text("utf-8").split())
 
-    def tokenize(self, sent, mode='exact'):
-        if mode == 'all':
+    def tokenize(self, sent, mode="exact"):
+        if mode == "all":
             return jieba.lcut(sent, True)
-        elif mode == 'exact':
+        elif mode == "exact":
             return jieba.lcut(sent, False)
-        elif mode == 'search':
+        elif mode == "search":
             return jieba.lcut_for_search(sent)
-        raise AssertionError(f'Unrecognized mode: {mode}')
+        raise AssertionError(f"Unrecognized mode: {mode}")
 
     def pos_tag(self, sent):
         return map(lambda pair: (pair.word, pair.flag), jieba.posseg.cut(sent))
@@ -40,9 +40,9 @@ class EnglishProcessor:
 
     def __init__(self):
         from nltk.corpus import stopwords
-        self.stopwords = set(stopwords.words('english'))
+        self.stopwords = set(stopwords.words("english"))
         # 词干提取函数、词形还原函数
-        self.stemmer = nltk.stem.SnowballStemmer('english').stem
+        self.stemmer = nltk.stem.SnowballStemmer("english").stem
         # self.lemmatizer = nltk.stem.WordNetLemmatizer().lemmatize
 
     def tokenize(self, sent):
@@ -64,8 +64,8 @@ class EnglishProcessor:
         return [[self.stemmer(token) for token, pos in token_pos] for token_pos in token_pos_list]
 
 
-if __name__ == '__main__':
-    eng = ['Hello, Mr.Tong. How are you? I want to do my homework', 'Happy birthday!']
-    chi = ['你好啊，今天过得开心吗？我是潮州市第二刘禅', '是梦吗，是你吗']
+if __name__ == "__main__":
+    eng = ["Hello, Mr.Tong. How are you? I want to do my homework", "Happy birthday!"]
+    chi = ["你好啊，今天过得开心吗？我是潮州市第二刘禅", "是梦吗，是你吗"]
     print(ChineseProcessor().process(chi))
     print(EnglishProcessor().process(eng))

@@ -1,13 +1,7 @@
 import sys
 
-# for ROS2
-if True:
-    import rclpy
-    from rclpy.node import Node
-# for CLion
-else:
-    from ros2 import rclpy
-    from ros2.rclpy.node import Node
+import rclpy
+from rclpy.node import Node
 
 
 class NodeBase(Node):
@@ -16,11 +10,11 @@ class NodeBase(Node):
     def main(cls):
         rclpy.init(args=sys.argv)
         node = cls()
-        node.info(f'Successful initialization.')
+        node.info(f"Successful initialization.")
         rclpy.spin(node)
         rclpy.shutdown()
 
-    def __init__(self, name='demo'):
+    def __init__(self, name="demo"):
         super().__init__(name)
         # log methods
         self.info = self.get_logger().info

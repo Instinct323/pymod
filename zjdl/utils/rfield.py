@@ -31,11 +31,11 @@ class Activation(nn.Module):
 
 
 class ReceptiveField:
-    ''' :param model: 需要进行可视化的模型
+    """ :param model: 需要进行可视化的模型
         :param tar_layer: 感兴趣的层, 其所输出特征图需有 4 个维度
         :param img_size: 测试时使用的图像尺寸
         :param align_center: 通过修改 img_size 使反向传播点居中
-        :cvar n_sample: 生成的随机图像的数量, 详见 effective 方法'''
+        :cvar n_sample: 生成的随机图像的数量, 详见 effective 方法"""
     n_sample = 8
 
     def __init__(self,
@@ -49,12 +49,12 @@ class ReceptiveField:
         # 注册前向传播的挂钩
         tar_layer = model[tar_layer] if isinstance(tar_layer, int) else tar_layer
         tar_layer.register_forward_hook(
-            lambda module, x, y: setattr(self, '_fmap', y)
+            lambda module, x, y: setattr(self, "_fmap", y)
         )
         # 验证 tar_layer 的输出为特征图
         img_size = to_2tuple(img_size)
         model(torch.zeros([1, in_channels, *img_size]))
-        assert self._fmap.dim() == 4, f'Invalid selection of tar_layer {type(tar_layer)}'
+        assert self._fmap.dim() == 4, f"Invalid selection of tar_layer {type(tar_layer)}"
         # 获得该模型的 stride
         fmap_size, self._fmap = self._fmap.shape[2:], None
         stride = tuple(round(i / f) for i, f in zip(img_size, fmap_size))
@@ -68,10 +68,10 @@ class ReceptiveField:
             try:
                 self.model = copy.deepcopy(model).eval()
             except:
-                warnings.warn('Fail to deep copy the model, the model will be modified in place')
+                warnings.warn("Fail to deep copy the model, the model will be modified in place")
         # 原地替换激活函数
         self._replace(self.model)
-        self.device = torch.device('cuda:0' if use_cuda else 'cpu')
+        self.device = torch.device("cuda:0" if use_cuda else "cpu")
 
     def __enter__(self):
         return self
@@ -80,13 +80,13 @@ class ReceptiveField:
         del self
 
     def compare(self, theoretical=True, original=True, state_dict=None, **imshow_kw):
-        ''' :param theoretical: 是否绘制理论感受野
+        """ :param theoretical: 是否绘制理论感受野
             :param original: 是否绘制训练前的感受野
-            :param state_dict: 完成训练的模型权值, 如果提供则绘制训练后的感受野'''
+            :param state_dict: 完成训练的模型权值, 如果提供则绘制训练后的感受野"""
         task = []
-        if original: task.append(('Before Training', self.effective()))
-        if theoretical: task.insert(0, ('Theoretical', self.theoretical()))
-        if state_dict: task.append(('After Training', self.effective(state_dict=state_dict)))
+        if original: task.append(("Before Training", self.effective()))
+        if theoretical: task.insert(0, ("Theoretical", self.theoretical()))
+        if state_dict: task.append(("After Training", self.effective(state_dict=state_dict)))
         # 开始绘制图像
         for i, (title, heatmap) in enumerate(task):
             plt.subplot(1, len(task), i + 1)
@@ -95,7 +95,7 @@ class ReceptiveField:
             plt.imshow(heatmap, vmin=0, vmax=1, **imshow_kw)
 
     def effective(self, state_dict=None):
-        ''' :param state_dict: 完成训练的模型权值, 如果提供则绘制训练后的感受野'''
+        """ :param state_dict: 完成训练的模型权值, 如果提供则绘制训练后的感受野"""
         Activation.identity = True
         x = torch.rand([self.n_sample, *self.img_size], requires_grad=True)
         # 加载模型参数
@@ -103,13 +103,13 @@ class ReceptiveField:
         return self._backward(x)
 
     def theoretical(self):
-        ''' 绘制理论感受野, 会对模型参数进行原地替换'''
+        """ 绘制理论感受野, 会对模型参数进行原地替换"""
         Activation.identity = False
         x = torch.ones([1, *self.img_size], requires_grad=True)
         # 原地替换替换参数
-        param_map = {'weight': 1e-3, 'bias': 0, 'running_mean': 0, 'running_var': 1}
+        param_map = {"weight": 1e-3, "bias": 0, "running_mean": 0, "running_var": 1}
         for key, value in self.model.state_dict().items():
-            fill = param_map.get(key.split('.')[-1], None)
+            fill = param_map.get(key.split(".")[-1], None)
             if fill is not None: nn.init.constant_(value, fill)
         return np.sqrt(self._backward(x))
 
@@ -117,7 +117,7 @@ class ReceptiveField:
         for key, m in model._modules.items():
             new = m
             # 更换激活函数
-            if hasattr(m, 'inplace') and 'nn' in type(m).__module__.split('.'):
+            if hasattr(m, "inplace") and "nn" in type(m).__module__.split("."):
                 new = Activation()
                 new.__dict__.update(m.__dict__)
             # 更换 MaxPool
@@ -139,7 +139,7 @@ class ReceptiveField:
         return res / (res.max() + eps)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from torchvision.models import resnet18
 
     # Step 1: 刚完成初始化的模型, 权重<完全随机>, 表 "训练前"

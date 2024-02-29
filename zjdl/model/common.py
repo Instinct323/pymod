@@ -6,11 +6,11 @@ from timm.models.layers import to_2tuple, DropPath
 from .fourier import FourierFeatures
 from .utils import *
 
-tuple(map(register_module('c1,c2'), (nn.Linear, nn.Conv1d, nn.Conv2d)))
-tuple(map(register_module('c1'), (nn.BatchNorm2d, nn.LayerNorm)))
+tuple(map(register_module("c1,c2"), (nn.Linear, nn.Conv1d, nn.Conv2d)))
+tuple(map(register_module("c1"), (nn.BatchNorm2d, nn.LayerNorm)))
 
 
-@register_module('c1')
+@register_module("c1")
 class BatchNorm(nn.BatchNorm2d):
 
     def __init__(self, c1, s=1):
@@ -28,18 +28,18 @@ class BatchNorm(nn.BatchNorm2d):
         return tuple(map(lambda x: x.data, eq_param)) if detach else eq_param
 
 
-@register_module('c1,c2')
+@register_module("c1,c2")
 class Conv(nn.Conv2d):
-    ''' Conv - BN - Act'''
+    """ Conv - BN - Act"""
     deploy = property(lambda self: isinstance(self.bn, nn.Identity))
 
     def __init__(self, c1, c2, k=3, s=1, g=1, d=1,
                  act: Optional[nn.Module] = nn.ReLU, ctrpad=True):
-        assert k & 1, 'The convolution kernel size must be odd'
+        assert k & 1, "The convolution kernel size must be odd"
         # 深度可分离卷积
-        if g == 'dw':
+        if g == "dw":
             g = c1
-            assert c1 == c2, 'Failed to create DWConv'
+            assert c1 == c2, "Failed to create DWConv"
         # nn.Conv2d 的关键字参数
         self.cfg_ = dict(
             in_channels=c1, out_channels=c2, kernel_size=k,
@@ -62,27 +62,27 @@ class Conv(nn.Conv2d):
             m.bn = nn.Identity()
 
 
-@register_module('c1,c2')
+@register_module("c1,c2")
 class RepConv(nn.Module):
-    ''' :param k: 卷积核尺寸, 0 表示恒等映射'''
+    """ :param k: 卷积核尺寸, 0 表示恒等映射"""
     deploy = property(lambda self: isinstance(self.rep, nn.Conv2d))
 
     def __init__(self, c1, c2, k=(0, 1, 3), s=1, g=1, d=1,
                  act: Optional[nn.Module] = nn.ReLU):
         super().__init__()
         self.rep = nn.ModuleList()
-        assert len(k) > 1, 'RepConv with a single branch is illegal'
+        assert len(k) > 1, "RepConv with a single branch is illegal"
         for k in sorted(k):
             # Identity
             if k == 0:
-                assert c1 == c2, 'Failed to add the identity mapping branch'
+                assert c1 == c2, "Failed to add the identity mapping branch"
                 self.rep.append(BatchNorm(c2, s=s))
             # nn.Conv2d + BatchNorm
             elif k > 0:
-                assert k & 1, f'The convolution kernel size {k} must be odd'
+                assert k & 1, f"The convolution kernel size {k} must be odd"
                 self.rep.append(Conv(c1, c2, k=k, s=s, g=g, d=d, act=None, ctrpad=False))
             else:
-                raise AssertionError(f'Wrong kernel size {k}')
+                raise AssertionError(f"Wrong kernel size {k}")
         # Activation
         self.act = act() if act else nn.Identity()
 
@@ -114,17 +114,17 @@ class RepConv(nn.Module):
                 conv.bias.data += b
 
 
-@register_module('c1,c2')
+@register_module("c1,c2")
 class MobileOne(nn.Sequential):
 
     def __init__(self, c1, c2, k=(0, 1, 3), s=1, d=1):
         super().__init__(
-            RepConv(c1, c1, k=k, s=s, g='dw', d=d),
+            RepConv(c1, c1, k=k, s=s, g="dw", d=d),
             Conv(c1, c2, 1)  # RepConv(c1, c1, k=(0, 1))
         )
 
 
-@register_module('c1,c2', 'n')
+@register_module("c1,c2", "n")
 class ELA(nn.Module):
 
     def __init__(self, c1, c2, e=0.5, n=3):
@@ -144,7 +144,7 @@ class ELA(nn.Module):
         return self.elap(torch.cat(y, 1))
 
 
-@register_module('c1,c2', 'n')
+@register_module("c1,c2", "n")
 class CspOSA(nn.Module):
 
     def __init__(self, c1, c2, e=0.5, n=4):
@@ -166,10 +166,10 @@ class CspOSA(nn.Module):
         return self.osap(torch.cat(y, 1))
 
 
-@register_module('c1,c2', 'n')
+@register_module("c1,c2", "n")
 class Hourglass(nn.Module):
 
-    def __init__(self, c1, c2, eb=.75, ec=1.125, agg='Concat', upmode='nearest', n=3):
+    def __init__(self, c1, c2, eb=.75, ec=1.125, agg="Concat", upmode="nearest", n=3):
         super().__init__()
         # 聚合函数
         agg = eval(agg) if isinstance(agg, str) else agg
@@ -197,7 +197,7 @@ class Hourglass(nn.Module):
                 self.proj.append(Conv(x1 if i else c1, x4, 1))
             # error
             else:
-                raise TypeError('Unsupported aggregate function')
+                raise TypeError("Unsupported aggregate function")
         # 瓶颈部分的参数
         self.proj.append(nn.Sequential(
             Conv(c1t[-1], c1t[-1], 3),
@@ -218,7 +218,7 @@ class Hourglass(nn.Module):
         return x
 
 
-@register_module('c1,c2')
+@register_module("c1,c2")
 class Bottleneck(nn.Module):
 
     def __init__(self, c1, c2, s=1, g=1, d=1, e=0.5):
@@ -233,13 +233,13 @@ class Bottleneck(nn.Module):
         return self.act(self.downs(x) + self.btn2(self.btn1(x)))
 
 
-@register_module('c1')
+@register_module("c1")
 class ConvFFN(nn.Module):
 
     def __init__(self, c1, k=7, act: nn.Module = nn.ReLU):
         super().__init__()
         self.attn = nn.Sequential(
-            Conv(c1, c1, k=k, g='dw'),
+            Conv(c1, c1, k=k, g="dw"),
             nn.Conv2d(c1, c1, 1), act(),
             nn.Conv2d(c1, c1, 1)
         )
@@ -248,16 +248,16 @@ class ConvFFN(nn.Module):
         return x + self.attn(x)
 
 
-@register_module('c1')
+@register_module("c1")
 class FastAttention(nn.Module):
-    ''' k > 0: RepMixer-FFN
-        k = 0: Self Attention-FFN'''
+    """ k > 0: RepMixer-FFN
+        k = 0: Self Attention-FFN"""
 
     def __init__(self, c1, k=3):
         super().__init__()
         self.local = k != 0
         if self.local:
-            self.fvit = RepConv(c1, c1, k=(0, k), g='dw')
+            self.fvit = RepConv(c1, c1, k=(0, k), g="dw")
         else:
             self.fvit = nn.ModuleList([
                 BatchNorm(c1),
@@ -266,7 +266,7 @@ class FastAttention(nn.Module):
         self.ffn = ConvFFN(c1, k=7)
 
     def extra_repr(self):
-        return f'local={self.local}'
+        return f"local={self.local}"
 
     def forward(self, x):
         if self.local:
@@ -277,7 +277,7 @@ class FastAttention(nn.Module):
         return self.ffn(x)
 
 
-@register_module('c1,c2', 'n')
+@register_module("c1,c2", "n")
 class SPPF(nn.Module):
     # Spatial Pyramid Pooling - Fast (SPPF) layer for YOLOv5 by Glenn Jocher
 
@@ -318,9 +318,9 @@ class QuickGELU(nn.Module):
         return x * torch.sigmoid(1.702 * x)
 
 
-@register_module('c1')
+@register_module("c1")
 class SEReLU(nn.Module):
-    ''' Squeeze-and-Excitation Block'''
+    """ Squeeze-and-Excitation Block"""
 
     def __init__(self, c1, r=16):
         super().__init__()
@@ -340,40 +340,40 @@ class SEReLU(nn.Module):
 
 class Upsample(nn.Upsample):
 
-    def __init__(self, s=2, mode='nearest'):
+    def __init__(self, s=2, mode="nearest"):
         super().__init__(scale_factor=s, mode=mode)
 
 
 class DropBlock(nn.Module):
-    ''' :param k: size of the masking area
+    """ :param k: size of the masking area
         :param drop: target value of drop_prob
         :cvar epochs: the number of epochs in which drop_prob reaches its target value
-        :cvar scheme: drop_prob adjustment scheme'''
+        :cvar scheme: drop_prob adjustment scheme"""
     epochs = 10
-    scheme = 'linear'
+    scheme = "linear"
     _progress = property(lambda self: torch.clip(self.cnt / self.epochs, min=0, max=1).item())
 
     @property
     def drop(self):
         # Incremental method from 0 to 1
-        scale = {'const': lambda: 1,
-                 'linear': lambda: self._progress,
+        scale = {"const": lambda: 1,
+                 "linear": lambda: self._progress,
                  }[self.scheme]()
         return self._dp_tar * scale
 
     def __init__(self, k=5, drop=0.1, norm=True):
         super().__init__()
-        self.register_buffer('cnt', torch.tensor([0], dtype=torch.int64))
+        self.register_buffer("cnt", torch.tensor([0], dtype=torch.int64))
         self.k = k
         self.norm = norm
-        assert self.k & 1, 'The k should be odd'
+        assert self.k & 1, "The k should be odd"
         self._dp_tar = drop
 
     def extra_repr(self):
-        return f'k={self.k}, \n' \
-               f'drop={self.drop}, \n' \
-               f'scheme={self.scheme}, \n' \
-               f'progress={self._progress},'
+        return f"k={self.k}, \n" \
+               f"drop={self.drop}, \n" \
+               f"scheme={self.scheme}, \n" \
+               f"progress={self._progress},"
 
     def train(self, mode=True):
         self.cnt += mode and not self.training
@@ -386,7 +386,7 @@ class DropBlock(nn.Module):
         for _ in range(epochs):
             self.eval(), self.train()
             drop.append(self.drop)
-        print(f'[WARNING] The drop probability has been changed to {self.drop}')
+        print(f"[WARNING] The drop probability has been changed to {self.drop}")
         return drop
 
     def forward(self, x):
@@ -413,9 +413,9 @@ class AvgPool(nn.Module):
         return x.mean(dim=self.dims)
 
 
-@register_module('c1')
+@register_module("c1")
 class AttnPool(nn.Module):
-    ''' paper: Learning Transferable Visual Models From Natural Language Supervision'''
+    """ paper: Learning Transferable Visual Models From Natural Language Supervision"""
 
     def __init__(self, c1, p, nhead=8, drop=0., bias=True):
         super().__init__()
@@ -429,10 +429,10 @@ class AttnPool(nn.Module):
         return self.mha(x[:, :1], x)[:, 0]
 
 
-@register_module('c1,c2')
+@register_module("c1,c2")
 class MixFFN(nn.Module):
-    ''' :param e: 全连接层通道膨胀比
-        :param k: 深度可分离卷积的尺寸 (k<2 时不使用)'''
+    """ :param e: 全连接层通道膨胀比
+        :param k: 深度可分离卷积的尺寸 (k<2 时不使用)"""
 
     def __init__(self, c1, c2=None, e=4., k=3, drop=0.1,
                  act: Optional[nn.Module] = QuickGELU):
@@ -452,7 +452,7 @@ class MixFFN(nn.Module):
         return self.linear2(x)
 
 
-@register_module('c1,c2')
+@register_module("c1,c2")
 class Mlp(MixFFN):
 
     def __init__(self, c1, c2=None, e=4., drop=0.1,
@@ -460,7 +460,7 @@ class Mlp(MixFFN):
         super().__init__(c1, c2, e=e, k=0, drop=drop, act=act)
 
 
-@register_module('c1')
+@register_module("c1")
 class MixerLayer(nn.Module):
 
     def __init__(self, c1, p, ep=2., ec=4, drop=0.1,
@@ -478,30 +478,30 @@ class MixerLayer(nn.Module):
         return x + self.mlp2(self.ln2(x))
 
 
-@register_module('c1')
+@register_module("c1")
 class PosEmbedding(nn.Module):
 
-    def __init__(self, c1, etype='fourier', w=None, h=None, f=10.):
+    def __init__(self, c1, etype="fourier", w=None, h=None, f=10.):
         super().__init__()
         self.hw = h, w
         self.etype = etype
-        if etype == 'simple':
+        if etype == "simple":
             self.embedding = nn.Parameter(torch.normal(0, 1 / math.sqrt(c1), [h * w, c1]))
-        elif etype == 'fourier':
+        elif etype == "fourier":
             self.embedding = None
             self.weight = nn.Parameter(torch.randn(c1))
             self.ff = FourierFeatures(c1, f=f, seed=0)
         else:
-            raise AssertionError(f'Unknown position embedding type <{etype}>')
+            raise AssertionError(f"Unknown position embedding type <{etype}>")
 
     def forward(self, x):
         equal = self.hw == LOCAL.hw
         # 可学习的位置编码
-        if self.etype == 'simple':
-            assert equal, 'Simple position embeddings are scale invariant'
+        if self.etype == "simple":
+            assert equal, "Simple position embeddings are scale invariant"
             y = self.embedding
         # fourier feature
-        elif self.etype == 'fourier':
+        elif self.etype == "fourier":
             if self.embedding is None or not equal:
                 self.hw = LOCAL.hw
                 self.embedding = torch.from_numpy(self.ff(*reversed(self.hw))
@@ -510,11 +510,11 @@ class PosEmbedding(nn.Module):
         return y
 
 
-@register_module('c1,c2')
+@register_module("c1,c2")
 class PatchEmbedding(nn.Module):
-    ''' Patch Embedding: image -> conv -> seq'''
+    """ Patch Embedding: image -> conv -> seq"""
 
-    def __init__(self, c1, c2, k=14, s=14, etype='fourier', pos_kwd={}):
+    def __init__(self, c1, c2, k=14, s=14, etype="fourier", pos_kwd={}):
         super().__init__()
         self.proj = nn.Conv2d(c1, c2, kernel_size=k, stride=s, padding=auto_pad(k, s))
         self.pos_embed = PosEmbedding(c2, etype=etype, **pos_kwd)
@@ -527,11 +527,11 @@ class PatchEmbedding(nn.Module):
         return self.norm(x)
 
 
-@register_module('c1,c2')
+@register_module("c1,c2")
 class MaskEmbedding(nn.Module):
-    ''' partial patches -> all patches'''
+    """ partial patches -> all patches"""
 
-    def __init__(self, c1, c2, etype='fourier', pos_kwd={}):
+    def __init__(self, c1, c2, etype="fourier", pos_kwd={}):
         super().__init__()
         self.proj = nn.Linear(c1, c2)
         self.mtoken = nn.Parameter(torch.randn(c2))
@@ -547,9 +547,9 @@ class MaskEmbedding(nn.Module):
         return self.norm(x_new + self.pos_embed(x_new))
 
 
-@register_module('c1,c2')
+@register_module("c1,c2")
 class SeqConv(nn.Conv2d):
-    ''' 序列卷积: seq -> image -> conv -> seq'''
+    """ 序列卷积: seq -> image -> conv -> seq"""
 
     def __init__(self, c1, c2, k=3, s=1, g=1, d=1):
         super().__init__(c1, c2, kernel_size=k, stride=s,
@@ -559,18 +559,18 @@ class SeqConv(nn.Conv2d):
         return img2vec(super().forward(vec2img(x)), in_backbone=False)
 
 
-@register_module('c1')
+@register_module("c1")
 class MultiheadAttn(nn.Module):
-    ''' :param nhead: 注意力头数
+    """ :param nhead: 注意力头数
         :param s: SRA 的 stride (s<2 时不使用)
         :param drop: 注意力权值的 dropout
-        :param bias: QKV 线性映射的偏置'''
+        :param bias: QKV 线性映射的偏置"""
 
     def __init__(self, c1, nhead=8, s=0, drop=0.1, qk_norm=False, bias=True):
         super().__init__()
         self.nhead = nhead
         self.chead = c1 // nhead
-        assert nhead * self.chead == c1, 'c1 must be divisible by n'
+        assert nhead * self.chead == c1, "c1 must be divisible by n"
         self.scale = 1 / math.sqrt(self.chead)
 
         self.q = nn.Linear(in_features=c1, out_features=c1, bias=bias)
@@ -588,7 +588,7 @@ class MultiheadAttn(nn.Module):
         self.proj = nn.Linear(in_features=c1, out_features=c1)
 
     def extra_repr(self):
-        return f'nhead={self.nhead},'
+        return f"nhead={self.nhead},"
 
     def qkv_proj(self, query, key=None):
         key = query if key is None else key
@@ -601,8 +601,8 @@ class MultiheadAttn(nn.Module):
         # Spatial-reduction
         if self.sr_radio > 1:
             key = self.norm(self.sr(key))
-        # k: [B, L, C] -> [B, L', N, C_head] -> [B, N, C_head, L']
-        # v: [B, L, C] -> [B, L', N, C_head] -> [B, N, L', C_head]
+        # k: [B, L, C] -> [B, L", N, C_head] -> [B, N, C_head, L"]
+        # v: [B, L, C] -> [B, L", N, C_head] -> [B, N, L", C_head]
         k, v = self.kv(key).chunk(2, -1)
         k = self.norm_k(k)
         if dims:
@@ -623,11 +623,11 @@ class MultiheadAttn(nn.Module):
         # q[B, N, L, C_head] × k[B, N, C_head, L] = attn[B, N, L, L]
         # N 对浮点运算量的影响主要在 softmax
         attn = self.attn_drop(F.softmax(q @ k, dim=-1))
-        # attn[B, N, L, L'] × v[B, N, L', C_head] = out[B, N, L, C_head]
+        # attn[B, N, L, L"] × v[B, N, L", C_head] = out[B, N, L, C_head]
         return self.out_proj(attn @ v)
 
 
-@register_module('c1')
+@register_module("c1")
 class TranEncoder(nn.Module):
 
     def __init__(self, c1, e=4., nhead=8, k=0, s=0, drop=0.1, droppath=0.1):
@@ -647,14 +647,14 @@ class TranEncoder(nn.Module):
         return nn.Sequential(*(cls(*args, **kwargs) for _ in range(n)))
 
 
-@register_module('c1,c2', 'n')
+@register_module("c1,c2", "n")
 class PyramidViT(nn.Module):
-    ''' :param n: TranEncoder 堆叠数
+    """ :param n: TranEncoder 堆叠数
         :param r: SRA 中空间缩减时的 stride (r<2 时不使用)
         :param e: TranEncoder 全连接层通道膨胀比
         :param nhead: 注意力头数
         :param drop: 注意力权值、各个层的 dropout
-        :param droppath: 残差连接的 droppath'''
+        :param droppath: 残差连接的 droppath"""
 
     def __init__(self, c1, c2, k=3, s=2, r=4, e=4., nhead=8, drop=0.1, droppath=0., n=3):
         super().__init__()
@@ -666,7 +666,7 @@ class PyramidViT(nn.Module):
         return vec2img(self.norm(self.encoder(self.pembed(x))))
 
 
-@register_module('c1')
+@register_module("c1")
 class AssignAttn(MultiheadAttn):
 
     def __init__(self, c1, drop=0, bias=True):
@@ -682,20 +682,20 @@ class AssignAttn(MultiheadAttn):
         return self.out_proj(out), attn.detach().float().cpu()
 
 
-@register_module('c1', 'n')
+@register_module("c1", "n")
 class GroupingLayer(nn.Module):
-    ''' :param n: TranEncoder 深度
+    """ :param n: TranEncoder 深度
         :param g: Group token 的数量
         :param e: MixFFN 全连接层通道膨胀比
         :param nhead: 注意力头数
         :param drop: MHA,MixFFN 中的 dropout
-        :param droppath: 残差连接的 droppath'''
+        :param droppath: 残差连接的 droppath"""
     assignment = property(lambda self: self._memory)
 
     def __init__(self, c1, g=8, e=4., nhead=8, drop=0.1, droppath=0., n=3):
         super().__init__()
         self.g = g
-        assert g > 1, 'The number of groups should be satisfied g > 1'
+        assert g > 1, "The number of groups should be satisfied g > 1"
         self._memory = None
         encoder_cfg = dict(k=0, s=0, e=e, nhead=nhead, drop=drop, droppath=droppath)
         mlp_cfg = dict(e=e, drop=0)
@@ -717,7 +717,7 @@ class GroupingLayer(nn.Module):
         self.mlp_y = Mlp(c1, **mlp_cfg)
 
     def extra_repr(self):
-        return f'group={self.g}'
+        return f"group={self.g}"
 
     def forward(self, x):
         # Transformer Encoder
@@ -757,7 +757,7 @@ class GroupingLayer(nn.Module):
             return ret.argmax(dim=1).data.numpy()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     a = torch.rand(2, 32, 64)
 
     model = nn.Sequential(

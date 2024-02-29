@@ -10,7 +10,7 @@ class BayerOpt:
 
     def __init__(self,
                  file: Path,
-                 direction: str = 'maximize',
+                 direction: str = "maximize",
                  nextp: dict = None):
         self.study = optuna.create_study(direction=direction)
         self.file = file
@@ -22,7 +22,7 @@ class BayerOpt:
         # 函数重命名
         self.dataframe = partial(
             self.study.trials_dataframe,
-            attrs=('datetime_start', 'duration', 'params', 'value')
+            attrs=("datetime_start", "duration", "params", "value")
         )
 
     def enqueue(self, params):
@@ -40,15 +40,15 @@ class BayerOpt:
                        len(self.study.trials) if n_trials is None else n_trials):
             self.study.optimize(func, 1)
             self.save()
-            # print('Automatically saved.')
+            # print("Automatically saved.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     def obj(trial: optuna.Trial):
-        x = trial.suggest_float('x', 0, 1)
-        y = trial.suggest_float('y', 0, 1)
+        x = trial.suggest_float("x", 0, 1)
+        y = trial.suggest_float("y", 0, 1)
         return x ** 2 + y
 
 
-    opt = BayerOpt(Path('test.bin'))
+    opt = BayerOpt(Path("test.bin"))
     opt(obj, 10)

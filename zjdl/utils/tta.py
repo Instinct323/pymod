@@ -26,7 +26,7 @@ class LAME:
         self.max_iter = max_iter
 
     def laplacianOptim(self, logp, kernel):
-        entropy = float('inf')
+        entropy = float("inf")
         p = softmax(logp)
         for i in range(self.max_iter):
             # 根据亲和力对 p 进行加权, 作为 logp 的迭代值
@@ -51,7 +51,7 @@ class LAME:
                                    for x in np.split(logp, self.nc, axis=-1)], axis=-1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     np.set_printoptions(3, suppress=True)
 
     B = 4

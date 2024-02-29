@@ -16,13 +16,13 @@ def heat_img(img, heat, cmap=cv2.COLORMAP_JET):
 
 
 def torch_show(img, delay=0):
-    ''' :param img: [B, C, H, W] or [C, H, W]'''
+    """ :param img: [B, C, H, W] or [C, H, W]"""
     assert img.dtype == torch.uint8
     img = img.data.numpy()
     img = img[None] if img.ndim == 3 else img
     img = img.transpose(0, 2, 3, 1)[..., ::-1]
     for i in img:
-        cv2.imshow('debug', i)
+        cv2.imshow("debug", i)
         cv2.waitKey(delay)
 
 
@@ -41,9 +41,9 @@ class LossLandScape:
             if y: m = m + abs(y) * ms[2 + (y > 0)]
             yield m
 
-    def plot(self, losses, cmap='Blues'):
+    def plot(self, losses, cmap="Blues"):
         losses = np.array(losses).reshape(self.dpi, self.dpi)
-        fig = plt.subplot(projection='3d')
+        fig = plt.subplot(projection="3d")
         fig.plot_surface(self.coord[..., 0], self.coord[..., 1], losses, cmap=cmap)
         plt.show()
 
@@ -71,14 +71,14 @@ class ParamUtilization:
                 norm_k.append(np.abs((wc[i:i + k1, i:i + k1]).sum() / (k1 ** 2 - k2 ** 2)).item())
                 wc[i:-i, i:-i] *= 0
             norm_k = np.array(norm_k, dtype=np.float32)
-            info['norm-kernel'] = cls._round(norm_k / (norm_k.mean() + 1e-6))
+            info["norm-kernel"] = cls._round(norm_k / (norm_k.mean() + 1e-6))
 
     @classmethod
     def _parse_weight(cls, weight) -> dict:
         weight = weight.float().cpu().numpy()
         c2, *not_1d = weight.shape
         if not_1d:
-            info = {'c2': c2}
+            info = {"c2": c2}
             cls._parse_kernel(weight, info)
             weight = weight.reshape(c2, -1)
             # 计算权重向量二范数 norm
@@ -96,7 +96,7 @@ class ParamUtilization:
             score = np.array([diff[i, i:].min() for i in range(c2 - 1)])
             # y = np.linalg.svd(weight)[1]
             # y /= y[0]
-            info['score'] = cls._round(np.sort(score))
+            info["score"] = cls._round(np.sort(score))
             return info
 
     @classmethod
@@ -106,49 +106,49 @@ class ParamUtilization:
         if isinstance(model_or_sdit, nn.Module):
             def solve(model, path):
                 # 如果有属性 weight 则计算参数利用率
-                if hasattr(model, 'weight'):
+                if hasattr(model, "weight"):
                     info = cls._parse_weight(model.weight.data)
                     if info: result[path[1:]] = info
                 # 递归搜索
                 else:
-                    for k, m in model._modules.items(): solve(m, f'{path}.{k}[{type(m).__name__}]')
+                    for k, m in model._modules.items(): solve(m, f"{path}.{k}[{type(m).__name__}]")
 
-            solve(model_or_sdit, '')
+            solve(model_or_sdit, "")
 
         elif isinstance(model_or_sdit, OrderedDict):
-            suffix = '.weight'
+            suffix = ".weight"
             for k, v in model_or_sdit.items():
                 if k.endswith(suffix):
                     info = cls._parse_weight(v)
                     if info: result[k.rstrip(suffix)] = info
 
         else:
-            raise TypeError(f'Incorrect argument type {type(model_or_sdit).__name__}')
+            raise TypeError(f"Incorrect argument type {type(model_or_sdit).__name__}")
 
         result = pd.DataFrame(result).T
         cls.export(result, **export_kwd)
         return result
 
     @classmethod
-    def export(cls, result, project, filt=None, show=False, group_lv=1, sep='.', limit=25, **vplot_kwd):
-        ''' :param result: parse 方法输出的结果 / 文件路径
+    def export(cls, result, project, filt=None, show=False, group_lv=1, sep=".", limit=25, **vplot_kwd):
+        """ :param result: parse 方法输出的结果 / 文件路径
             :param project: 项目目录
             :param filt: 过滤器, 筛选输出的 module
             :param show: 是否显示图像
             :param group_lv: module 进行分组的层级
-            :param vplot_kwd: violinplot 的参数'''
+            :param vplot_kwd: violinplot 的参数"""
         from pymod.zjplot import violinplot, rand_colors
         # 创建项目目录, 输出 csv
         project.mkdir(parents=True, exist_ok=True)
         name = project.name
-        csv = project / f'{name}.csv'
+        csv = project / f"{name}.csv"
         if isinstance(result, pd.DataFrame):
             result.to_csv(csv)
         else:
             result = pd.read_csv(result, index_col=0)
             trans = lambda x: x if pd.isna(x) else eval(str(x))
             for k in result.columns:
-                if str(result[k].dtype) == 'object':
+                if str(result[k].dtype) == "object":
                     result[k] = result[k].apply(trans)
         # 对神经网络中的层进行分组
         k2i = lambda k: sep.join(k.split(sep)[:group_lv + 1])
@@ -159,19 +159,19 @@ class ParamUtilization:
         # 绘图相关参数设定
         if filt: result = result.loc[filter(filt, result.index)]
         limit = limit if limit else len(result)
-        plt.rcParams['figure.dpi'] = 300
-        plt.rcParams['figure.figsize'] = [.8 + 0.46 * (limit + 1), 6.4]
-        ymin = result['score'].apply(min).min()
-        ymax = result['score'].apply(max).max()
+        plt.rcParams["figure.dpi"] = 300
+        plt.rcParams["figure.figsize"] = [.8 + 0.46 * (limit + 1), 6.4]
+        ymin = result["score"].apply(min).min()
+        ymax = result["score"].apply(max).max()
         # 分页读取 result
-        for i in tqdm(range(int(np.ceil(len(result) / limit))), desc='exporting plots'):
+        for i in tqdm(range(int(np.ceil(len(result) / limit))), desc="exporting plots"):
             tmp = result.iloc[i * limit: (i + 1) * limit]
             plt.clf()
-            plt.ylabel('score')
+            plt.ylabel("score")
             # 根据分组分配颜色
-            violinplot(tmp['score'], labels=list(tmp.index),
+            violinplot(tmp["score"], labels=list(tmp.index),
                        colors=[colors[groups.index(k2i(k))] for k in tmp.index], xrotate=90, **vplot_kwd)
             # 设置上下限, 布局优化
             plt.xlim([0, limit + 1]), plt.ylim(ymin, ymax)
             plt.grid(), plt.tight_layout()
-            plt.show() if show else (plt.savefig(project / f'{name}{i}.png'), plt.close())
+            plt.show() if show else (plt.savefig(project / f"{name}{i}.png"), plt.close())

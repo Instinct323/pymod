@@ -2,7 +2,7 @@ import numpy as np
 
 
 def skew_symm3(x):
-    ''' 反对称矩阵 - x(..., 3)'''
+    """ 反对称矩阵 - x(..., 3)"""
     assert x.shape[-1] == 3
     mat = np.zeros(x.shape + (3,), dtype=x.dtype)
     mat[..., 2, 1], mat[..., 0, 2], mat[..., 1, 0] = np.split(x, 3, axis=-1)
@@ -11,7 +11,7 @@ def skew_symm3(x):
 
 
 def rotvec2mat(rotvec):
-    ''' 罗德里格斯公式: 旋转向量 -> 旋转矩阵'''
+    """ 罗德里格斯公式: 旋转向量 -> 旋转矩阵"""
     assert rotvec.shape == (3,)
     theta = np.linalg.norm(rotvec)
     n = rotvec / theta
@@ -20,7 +20,7 @@ def rotvec2mat(rotvec):
 
 
 class Quat:
-    ''' 四元数'''
+    """ 四元数"""
     real = property(lambda self: self.data[..., :1])
     imag = property(lambda self: self.data[..., 1:])
 
@@ -71,7 +71,7 @@ class Quat:
         return np.concatenate([np.cos(theta / 2), rotvec / theta], axis=-1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from scipy.spatial.transform import Rotation
 
     q = Quat([1, 2, 3, 4])

@@ -15,16 +15,16 @@ def is_parallel(model):
 
 
 def fstring(*args, length=10, decimals=2, axis=-1):
-    ''' :param axis: 对称轴, >= axis 的字符串左对齐'''
+    """ :param axis: 对称轴, >= axis 的字符串左对齐"""
     axis %= len(args)
-    lut = {int: f'%{length}d', float: f'%{length}.{decimals}f'}
-    fstr = [lut.get(type(i), f'%{length}s') for i in args]
-    for i in range(axis, len(args)): fstr[i] = '%-' + fstr[i][1:]
-    return ' '.join(fstr) % args
+    lut = {int: f"%{length}d", float: f"%{length}.{decimals}f"}
+    fstr = [lut.get(type(i), f"%{length}s") for i in args]
+    for i in range(axis, len(args)): fstr[i] = "%-" + fstr[i][1:]
+    return " ".join(fstr) % args
 
 
-def switch_branch(state_dict, branch='ema'):
-    branch += '.'
+def switch_branch(state_dict, branch="ema"):
+    branch += "."
     # Switches to the weight of the specified branch
     for k in tuple(state_dict.keys()):
         if k.startswith(branch):
@@ -37,16 +37,16 @@ def cfg_modify(yaml_cfg: dict, modify: Union[tuple, list]):
     # 使用特定语法修改配置
     for i, key, value in modify:
         # number, module, args
-        j = 'nma'.index(key[0]) + 1
+        j = "nma".index(key[0]) + 1
         if j < 3:
-            yaml_cfg['architecture'][i][j] = value
+            yaml_cfg["architecture"][i][j] = value
         else:
-            yaml_cfg['architecture'][i][j][int(key[1:])] = value
+            yaml_cfg["architecture"][i][j][int(key[1:])] = value
     return yaml_cfg
 
 
 class YamlModel(nn.Module):
-    ''' :param yaml_cfg:
+    """ :param yaml_cfg:
             depth_multiple: 模块深度增益
             width_multiple: 卷积宽度增益
             fixed_layers: 不受增益影响的层索引
@@ -59,7 +59,7 @@ class YamlModel(nn.Module):
                 from: 输入来源
                 number: 串联深度 / 模块 n 参数
                 module: 模块名称
-                args: 模块初始化参数 (c2, ...)'''
+                args: 模块初始化参数 (c2, ...)"""
     device = property(lambda self: next(self.parameters()).device)
 
     def __init__(self, yaml_cfg: Union[Path, dict], ch_divisor: int = 4):
@@ -67,28 +67,28 @@ class YamlModel(nn.Module):
         self.cfg = yaml_cfg if isinstance(yaml_cfg, dict) \
             else yaml.load(yaml_cfg.read_text(), Loader=yaml.Loader)
         # 缺省参数: 深度增益, 宽度增益
-        self.cfg.setdefault('depth_multiple', 1.)
-        self.cfg.setdefault('width_multiple', 1.)
+        self.cfg.setdefault("depth_multiple", 1.)
+        self.cfg.setdefault("width_multiple", 1.)
         # 输入张量信息
-        self.cfg.setdefault('in_channels', 3)
-        img_size = self.cfg.setdefault('img_size', None)
+        self.cfg.setdefault("in_channels", 3)
+        img_size = self.cfg.setdefault("img_size", None)
         if img_size:
-            self.cfg['img_size'] = to_2tuple(img_size)
+            self.cfg["img_size"] = to_2tuple(img_size)
         # 模型架构信息, 参数固定层信息
-        assert self.cfg.get('architecture', None), '\"architecture\" is not defined'
-        self.cfg['fixed_layers'] = [i % len(self.cfg['architecture']) for i in self.cfg.get('fixed_layers', [])]
+        assert self.cfg.get("architecture", None), "\"architecture\" is not defined"
+        self.cfg["fixed_layers"] = [i % len(self.cfg["architecture"]) for i in self.cfg.get("fixed_layers", [])]
         # 解析架构信息
         self.main = nn.ModuleList(self.parse_architecture(ch_divisor))
         # 冻结层信息
-        self.cfg.setdefault('freeze', [])
-        assert isinstance(self.cfg['freeze'], list), '\"freeze\" should be a list of slicing expressions'
+        self.cfg.setdefault("freeze", [])
+        assert isinstance(self.cfg["freeze"], list), "\"freeze\" should be a list of slicing expressions"
         i = list(range(len(self.main)))
-        for slc in self.cfg['freeze']:
-            for i in eval(f'i[{slc}]'): self.freeze(i)
+        for slc in self.cfg["freeze"]:
+            for i in eval(f"i[{slc}]"): self.freeze(i)
         self.init_param(), self.eval()
 
     def example_input(self, b=1):
-        return torch.rand([b, self.cfg['in_channels'], *self.cfg['img_size']])
+        return torch.rand([b, self.cfg["in_channels"], *self.cfg["img_size"]])
 
     def forward_feature(self, x, tarlayer=-1, profile=False):
         output = []
@@ -112,7 +112,7 @@ class YamlModel(nn.Module):
     def profile(self, x=None, repeat=5):
         x = self.example_input() if x is None else x
         information = np.zeros(3)
-        print('\n' + fstring('', 'time (ms)', 'FLOPs', 'params', 'module'))
+        print("\n" + fstring("", "time (ms)", "FLOPs", "params", "module"))
         for m, x in self.forward_feature(x, profile=True):
             # 测试该模块的性能
             t0 = time.time()
@@ -126,19 +126,19 @@ class YamlModel(nn.Module):
             information += cost, flops, params
         # 输出模型的性能测试结果
         cost, flops, params = information
-        print(fstring('', float(cost), int(flops), int(params), '--Total--'))
+        print(fstring("", float(cost), int(flops), int(params), "--Total--"))
         return information
 
     def pop(self, index):
         self.main._modules.pop(str(index))
 
     def freeze(self, index):
-        print(f'freezing layer {index} <{self.main[index].t}>')
+        print(f"freezing layer {index} <{self.main[index].t}>")
         for k, v in self.main[index].named_parameters():
             v.requires_grad = False
 
     def unfreeze(self, index):
-        print(f'unfreezing layer {index} <{self.main[index].t}>')
+        print(f"unfreezing layer {index} <{self.main[index].t}>")
         for k, v in self.main[index].named_parameters():
             v.requires_grad = True
 
@@ -162,7 +162,7 @@ class YamlModel(nn.Module):
             return (time.time() - t0) / repeat * 1e3
 
         model.profile = profile
-        print('The runtime can be obtained using TorchScript\'s function <profile>')
+        print("The runtime can be obtained using TorchScript's function <profile>")
         return model
 
     def init_param(self):
@@ -192,8 +192,8 @@ class YamlModel(nn.Module):
             try:
                 return super().load_state_dict(state_dict, strict=True)
             except Exception as error:
-                LOGGER.warning(f'[WARNING] {error}')
-                print('[INFO] Try loading the state_dict loosely')
+                LOGGER.warning(f"[WARNING] {error}")
+                print("[INFO] Try loading the state_dict loosely")
         redundantp = []
         # 处理 shape 失配的参数
         local_sdict = self.state_dict()
@@ -219,13 +219,13 @@ class YamlModel(nn.Module):
                             cut = max(0, (sn[-1] - k) // 2)
                             pl[:s1, :s2, pad:pad + k, pad:pad + k] = pn[:s1, :s2, cut:cut + k, cut:cut + k]
                         else:
-                            raise AssertionError(f'Unknown parameter: {key}')
+                            raise AssertionError(f"Unknown parameter: {key}")
                     # 覆盖写入现模型的参数字典
                     state_dict.pop(key)
             else:
                 state_dict.pop(key)
                 redundantp.append(key)
-        if redundantp: LOGGER.warning(f'Redundant parameter: {", ".join(redundantp)}')
+        if redundantp: LOGGER.warning(f"Redundant parameter: {', '.join(redundantp)}")
         super().load_state_dict(state_dict, strict=False)
         return self
 
@@ -236,12 +236,12 @@ class YamlModel(nn.Module):
         return nn.parallel.DistributedDataParallel(self, *args, **kwargs)
 
     def parse_architecture(self, ch_divisor=4):
-        print('\n%3s %17s %2s %9s  %-15s %-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))
-        modules, channels = [], [self.cfg['in_channels']]
-        for i, (from_, number, module, args) in enumerate(copy.deepcopy(self.cfg['architecture'])):
+        print("\n%3s %17s %2s %9s  %-15s %-30s" % ("", "from", "n", "params", "module", "arguments"))
+        modules, channels = [], [self.cfg["in_channels"]]
+        for i, (from_, number, module, args) in enumerate(copy.deepcopy(self.cfg["architecture"])):
             kwargs = {}
             # 使用深度增益对 number 进行修改
-            if i not in self.cfg['fixed_layers']: number = max(1, int(number * self.cfg['depth_multiple']))
+            if i not in self.cfg["fixed_layers"]: number = max(1, int(number * self.cfg["depth_multiple"]))
             # 对 module 进行转换
             module = eval(module) if isinstance(module, str) else module
             # 对 args 进行转换
@@ -251,25 +251,25 @@ class YamlModel(nn.Module):
                 except (NameError, AttributeError):
                     pass
             # 增添 n 参数
-            if module in module_required['n']: kwargs['n'], number = number, 1
+            if module in module_required["n"]: kwargs["n"], number = number, 1
             # 根据模型的参数要求, 对 args 进行修改
             if isinstance(from_, int):
                 # 需要 c1,c2 参数的模块: 改变维度
-                if module in module_required['c1,c2']:
-                    if i not in self.cfg['fixed_layers']:
+                if module in module_required["c1,c2"]:
+                    if i not in self.cfg["fixed_layers"]:
                         # 将 c2 处理为 4 的倍数
-                        args[0] = make_divisible(args[0] * self.cfg['width_multiple'], divisor=ch_divisor)
+                        args[0] = make_divisible(args[0] * self.cfg["width_multiple"], divisor=ch_divisor)
                     c1, c2 = channels[from_], args[0]
                     # 升维单元、降维单元不可堆叠
                     if c1 != c2 and number != 1:
                         number = 1
-                        warnings.warn('The dimension transform convolution is not stackable')
+                        warnings.warn("The dimension transform convolution is not stackable")
                     args.insert(0, c1)
                 # 无需 c2 则视为不改变通道数
                 else:
                     c2 = channels[from_]
                     # 要求 c1 参数的模块: BatchNorm2d, CBAM
-                    if module in module_required['c1']: args.insert(0, c2)
+                    if module in module_required["c1"]: args.insert(0, c2)
                     # 除此之外: 池化层, 激活函数, DropBlock
             else:
                 c1 = [channels[f] for f in from_]
@@ -289,23 +289,23 @@ class YamlModel(nn.Module):
             # if from_ != -1: self.save |= {f % i for f in ([from_] if isinstance(from_, int) else from_)}
             # 输出模块信息
             if kwargs: args.append(kwargs)
-            print('%3s %17s %2s %9.0f  %-15s %-30s' % (i, from_, number, params, type_, args))
+            print("%3s %17s %2s %9.0f  %-15s %-30s" % (i, from_, number, params, type_, args))
         # 输出模型的统计信息
         params = sum(m.np for m in modules)
         mbytes = params * 4 / 1e6
-        print(f'\nModel Summary: {len(modules)} layers, {params} parameters, {mbytes:.3f} MB')
+        print(f"\nModel Summary: {len(modules)} layers, {params} parameters, {mbytes:.3f} MB")
         return modules
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import os
 
-    os.chdir(r'cfg')
+    os.chdir(r"cfg")
     image = torch.rand([1, 3, 224, 224]).cuda().half()
 
-    model1 = YamlModel(Path('ResNet-50.yaml')).eval().cuda().half()
-    # OnnxModel.test(model1, (image,), 'model.onnx')
+    model1 = YamlModel(Path("ResNet-50.yaml")).eval().cuda().half()
+    # OnnxModel.test(model1, (image,), "model.onnx")
     # model1.profile(image)
 
-    '''traced = model1.torchscript(image.repeat(8, 1, 1, 1)).cuda()
-    traced.save(Path('ResNet-50.pt'))'''
+    """traced = model1.torchscript(image.repeat(8, 1, 1, 1)).cuda()
+    traced.save(Path("ResNet-50.pt"))"""

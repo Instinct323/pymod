@@ -6,15 +6,15 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.INFO)
+logging.basicConfig(format="[%(levelname)s] %(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 
 class AsciiArt:
 
-    def __init__(self, char='#$@&GU?^.    '):
+    def __init__(self, char="#$@&GU?^.    "):
         self.lut = np.linspace(0, len(char), 256, dtype=np.uint8)
-        self.char = np.array(list(char + ' '))
+        self.char = np.array(list(char + " "))
 
     def __call__(self, img, rows=20):
         img = cv2.imread(str(img), flags=cv2.IMREAD_GRAYSCALE)
@@ -25,8 +25,8 @@ class AsciiArt:
             img = cv2.resize(img, new_shape[::-1])
             stream = self.char[cv2.LUT(img, self.lut)]
             # 拼接字符串
-            stream = map(lambda seq: ''.join(seq).rstrip(), stream)
-            return '\n'.join(stream)
+            stream = map(lambda seq: "".join(seq).rstrip(), stream)
+            return "\n".join(stream)
 
 
 class DictOrder:
@@ -38,16 +38,16 @@ class DictOrder:
     def __iter__(self):
         def generator():
             for i, char in enumerate(self.iter):
-                if i % self.skip == 0: yield ''.join(char)
+                if i % self.skip == 0: yield "".join(char)
 
         return generator()
 
 
 class Artist:
-    ''' :param img: 前景图像文件
+    """ :param img: 前景图像文件
         :param shape: 前景图像的目标分割形状
         :param material: 隐藏图像素材包的路径
-        :param pad_width: 隐藏图像的侧边距'''
+        :param pad_width: 隐藏图像的侧边距"""
 
     def __init__(self, img, material=None, shape=[2, 3],
                  dpi=1280, pad_width=0.05, pad_value=255):
@@ -66,7 +66,7 @@ class Artist:
         check = isinstance(img, np.ndarray)
         # 无法读取时发出警告
         if not check:
-            msg = f'Unreadable image file: {file}'
+            msg = f"Unreadable image file: {file}"
             if warn_only:
                 LOGGER.warning(msg)
             else:
@@ -77,7 +77,7 @@ class Artist:
         return img, check
 
     def partition(self, img, shape):
-        ''' 前景图像分割'''
+        """ 前景图像分割"""
         img = self.imread(img, warn_only=False)[0]
         # self.stride = max([round(img.shape[i] / shape[i]) for i in range(2)])
         img = cv2.resize(img, np.array(shape[::-1]) * self.stride)
@@ -87,17 +87,17 @@ class Artist:
         return cells
 
     def parse_material(self, material):
-        ''' 隐藏图像素材包解析'''
+        """ 隐藏图像素材包解析"""
         if material:
             material = list(material.iterdir())
-            assert len(material) == len(self.cells), f'The number of material packs should be {len(self.cells)}'
+            assert len(material) == len(self.cells), f"The number of material packs should be {len(self.cells)}"
             # 素材图像的宽度
             w = self.stride - 2 * self.pad_size[0]
             for i in np.arange(len(material)):
                 # 取出素材包路径
                 folder, material[i] = material[i], []
                 for j, file in zip(DictOrder(), folder.iterdir()):
-                    file = file.rename(file.parent / f'{j}{file.suffix}')
+                    file = file.rename(file.parent / f"{j}{file.suffix}")
                     img, check = self.imread(file)
                     # 进行边界填充并进行尺寸变换
                     if check:
@@ -106,11 +106,11 @@ class Artist:
                         img = cv2.resize(img, [w, h])
                         img = cv2.copyMakeBorder(img, *self.pad_size.repeat(2)[::-1], **self.pad_kwarg)
                         material[i].append(img)
-                LOGGER.info(f'The material package {i + 1} is loaded')
+                LOGGER.info(f"The material package {i + 1} is loaded")
         return material
 
     def puzzle(self):
-        ''' 拼接前景图像与素材包图像'''
+        """ 拼接前景图像与素材包图像"""
         pad_vert = lambda x, bottom, top: cv2.copyMakeBorder(x, bottom=bottom, top=top,
                                                              left=0, right=0, **self.pad_kwarg)
         for i, cell in enumerate(self.cells):
@@ -135,13 +135,13 @@ class Artist:
                 cell = pad_vert(cell, bottom=self.pad_size[1], top=self.pad_size[1])
                 img_queue.insert(1, cell)
                 cell = np.concatenate(img_queue)
-            cv2.imwrite(f'{i + 1}_artist.png', cell)
-        LOGGER.info(f'The generated image has been saved in {Path.cwd()}')
+            cv2.imwrite(f"{i + 1}_artist.png", cell)
+        LOGGER.info(f"The generated image has been saved in {Path.cwd()}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import os
 
-    os.chdir(Path(r'D:\Workbench\data\tmp'))
+    os.chdir(Path(r"D:\Workbench\data\tmp"))
 
-    Artist(Path('1.jpg'), material=Path('mat'), shape=[2, 3])
+    Artist(Path("1.jpg"), material=Path("mat"), shape=[2, 3])

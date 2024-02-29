@@ -7,8 +7,8 @@ class Crosstab:
     def __init__(self, pred, target, num_classes=None):
         num_classes = max(target) + 1 if num_classes is None else num_classes
         empty = sum(len(y) for y in (pred, target)) == 0
-        assert empty or all('int' in str(y.dtype) for y in (pred, target)), \
-            'Only integer can be used to represent categories'
+        assert empty or all("int" in str(y.dtype) for y in (pred, target)), \
+            "Only integer can be used to represent categories"
         if empty:
             self.data = np.zeros((num_classes,) * 2, dtype=np.int32)
         else:
@@ -32,21 +32,21 @@ class Crosstab:
         return max(0, (self.accuracy - pe) / (1 - pe))
 
     def eval(self, beta=1.):
-        return {'Accuracy': self.accuracy, 'Precision': self.precision,
-                'Recall': self.recall, 'Kappa': self.kappa, f'F{beta:.1f}-Score': self.f_score(beta)}
+        return {"Accuracy": self.accuracy, "Precision": self.precision,
+                "Recall": self.recall, "Kappa": self.kappa, f"F{beta:.1f}-Score": self.f_score(beta)}
 
     def __add__(self, other):
         if isinstance(other, __class__):
             self.data += other.data
             return self
         types = tuple(map(lambda x: type(x).__name__, (self, other)))
-        raise TypeError(f'unsupported operand type(s) for +: \'{types[0]}\' and \'{types[1]}\'')
+        raise TypeError(f"unsupported operand type(s) for +: \"{types[0]}\" and \"{types[1]}\"")
 
     def __repr__(self):
         return str(self.data)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     num_classes = 3
 
     pred = np.random.randint(0, num_classes, [100])

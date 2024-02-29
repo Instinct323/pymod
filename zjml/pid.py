@@ -2,7 +2,7 @@ import collections
 
 
 class PositionalPID:
-    ''' 位置式 PID'''
+    """ 位置式 PID"""
 
     def __init__(self, kp, ki, kd, target=0.):
         self.kp, self.ki, self.kd, self.target = kp, ki, kd, target

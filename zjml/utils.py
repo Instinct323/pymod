@@ -5,8 +5,8 @@ import numpy as np
 
 
 def runge_kutta(pdfunc, init, dt, n):
-    ''' :param pdfunc: 偏微分函数
-        :param init: 初值条件'''
+    """ :param pdfunc: 偏微分函数
+        :param init: 初值条件"""
     ret = [np.array(init)]
     for _ in range(n):
         k1 = pdfunc(ret[-1])
@@ -18,15 +18,15 @@ def runge_kutta(pdfunc, init, dt, n):
 
 
 def laida_bound(data):
-    ''' 拉以达边界
-        :param data: 单指标向量'''
+    """ 拉以达边界
+        :param data: 单指标向量"""
     std = np.std(data)
     mean = np.mean(data)
     return mean - std * 3, mean + std * 3
 
 
 def adjusted_r_squared(pred, target, n_features):
-    ''' :return: 校正决定系数 R^2'''
+    """ :return: 校正决定系数 R^2"""
     n_samples = pred.size
     tss = np.square(target - target.mean()).sum()
     rss = np.square(pred - target).sum()
@@ -35,24 +35,24 @@ def adjusted_r_squared(pred, target, n_features):
 
 
 class MarkovChain:
-    ''' 马尔科夫链
-        :param T: 转移概率矩阵'''
+    """ 马尔科夫链
+        :param T: 转移概率矩阵"""
 
     def __init__(self, T, check=True):
         if check:
-            assert np.all(T.shape == (len(T),) * 2), 'Transitional matrix should be square'
-            assert np.abs(T.sum(axis=0) - 1).sum() < 1e-6, 'Sum of each row should be 1'
+            assert np.all(T.shape == (len(T),) * 2), "Transitional matrix should be square"
+            assert np.abs(T.sum(axis=0) - 1).sum() < 1e-6, "Sum of each row should be 1"
         self.T = T
 
     def steady_state(self):
-        ''' :return: 马氏链稳态概率分布'''
+        """ :return: 马氏链稳态概率分布"""
         u, s, vt = np.linalg.svd(self.T - np.eye(len(self.T)))
         return vt[-1] / vt[-1].sum()
 
     def update_state(self, s, t):
-        ''' :param s: 当前状态
+        """ :param s: 当前状态
             :param t: 转移次数
-            :return: 新状态概率分布'''
+            :return: 新状态概率分布"""
         return np.linalg.matrix_power(self.T, t) @ s
 
 
@@ -64,7 +64,7 @@ class PolyFun(np.poly1d):
 
 
 class PolyFit(PolyFun):
-    ''' 多项式拟合'''
+    """ 多项式拟合"""
 
     def __init__(self, x, y, deg, plot=False):
         super().__init__(np.polyfit(x, y, deg))
@@ -72,8 +72,8 @@ class PolyFit(PolyFun):
         self.pred = self(x)
         # 绘制拟合结果
         if plot:
-            plt.plot(x, self.y, label='true', color='orange')
-            plt.plot(x, self.pred, label='pred', color='deepskyblue', linestyle='--')
+            plt.plot(x, self.y, label="true", color="orange")
+            plt.plot(x, self.pred, label="pred", color="deepskyblue", linestyle="--")
             plt.legend(), plt.show()
 
     def abs_error(self):
@@ -84,11 +84,11 @@ class PolyFit(PolyFun):
 
 
 class PCA:
-    ''' 主成分分析
+    """ 主成分分析
         :param x: 相关系数矩阵 (e.g., np.cov)
         :param thresh: 累积贡献率阈值
         :ivar contri: 各个主成分的贡献率
-        :ivar rota: 旋转降维矩阵'''
+        :ivar rota: 旋转降维矩阵"""
 
     def __init__(self, x, thresh=0.90):
         assert 0. < thresh <= 1.
@@ -107,11 +107,11 @@ class PCA:
 
     def __repr__(self):
         contri = tuple(map(lambda x: round(x, 3), self.contri))
-        return f'{__class__.__name__}{contri}'
+        return f"{__class__.__name__}{contri}"
 
 
 class HexagonalMesh:
-    ''' 六边形网格'''
+    """ 六边形网格"""
     default = np.array(-1, dtype=np.int32)
 
     def __init__(self, w, h, data=None):
@@ -123,7 +123,7 @@ class HexagonalMesh:
             self.data = data.reshape(self.data.shape)
 
     def neighbor(self):
-        ''' :returns left, right, top-left, top-right, bottom-left, bottom-right'''
+        """ :returns left, right, top-left, top-right, bottom-left, bottom-right"""
         padh = self.default[None, None].repeat(self._h, 0)
         padv = self.default[None, None].repeat(self._w + 1, 1)
         # 水平相邻
@@ -149,14 +149,14 @@ class HexagonalMesh:
             stream.append(list(map(str, row)))
             length = max(length, max(map(len, stream[-1])))
         # 格式化字符串流
-        sep = ' ' * (length // 2)
-        indent = ' ' * int(0.75 * length)
+        sep = " " * (length // 2)
+        indent = " " * int(0.75 * length)
         for i, row in enumerate(stream):
             stream[i] = indent * (i & 1 ^ 1) + sep.join(map(lambda x: x.center(length), row)).rstrip()
-        return '\n'.join(stream)
+        return "\n".join(stream)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     np.set_printoptions(3, suppress=True)
 
     for i in range(10):

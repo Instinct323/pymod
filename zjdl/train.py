@@ -19,14 +19,14 @@ def random_dropout(x, p=0.4):
     return x * mask
 
 
-CFG = Path('cfg/cnn/mnist.yaml')
-HYP = Path('cfg/hyp.yaml')
-PROJECT = Path('runs')
-DATA = Path('data')
+CFG = Path("cfg/cnn/mnist.yaml")
+HYP = Path("cfg/hyp.yaml")
+PROJECT = Path("runs")
+DATA = Path("data")
 
 BATCH_SIZE = 1000
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     m = YamlModel(CFG).DP()
     # m.profile()
     ema = EmaModel(m, bp_times=50).DP()
@@ -39,9 +39,9 @@ if __name__ == '__main__':
 
     # 启动训练器
     trainer = Trainer(m, PROJECT, HYP)
-    best = PROJECT / 'best.pt'
-    fitness = torch.load(best)['fitness'] if best.exists() else 0
-    print('fitness:', fitness)
+    best = PROJECT / "best.pt"
+    fitness = torch.load(best)["fitness"] if best.exists() else 0
+    print("fitness:", fitness)
 
     for epoch in trainer:
         # 训练模型
@@ -52,7 +52,7 @@ if __name__ == '__main__':
             pred = m(random_dropout(img))
             loss = F.cross_entropy(pred, tar.cuda()) + ema.mse(img, pred)
             trainer.bp_gradient(loss)
-            qbar.set_description(f'Epoch {epoch}, loss {loss.item()}')
+            qbar.set_description(f"Epoch {epoch}, loss {loss.item()}")
         trainer.save_ckpt()
 
         # 验证模型
@@ -65,14 +65,14 @@ if __name__ == '__main__':
                 cnt += len(pred)
                 correct += (pred == tar).sum().item()
             acc = correct / cnt
-            print(f'Epoch {epoch}, Accuracy {acc:.4f}')
+            print(f"Epoch {epoch}, Accuracy {acc:.4f}")
 
-            save_list = ['last.pt']
+            save_list = ["last.pt"]
             if acc > fitness:
-                save_list.append('best.pt')
+                save_list.append("best.pt")
                 fitness = acc
             trainer.save_ckpt(save_list, fitness=acc)
 
     # 保存模型
     Conv.reparam(m)
-    m.onnx('mnist.onnx')
+    m.onnx("mnist.onnx")

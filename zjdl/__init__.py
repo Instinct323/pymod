@@ -1,9 +1,9 @@
-if __name__ == '__main__':
+if __name__ == "__main__":
     import torch
 
     from model.model import *
 
-    cfg = Path('cfg/cnn/_example.yaml')
+    cfg = Path("cfg/cnn/_example.yaml")
     m = YamlModel(cfg)
     RepConv.reparam(m)
 

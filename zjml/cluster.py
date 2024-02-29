@@ -5,31 +5,31 @@ from optimize import *
 
 
 def Eu_dist(data, center):
-    ''' 以 欧氏距离 为聚类准则的距离计算函数
+    """ 以 欧氏距离 为聚类准则的距离计算函数
         :param data: 形如 [n_sample, n_feature] 的 tensor
-        :param center: 形如 [n_cluster, n_feature] 的 tensor'''
+        :param center: 形如 [n_cluster, n_feature] 的 tensor"""
     return ((data[:, None] - center[None]) ** 2).sum(dim=2)
 
 
 class Dist_Cluster:
-    ''' 基于距离的聚类器
+    """ 基于距离的聚类器
         :param n_cluster: 簇中心数
         :param dist_fun: 距离计算函数
             :param data: 形如 [n_sample, n_feather] 的 tensor
             :param center: 形如 [n_cluster, n_feature] 的 tensor
             :return: 形如 [n_sample, n_cluster] 的 tensor
-        :param mode: 距离优化模式 ('max', 'mean', 'sum')
+        :param mode: 距离优化模式 ("max", "mean", "sum")
         :param init: 初始簇中心
         :param patience: 允许 loss 无进展的次数
         :param lr: 中心点坐标学习率
 
         :ivar cluster_centers: 聚类中心
-        :ivar labels: 聚类结果'''
+        :ivar labels: 聚类结果"""
 
     def __init__(self, n_cluster: int,
                  dist_fun: Callable[[torch.tensor, torch.tensor],
                                     torch.tensor] = Eu_dist,
-                 mode: str = 'max',
+                 mode: str = "max",
                  init: Optional[Sequence[Sequence]] = None,
                  patience: int = 50,
                  lr: float = 0.08):
@@ -43,10 +43,10 @@ class Dist_Cluster:
         self.labels = None
         self._bar_len = 20
 
-    def fit(self, data: torch.tensor, prefix='Cluster'):
-        ''' :param data: 形如 [n_sample, n_feature] 的 tensor
-            :return: 簇惯性'''
-        LOGGER.info(('%10s' * 3) % ('', 'cur_loss', 'min_loss'))
+    def fit(self, data: torch.tensor, prefix="Cluster"):
+        """ :param data: 形如 [n_sample, n_feature] 的 tensor
+            :return: 簇惯性"""
+        LOGGER.info(("%10s" * 3) % ("", "cur_loss", "min_loss"))
         self._init_cluster(data, self._patience // 5, prefix)
         inertia = self._train(data, self._lr, self._patience, prefix=prefix)
         # 开始若干轮次的训练，得到簇惯性
@@ -54,8 +54,8 @@ class Dist_Cluster:
         return inertia
 
     def classify(self, data: torch.tensor):
-        ''' :param data: 形如 [n_sample, n_feature] 的 tensor
-            :return: 分类标签'''
+        """ :param data: 形如 [n_sample, n_feature] 的 tensor
+            :return: 分类标签"""
         dist = self._dist_fun(data, self.cluster_centers)
         # 将标签加载到实例属性
         self.labels = dist.argmin(axis=1)
@@ -72,7 +72,7 @@ class Dist_Cluster:
             new_cluster = data[random.choices(range(data.shape[0]), weights=dist / dist.sum())].reshape(1, -1)
             # 取新的中心点
             self.cluster_centers = torch.cat([self.cluster_centers, new_cluster], dim=0).float()
-            self._train(data, self._lr * 2.5, patience, prefix=f'Init_{cur_center_num}'.ljust(len(prefix)), init=True)
+            self._train(data, self._lr * 2.5, patience, prefix=f"Init_{cur_center_num}".ljust(len(prefix)), init=True)
             # 初始化簇中心时使用较大的lr
 
     def _train(self, data, lr, patience, prefix, init=False):
@@ -93,21 +93,21 @@ class Dist_Cluster:
             else:
                 clf_result.append(sample_dist[:, idx].min())
         # 计算 loss 值
-        if self._mode == 'max':
+        if self._mode == "max":
             loss = sum([dists.max() + .05 * dists.mean() for dists in clf_result])
-        elif self._mode == 'mean':
+        elif self._mode == "mean":
             loss = sum([dists.mean() for dists in clf_result])
-        elif self._mode == 'sum':
+        elif self._mode == "sum":
             loss = sum([dists.sum() for dists in clf_result])
         else:
-            raise KeyError('mode 参数出错')
+            raise KeyError("mode 参数出错")
         return loss
 
 
 def Cos_similarity(data, refer):
-    ''' 余弦相似度计算
+    """ 余弦相似度计算
         :param data: 形如 [n_sample, n_feature] 的 tensor
-        :param refer: 形如 [n_cluster, n_feature] 的 tensor'''
+        :param refer: 形如 [n_cluster, n_feature] 的 tensor"""
     data_len = (data ** 2).sum(dim=1) ** 0.5
     refer_len = (refer ** 2).sum(dim=1) ** 0.5
     # 计算向量模
@@ -117,9 +117,9 @@ def Cos_similarity(data, refer):
 
 
 def PIoU_dist(boxes, anchor, eps=1e-5):
-    ''' 以 IoU 为聚类准则的距离计算函数
+    """ 以 IoU 为聚类准则的距离计算函数
         :param boxes: 形如 [n_sample, 2] 的 tensor
-        :param anchor: 形如 [n_cluster, 2] 的 tensor'''
+        :param anchor: 形如 [n_cluster, 2] 的 tensor"""
     boxes = boxes[:, None]
     anchor = anchor[None]
     max_coord = torch.maximum(boxes, anchor)
@@ -159,17 +159,17 @@ def cluster_plot_2d(cluster, data, opacity=0.5):
         sample = data[label == i]
         plt.scatter(sample[:, 0], sample[:, 1], alpha=opacity)
     # 绘制聚类中心
-    plt.scatter(centers[:, 0], centers[:, 1], marker='p', color='gold')
+    plt.scatter(centers[:, 0], centers[:, 1], marker="p", color="gold")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from sklearn import datasets
     from sklearn.cluster import KMeans
     import numpy as np
     import warnings
 
-    warnings.filterwarnings('ignore')
+    warnings.filterwarnings("ignore")
 
 
     class Timer:
@@ -183,9 +183,9 @@ if __name__ == '__main__':
 
 
     def draw_result(train_x, labels, cents, idx, title):
-        ''' 聚类结果可视化'''
+        """ 聚类结果可视化"""
         # 创建子图, 并设置标题
-        fig = plt.subplot(1, 2, idx, projection='3d')
+        fig = plt.subplot(1, 2, idx, projection="3d")
         plt.title(title)
         # 簇中心数量, 以及每个簇的颜色
         n_clusters = np.unique(labels).shape[0]
@@ -206,12 +206,12 @@ if __name__ == '__main__':
 
     # 使用 KMeans 聚类
     clf = KMeans(n_clusters=3)
-    print(f'Kmeans: {Timer(clf.fit, iris_x):.0f} ms')
+    print(f"Kmeans: {Timer(clf.fit, iris_x):.0f} ms")
     draw_result(iris_x, clf.labels_, clf.cluster_centers_, 1, "KMeans++")
 
     # 使用基于距离的自定义聚类
-    clf = Dist_Cluster(n_cluster=3, dist_fun=Eu_dist, lr=1., mode='mean')
-    print(f'My Cluster: {Timer(clf.fit, iris_x):.0f} ms')
+    clf = Dist_Cluster(n_cluster=3, dist_fun=Eu_dist, lr=1., mode="mean")
+    print(f"My Cluster: {Timer(clf.fit, iris_x):.0f} ms")
     draw_result(iris_x, clf.labels, clf.cluster_centers, 2, "My Cluster")
 
     plt.show()

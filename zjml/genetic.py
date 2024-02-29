@@ -6,38 +6,38 @@ from tqdm import trange
 
 
 class ChromosomeBase:
-    ''' 染色体基类'''
+    """ 染色体基类"""
 
     def __init__(self, *args, **kwargs):
-        ''' 无参构造: 用于生成随机个体
-            有参构造: 用于遗传交叉、基因突变'''
+        """ 无参构造: 用于生成随机个体
+            有参构造: 用于遗传交叉、基因突变"""
         raise NotImplementedError
 
     def __eq__(self, other):
-        ''' 重载 == 运算符, 用于去重'''
+        """ 重载 == 运算符, 用于去重"""
         raise NotImplementedError
 
     def fitness(self) -> float:
-        ''' 适应度函数 (max -> best)'''
+        """ 适应度函数 (max -> best)"""
         raise NotImplementedError
 
     def variation(self):
-        ''' 基因突变'''
+        """ 基因突变"""
         raise NotImplementedError
 
     def cross_with(self, other):
-        ''' 交叉遗传'''
+        """ 交叉遗传"""
         raise NotImplementedError
 
 
 class GeneticOpt:
-    ''' 遗传算法
+    """ 遗传算法
         :param chromosome: 染色体类
         :param n_unit: 染色体群体规模
         :param cross_proba: 交叉概率
         :param var_proba: 变异概率
         :param well_radio: 最优个体比例
-        :ivar group: 染色体群体'''
+        :ivar group: 染色体群体"""
 
     def __init__(self,
                  chromosome: Type[ChromosomeBase],
@@ -51,21 +51,21 @@ class GeneticOpt:
         self.group = self.new_unit(self.n_unit)
         self.log = []
 
-        assert 0 < cross_proba + var_proba < 1, 'cross_proba + var_proba must be in (0, 1)'
+        assert 0 < cross_proba + var_proba < 1, "cross_proba + var_proba must be in (0, 1)"
         self._cross_proba = cross_proba
         self._var_proba = var_proba
 
-        assert 0 < well_radio < 1, 'well_radio must be in (0, 1)'
+        assert 0 < well_radio < 1, "well_radio must be in (0, 1)"
         self._well_radio = well_radio
 
         if isinstance(best_unit, ChromosomeBase): self.group[0] = best_unit
 
     def new_unit(self, size: int) -> list:
-        ''' 初始化染色体群体'''
+        """ 初始化染色体群体"""
         return [self.chromosome() for _ in range(size)]
 
     def sort_unique(self, group: list):
-        ''' 计算每个染色体的适应度, 排序、去重'''
+        """ 计算每个染色体的适应度, 排序、去重"""
         fitness = np.array([x.fitness() for x in group])
         # 去除无限值
         cond = np.isfinite(fitness)
@@ -83,9 +83,9 @@ class GeneticOpt:
 
     def fit(self, epochs: int,
             patience: int = np.inf,
-            prefix: str = 'GA-fit') -> np.ndarray:
-        ''' :param epochs: 训练轮次
-            :param patience: 允许搜索无进展的次数'''
+            prefix: str = "GA-fit") -> np.ndarray:
+        """ :param epochs: 训练轮次
+            :param patience: 允许搜索无进展的次数"""
         pbar = trange(epochs)
         angry = 0
         # 最优个体数, 随机选取数
@@ -102,7 +102,7 @@ class GeneticOpt:
             self.log.append([fitness[0], fitness.mean(), fitness.std(), len(fitness)])
             # 保留一定数量的个体
             tmp_group = self.group[:n_well]
-            pbar.set_description((f'%-10s' + '%-10.4g') % (prefix, fitness[0]))
+            pbar.set_description((f"%-10s" + "%-10.4g") % (prefix, fitness[0]))
             # 使用轮盘赌法进行筛选
             p = fitness - fitness.min()
             p = p / p.sum()
@@ -116,11 +116,11 @@ class GeneticOpt:
                 tmp_group.append(unit)
             self.group = tmp_group
         pbar.close()
-        return self.group[0], pd.DataFrame(self.log, columns=['fit-best', 'fit-mean', 'fit-std', 'n-unique'])
+        return self.group[0], pd.DataFrame(self.log, columns=["fit-best", "fit-mean", "fit-std", "n-unique"])
 
 
 class TspPath(ChromosomeBase):
-    ''' 旅行商问题'''
+    """ 旅行商问题"""
     n = property(lambda self: len(self.adj))
     adj = None
     cluster = None
@@ -130,11 +130,11 @@ class TspPath(ChromosomeBase):
         k = round(np.sqrt(len(cls.adj)))
         # 对邻接矩阵进行聚类
         from sklearn.cluster import KMeans
-        clf = KMeans(n_clusters=k, n_init='auto')
+        clf = KMeans(n_clusters=k, n_init="auto")
         clf.fit(cls.adj)
         # 路标点分块
         cls.cluster = [np.where(clf.labels_ == i)[0] for i in range(k)]
-        print('Init cluster.')
+        print("Init cluster.")
 
     def __init__(self, data=None):
         # self.data = data if isinstance(data, np.ndarray) else np.random.permutation(self.n)
@@ -161,7 +161,7 @@ class TspPath(ChromosomeBase):
         return - self._dist.sum()
 
     def variation(self):
-        ''' 基因突变'''
+        """ 基因突变"""
         l = np.random.randint(0, self.n - 1)
         r = np.random.randint(l + 1, self.n)
         # note: 对数据进行深拷贝, 否则会影响其他个体
@@ -177,7 +177,7 @@ class TspPath(ChromosomeBase):
         return __class__(data)
 
     def cross_with(self, other):
-        ''' 交叉遗传'''
+        """ 交叉遗传"""
         other = other.data.tolist()
 
         for _ in range(10):
@@ -196,7 +196,7 @@ class TspPath(ChromosomeBase):
         return self.variation()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from pymod.zjplot import *
 
     np.random.seed(0)
@@ -207,7 +207,7 @@ if __name__ == '__main__':
     ADJ = TspPath.adj = np.sqrt(np.square(POS[:, None] - POS).sum(axis=-1))
 
     colors = [blue, purple]
-    labels = ['Random', 'Proposed']
+    labels = ["Random", "Proposed"]
 
     for i in range(2):
         if i: TspPath.kmeans_init()
@@ -220,16 +220,16 @@ if __name__ == '__main__':
         fig = plt.subplot(1, 3, i + 1)
         plt.title(labels[i])
         plt.xticks([], []), plt.yticks([], [])
-        for key in 'right', 'top':
-            fig.spines[key].set_color('None')
+        for key in "right", "top":
+            fig.spines[key].set_color("None")
         plt.plot(*POS[unit].T, c=colors[i])
-        plt.scatter(*POS.T, marker='p', c='orange')
+        plt.scatter(*POS.T, marker="p", c="orange")
 
         # 绘制适应度曲线
         plt.subplot(1, 3, 3)
-        regionplot(log['fit-best'], log['fit-mean'], log['fit-std'], y_color=colors[i], label=labels[i])
+        regionplot(log["fit-best"], log["fit-mean"], log["fit-std"], y_color=colors[i], label=labels[i])
 
     plt.subplot(1, 3, 3)
-    plt.title('fitness')
+    plt.title("fitness")
     plt.legend()
     plt.show()

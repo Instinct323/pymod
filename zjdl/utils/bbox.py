@@ -4,16 +4,16 @@ import numpy as np
 from tqdm import tqdm
 
 BGR_COLOR = {
-    'red': (58, 0, 255),
-    'orange': (49, 125, 237),
-    'yellow': (0, 255, 255),
-    'green': (71, 173, 112),
-    'cyan': (255, 255, 0),
-    'blue': (240, 176, 0),
-    'purple': (209, 0, 152),
-    'pink': (241, 130, 234),
-    'gray': (190, 190, 190),
-    'black': (0, 0, 0)
+    "red": (58, 0, 255),
+    "orange": (49, 125, 237),
+    "yellow": (0, 255, 255),
+    "green": (71, 173, 112),
+    "cyan": (255, 255, 0),
+    "blue": (240, 176, 0),
+    "purple": (209, 0, 152),
+    "pink": (241, 130, 234),
+    "gray": (190, 190, 190),
+    "black": (0, 0, 0)
 }
 
 
@@ -46,12 +46,12 @@ def radio2pixel(labels, h, w, i=1):
 
 
 class BBoxTransformer:
-    ''' 针对各种数据增强手段提供的标签变换
-        :param label: [cls, x1, y1, x2, y2]'''
+    """ 针对各种数据增强手段提供的标签变换
+        :param label: [cls, x1, y1, x2, y2]"""
 
     @staticmethod
     def affine(img, label, r, x, y):
-        ''' 在原图像截取左上顶点 (x, y) 的图像, 并以比例 r 进行放缩'''
+        """ 在原图像截取左上顶点 (x, y) 的图像, 并以比例 r 进行放缩"""
         h, w = img.shape[:2]
         label = radio2pixel(label, h, w)
         label[..., 1:] *= r
@@ -62,7 +62,7 @@ class BBoxTransformer:
 
     @staticmethod
     def aggregate(img, label):
-        ''' 多个标签聚合'''
+        """ 多个标签聚合"""
         h, w = img.shape[:2]
         label = np.concatenate(label, axis=0)
         label[..., 1::2] = label[..., 1::2].clip(min=0, max=w - 1)
@@ -98,7 +98,7 @@ class BBoxPlotter(list):
             c1, c2 = tuple(map(round, xyxy[:2])), tuple(map(round, xyxy[2:4]))
             cv2.rectangle(img, c1, c2, self.colors[cls], thickness=tl, lineType=cv2.LINE_AA)
             # 制作并绘制标签
-            tag = self[cls] + (f' {xyxy[-1]:.2f}' if has_p else '')
+            tag = self[cls] + (f" {xyxy[-1]:.2f}" if has_p else "")
             tf = max(1, tl - 1)  # font thickness
             t_size = cv2.getTextSize(tag, 0, fontScale=tl / 3, thickness=tf)[0]
             c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
@@ -107,12 +107,12 @@ class BBoxPlotter(list):
         return img
 
     def check_dataset(self, image_dir, label_dir, detect_dir=None):
-        ''' :param image_dir: Original image directory
+        """ :param image_dir: Original image directory
             :param label_dir: Tag file directory (cls, *xywh)
-            :param detect_dir: Detect result directory'''
+            :param detect_dir: Detect result directory"""
         if detect_dir and not detect_dir.is_dir(): detect_dir.mkdir()
         for img_file in tqdm(list(image_dir.iterdir())):
-            txt = label_dir / img_file.with_suffix('.txt').name
+            txt = label_dir / img_file.with_suffix(".txt").name
             if txt.is_file():
                 img = cv2.imread(str(img_file))
                 # Resolve bounding boxes
@@ -124,5 +124,5 @@ class BBoxPlotter(list):
                 if detect_dir:
                     cv2.imwrite(str(detect_dir / img_file.name), img)
                 else:
-                    cv2.imshow('show', img)
+                    cv2.imshow("show", img)
                     cv2.waitKey(0)

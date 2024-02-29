@@ -36,7 +36,7 @@ class FocalLoss(nn.Module):
     def forward(self, logits, target):
         # target: 转为 one_hot, 计算二元交叉熵
         target = self.get_target(target).float()
-        loss = F.binary_cross_entropy_with_logits(logits, target, reduction='none')
+        loss = F.binary_cross_entropy_with_logits(logits, target, reduction="none")
         # logits: 利用 sigmoid 计算 pred, 以及聚焦系数
         if self.gamma:
             pred = logits.detach().sigmoid()
@@ -66,7 +66,7 @@ class CrossEntropy(nn.Module):
         loss = F.nll_loss(log_softmax, hardlabel)
         # softlabel
         if softlabel is not None:
-            assert self.softw, 'Vanishing weight'
+            assert self.softw, "Vanishing weight"
             item = - (log_softmax * softlabel).sum(dim=-1).mean()
             item = loss * (1 - self.softw) + item * self.softw
             loss = item - item.detach() + loss.detach()
@@ -118,24 +118,24 @@ class MultiCrossEntropy(nn.Module):
 
 
 class ContrastiveLoss(nn.Module):
-    ''' 同数据类型的对比损失
-        g: 增强数据相对于原数据的倍数'''
+    """ 同数据类型的对比损失
+        g: 增强数据相对于原数据的倍数"""
     t = property(lambda self: self.param_t.sigmoid() * 4.5 + .5)
 
     def __init__(self, g=1, dim=-1, const_t=False):
         super().__init__()
-        assert g > 0, f'Invalid value g={g}'
+        assert g > 0, f"Invalid value g={g}"
         self.g = g
         self.param_t = nn.Parameter(torch.tensor(-2.079), requires_grad=not const_t)
         self.measure = nn.CosineSimilarity(dim=dim, eps=1e-6)
 
     def extra_repr(self):
-        return f'g={self.g}, \n' \
-               f'T={self.t.item()}'
+        return f"g={self.g}, \n" \
+               f"T={self.t.item()}"
 
     def gs(self, x):
         B, C = x.shape
-        assert B % (self.g + 1) == 0, 'batch_size is not match g'
+        assert B % (self.g + 1) == 0, "batch_size is not match g"
         return B // (self.g + 1)
 
     def forward(self, x):
@@ -148,7 +148,7 @@ class ContrastiveLoss(nn.Module):
         return - torch.log(p / (n + p.detach())).mean()
 
     def accuracy(self, x):
-        ''' :return: 正样本数, 总样本数'''
+        """ :return: 正样本数, 总样本数"""
         B = int(x.size(0))
         gs = self.gs(x)
         measure = self.measure(x, x[:, None]) * (1 - torch.eye(B)).to(x)
@@ -158,7 +158,7 @@ class ContrastiveLoss(nn.Module):
         return np.array([match, topk.numel()])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logits = torch.rand([9, 5], requires_grad=True)
     target = torch.randint(0, 2, [9, 3])
 

@@ -5,22 +5,22 @@ import numpy as np
 
 
 def cal_dist(x, coef: np.array, bias: Union[int, float]):
-    ''' 计算点到直线的距离 (保留正负号)
+    """ 计算点到直线的距离 (保留正负号)
         Dist = (coef × x + bias) / ||coef||
         :param x: [n_sample, n_dim]
-        :param coef: [n_dim, ]'''
+        :param coef: [n_dim, ]"""
     return (x @ coef + bias) / np.linalg.norm(coef, ord=2)
 
 
 def plot_hyperplane(svc, dataset, label, fig=None, s=None,
-                    scatter_color=['deepskyblue', 'orange'],
-                    plane_color=['mediumpurple', 'violet']):
-    ''' 二分类 SVM 可视化
+                    scatter_color=["deepskyblue", "orange"],
+                    plane_color=["mediumpurple", "violet"]):
+    """ 二分类 SVM 可视化
         :param svc: 线性支持向量机实例
         :param dataset: 数据集, [n_sample, n_dim]
         :param label: 数据标签, [n_sample, ]
         :param scatter_color: 负样本、正样本散点颜色
-        :param plane_color: 分界超平面、极端超平面颜色'''
+        :param plane_color: 分界超平面、极端超平面颜色"""
     # 读取超平面参数
     coef, bias = svc.coef_[0], svc.intercept_[0]
     # 各个维度的上下限
@@ -46,13 +46,13 @@ def plot_hyperplane(svc, dataset, label, fig=None, s=None,
         if plane_color[1]:
             for b_ in [-1, 1]:
                 y = cal_y(x, bias + b_)
-                plt.plot(x, y, color=plane_color[1], linestyle='--')
+                plt.plot(x, y, color=plane_color[1], linestyle="--")
         # 裁剪画布边界
         for lim, func in zip(limit, [plt.xlim, plt.ylim]):
             func(lim)
     # 绘制 3D 图像
     elif n_dim == 3:
-        fig, opacity = fig = fig if fig else plt.subplot(projection='3d'), 0.5
+        fig, opacity = fig = fig if fig else plt.subplot(projection="3d"), 0.5
         coef_x, coef_y, coef_z = coef
         # 定义计算 z 的函数
         cal_z = lambda x, y, b: - (coef_x * x + coef_y * y + b) / coef_z
@@ -90,7 +90,7 @@ def plot_hyperplane(svc, dataset, label, fig=None, s=None,
         for lim, func in zip(limit, [fig.set_xlim3d, fig.set_ylim3d, fig.set_zlim3d]):
             func(lim)
     else:
-        raise AssertionError(f'不支持{n_dim}维数据的可视化')
+        raise AssertionError(f"不支持{n_dim}维数据的可视化")
     # 绘制样本散点
     if scatter_color:
         scatter_color = scatter_color * 2 if len(scatter_color) == 1 else scatter_color
@@ -98,7 +98,7 @@ def plot_hyperplane(svc, dataset, label, fig=None, s=None,
                     color=[scatter_color[l] for l in map(int, label)], s=s)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import random
 
     from sklearn.svm import SVC
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     train_set_label = cal(train_set) > 0
     random.shuffle(train_set[:100])
 
-    clf = SVC(kernel='linear')
+    clf = SVC(kernel="linear")
     clf.fit(train_set, train_set_label)
 
     plot_hyperplane(clf, train_set, train_set_label)

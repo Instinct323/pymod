@@ -6,7 +6,7 @@ import random
 
 
 class DisjointSet:
-    ''' 并查集'''
+    """ 并查集"""
 
     def __init__(self, length):
         # 记录前驱结点, 结点级别
@@ -40,11 +40,11 @@ class DisjointSet:
 
 
 class SegmentTree:
-    ''' :param oper: 二元运算函数
+    """ :param oper: 二元运算函数
         :param v0: 满足 oper(x, v0) = x 的值
 
         :ivar index: 数组元素在二叉树的结点索引
-        :ivar tree: 以二叉树形式存储的聚合值'''
+        :ivar tree: 以二叉树形式存储的聚合值"""
 
     def __init__(self, arr, oper=operator.add, v0=0):
         self.arr = arr
@@ -63,7 +63,7 @@ class SegmentTree:
     def _slice_handler(self, i: slice, func, *args, **kwargs):
         self._l, self._r = i.start, i.stop - 1
         ret = func(*args, **kwargs)
-        for k in ('_l', '_r'): delattr(self, k)
+        for k in ("_l", "_r"): delattr(self, k)
         return ret
 
     def __setitem__(self, i, v):
@@ -111,7 +111,7 @@ class SegmentTree:
 
 
 class PdrChecker:
-    ''' hash 算法判断回文串
+    """ hash 算法判断回文串
         :param hashv: 字符串的 hash 值对应的列表
         :param base: max(hashv) + 1
 
@@ -119,7 +119,7 @@ class PdrChecker:
         >>> hashv = [ord(c) - 97 for c in "racecar"]
         >>> checker = PdrChecker(hashv, 26)
         >>> checker[1:6]
-        True'''
+        True"""
 
     def __init__(self, hashv, base):
         self.base = base
@@ -140,11 +140,11 @@ class PdrChecker:
 
 
 def rem_theorem(mods, rems, lcm_fcn=math.prod):
-    ''' 中国剩余定理
+    """ 中国剩余定理
         :param mods: 模数集
         :param rems: 余数集
         :param lcm_fcn: 最小公倍数的求解函数 (模数集全为质数时使用 math.prod)
-        :return: 满足给定条件的余数项'''
+        :return: 满足给定条件的余数项"""
     lcm = lcm_fcn(mods)
     # 费马小定理求逆元, 要求 a,p 互质
     inv = lambda a, p: pow(a, p - 2, p)
@@ -156,12 +156,12 @@ def rem_theorem(mods, rems, lcm_fcn=math.prod):
 
 
 def prime_filter(n):
-    ''' 质数筛选 (埃氏筛法)
+    """ 质数筛选 (埃氏筛法)
         :return: 质数标志
         :example:
         >>> is_prime = prime_filter(10000)
         >>> is_prime[2:].count(True)
-        1229'''
+        1229"""
     is_prime = [True] * (n + 1)
     # 枚举 [2, sqrt(n)]
     for i in range(2, math.isqrt(n) + 1):
@@ -172,7 +172,7 @@ def prime_filter(n):
 
 
 def map_euler_fun(n):
-    ''' 批算欧拉函数'''
+    """ 批算欧拉函数"""
     # 素数集合、素数标记、欧拉函数值
     prime_set = []
     is_prime = [True] * (n + 1)
@@ -202,7 +202,7 @@ def map_euler_fun(n):
 
 
 def try_div(n, factor={}):
-    ''' 试除法分解'''
+    """ 试除法分解"""
     i, bound = 2, math.isqrt(n)
     while i <= bound:
         if n % i == 0:
@@ -221,7 +221,7 @@ def try_div(n, factor={}):
 
 
 def all_factor(n):
-    ''' 所有因数'''
+    """ 所有因数"""
     prime = try_div(n)
     factor = [1]
     for i in prime:
@@ -233,7 +233,7 @@ def all_factor(n):
 
 
 def miller_rabin(p):
-    ''' 素性测试'''
+    """ 素性测试"""
     # 特判 4
     if p <= 4: return p in (2, 3)
     # 对 p-1 进行分解
@@ -260,7 +260,7 @@ def miller_rabin(p):
 
 
 def pollard_rho(n):
-    ''' 求因数: 7e5 以上'''
+    """ 求因数: 7e5 以上"""
     # 更新函数
     bias = random.randint(3, n - 1)
     update = lambda i: (i ** 2 + bias) % n
@@ -278,8 +278,8 @@ def pollard_rho(n):
 
 
 class prime_factor(dict):
-    ''' 质因数分解
-        require: miller_rabin, pollard_rho'''
+    """ 质因数分解
+        require: miller_rabin, pollard_rho"""
 
     def __init__(self, n):
         super().__init__()
@@ -311,7 +311,7 @@ class prime_factor(dict):
         if n > 1: self.main(n, gain=gain)
 
     def try_divide(self, n, gain=1):
-        ''' 试除法分解'''
+        """ 试除法分解"""
         i, bound = 2, math.isqrt(n)
         while i <= bound:
             if n % i == 0:
@@ -325,9 +325,9 @@ class prime_factor(dict):
 
 
 def next_perm(seq):
-    ''' 找到下个字典序
+    """ 找到下个字典序
         e.g.: 8 3 7 6 5 4 2 1
-                |       |    '''
+                |       |    """
     n = len(seq)
     filt1 = lambda i: seq[i] >= seq[i + 1]
     try:
@@ -344,8 +344,8 @@ def next_perm(seq):
 
 
 def manacher(string):
-    ''' 最长回文串长度'''
-    string = '#'.join(string.join('^$'))
+    """ 最长回文串长度"""
+    string = "#".join(string.join("^$"))
     center, border = 0, 0
     # 以对应字符为中心 最长回文串的半径
     p = [0] * len(string)
@@ -355,18 +355,18 @@ def manacher(string):
         p[i] = min(max(0, border - i), p[max(0, 2 * center - i)])
         # 中心扩展法
         while is_same(i - p[i] - 1, i + p[i] + 1): p[i] += 1
-        # 更新回文串中心, 回文串右端点 ('#')
+        # 更新回文串中心, 回文串右端点 ("#")
         if i + p[i] > border: center, border = i, i + p[i]
     return max(p)
 
 
 def dijkstra(source, adj):
-    ''' 单源最短路径 (不带负权)
+    """ 单源最短路径 (不带负权)
         :param source: 源点
-        :param adj: 图的邻接表'''
+        :param adj: 图的邻接表"""
     n = len(adj)
     # 记录单源最短路, 未访问标记
-    info = [[float('inf'), True] for _ in range(n)]
+    info = [[float("inf"), True] for _ in range(n)]
     info[source][0] = 0
     # 记录未完成搜索的点 (优先队列)
     undone = [(0, source)]
@@ -385,12 +385,12 @@ def dijkstra(source, adj):
 
 
 def spfa(source, adj):
-    ''' 单源最短路径 (带负权)
+    """ 单源最短路径 (带负权)
         :param source: 源点
-        :param adj: 图的邻接表'''
+        :param adj: 图的邻接表"""
     n, undone = len(adj), [(0, source)]
     # 单源最短路, 是否在队, 入队次数
-    info = [[float('inf'), False, 0] for _ in range(n)]
+    info = [[float("inf"), False, 0] for _ in range(n)]
     info[source][0] = 0
     while undone:
         # 队列: 弹出中间点
@@ -412,8 +412,8 @@ def spfa(source, adj):
 
 
 def floyd(adj):
-    ''' 多源最短路径 (带负权)
-        :param adj: 图的邻接矩阵'''
+    """ 多源最短路径 (带负权)
+        :param adj: 图的邻接矩阵"""
     # import itertools as it
     n = len(adj)
     for m in range(n):
@@ -422,9 +422,9 @@ def floyd(adj):
 
 
 def topo_sort(in_degree, adj):
-    ''' AOV 网拓扑排序 (最小字典序)
+    """ AOV 网拓扑排序 (最小字典序)
         :param in_degree: 入度表
-        :param adj: 图的邻接表'''
+        :param adj: 图的邻接表"""
     undone = [i for i, v in enumerate(in_degree) if v == 0]
     heapq.heapify(undone)
     order = []
@@ -439,15 +439,15 @@ def topo_sort(in_degree, adj):
 
 
 def prim(source, adj):
-    ''' 最小生成树
+    """ 最小生成树
         :param source: 源点
-        :param adj: 图的邻接表'''
+        :param adj: 图的邻接表"""
     edges, n = [], len(adj)
     # 未完成搜索的边
     undone = list(adj[source].items())
     heapq.heapify(undone)
     # 和树的最小距离, 最近结点, 未完成标志
-    info = [[adj[source].get(i, float('inf')), source, True] for i in range(n)]
+    info = [[adj[source].get(i, float("inf")), source, True] for i in range(n)]
     info[source][-1] = False
     while undone:
         # 未被选取的顶点中, 离树最近的点
@@ -464,7 +464,7 @@ def prim(source, adj):
 
 
 def wythoff_game(x):
-    ''' 威佐夫博弈'''
+    """ 威佐夫博弈"""
     coef = (5 ** 0.5 + 1) / 2
     # 两塔同取时的决策 (索引为高度差)
     k, singular = 0, []
@@ -475,13 +475,13 @@ def wythoff_game(x):
         k += 1
         singular.append((ak, bk))
     # 只取一塔时的决策
-    one = [float('inf')] * (x + 1)
+    one = [float("inf")] * (x + 1)
     for ak, bk in singular:
         one[ak], one[bk] = bk, ak
     return list(enumerate(one)), singular
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     one, singular = wythoff_game(100)
-    print(*one, sep='\n')
+    print(*one, sep="\n")
     print(len(singular))

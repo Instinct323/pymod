@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 
 from scipy.spatial.transform import Rotation
@@ -20,42 +19,42 @@ class _SEnd:
             self.s = csys
 
     def abs_tf(self, tf):
-        ''' 绝对变换'''
+        """ 绝对变换"""
         return type(self)(tf @ self.s)
 
     def rela_tf(self, tf):
-        ''' 相对变换'''
+        """ 相对变换"""
         return type(self)(self.s @ tf)
 
     def apply(self, *coords) -> tuple:
-        ''' 局部坐标值 -> 全局坐标值'''
+        """ 局部坐标值 -> 全局坐标值"""
         xyz = np.stack(coords, axis=-1) @ self.direction.T + self.position
         return tuple(i[..., 0] for i in np.split(xyz, self.dim, axis=-1))
 
     def plot_coord_sys(self, length=.5, linewidth=None,
-                       colors=['orangered', 'deepskyblue', 'greenyellow'], labels='xyz'):
-        ''' 绘制局部坐标系'''
+                       colors=["orangered", "deepskyblue", "greenyellow"], labels="xyz"):
+        """ 绘制局部坐标系"""
         pos = self.position
         axis = self.direction.T * length
         for i in range(self.dim):
             plt.plot(*zip(pos, pos + axis[i]), c=colors[i], label=labels[i], linewidth=linewidth)
 
     def __repr__(self):
-        return str(self.s) + '\n'
+        return str(self.s) + "\n"
 
 
 class SE2d(_SEnd):
     dim = 2
 
     def apply(self, x: np.ndarray, y: np.ndarray) -> tuple:
-        ''' 局部坐标值 -> 全局坐标值'''
+        """ 局部坐标值 -> 全局坐标值"""
         return super().apply(x, y)
 
     def transform(self, dx: float = 0., dy: float = 0.,
                   theta: float = 0, relative: bool = True):
-        ''' :param dx,dy: 平移变换的参数
+        """ :param dx,dy: 平移变换的参数
             :param theta: 旋转变换的参数
-            :param relative: 是否使用相对变换'''
+            :param relative: 是否使用相对变换"""
         mat = np.concatenate((np.eye(3, 2, dtype=self.dtype),
                               np.array((dx, dy, 1))[:, None]), axis=-1)
         if theta:
@@ -69,18 +68,18 @@ class SE3d(_SEnd):
     dim = 3
 
     def apply(self, x: np.ndarray, y: np.ndarray, z: np.ndarray) -> tuple:
-        ''' 局部坐标值 -> 全局坐标值'''
+        """ 局部坐标值 -> 全局坐标值"""
         return super().apply(x, y, z)
 
     @classmethod
     def trans(cls, dx: float = 0., dy: float = 0., dz: float = 0.) -> np.ndarray:
-        ''' 齐次变换矩阵 - 平移'''
+        """ 齐次变换矩阵 - 平移"""
         return np.concatenate((np.eye(4, 3, dtype=cls.dtype),
                                np.array((dx, dy, dz, 1))[:, None]), axis=-1)
 
     @classmethod
     def rot(cls, yaw=0, pitch=0, roll=0) -> np.ndarray:
-        ''' 齐次变换矩阵 - 旋转
+        """ 齐次变换矩阵 - 旋转
             :param yaw: 偏航角, 绕 z 轴旋转
             :param pitch: 俯仰角, 绕 y 轴旋转
             :param roll: 滚转角, 绕 x 轴旋转
@@ -92,13 +91,13 @@ class SE3d(_SEnd):
             >>> a = rot(*rpy[::-1])
             >>> b = rot(yaw=rpy[2]) @ rot(pitch=rpy[1]) @ rot(roll=rpy[0])
             >>> np.square(a - b).sum()
-            8.049117e-15'''
+            8.049117e-15"""
         mat = np.eye(4, dtype=cls.dtype)
-        mat[:3, :3] = Rotation.from_euler('ZYX', [yaw, pitch, roll], degrees=True).as_matrix()
+        mat[:3, :3] = Rotation.from_euler("ZYX", [yaw, pitch, roll], degrees=True).as_matrix()
         return mat
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     rot = SE3d.rot
@@ -106,11 +105,11 @@ if __name__ == '__main__':
 
     se = SE3d().abs_tf(rot(30, 20)).abs_tf(trans(1, 2, 3))
 
-    fig = plt.subplot(projection='3d')
+    fig = plt.subplot(projection="3d")
 
     p = np.array([1, 2, 3])
     for i in range(10):
         se.s[:3, :3] *= 1.1
-        fig.scatter(*se.apply(*p), c='r')
+        fig.scatter(*se.apply(*p), c="r")
 
     plt.show()

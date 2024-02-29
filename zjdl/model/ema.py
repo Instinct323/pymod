@@ -7,8 +7,8 @@ from .model import is_parallel
 
 
 class EmaModel:
-    ''' Mean teachers are better role models
-        通过学生的 state_dict 保存 / 加载参数'''
+    """ Mean teachers are better role models
+        通过学生的 state_dict 保存 / 加载参数"""
 
     def __init__(self,
                  model: nn.Module,
@@ -17,9 +17,9 @@ class EmaModel:
         self.__model = model.module if is_parallel(model) else model
         # 冻结 ema 的所有参数, 并将参数加入 model
         self.__ema = self.__model.ema = copy.deepcopy(self.__model)
-        for p in self.__ema.parameters(): setattr(p, 'requires_grad', False)
+        for p in self.__ema.parameters(): setattr(p, "requires_grad", False)
         # 记录 EMA 的次数
-        self.__ema.register_buffer('ema_t', torch.tensor([0], dtype=torch.int64))
+        self.__ema.register_buffer("ema_t", torch.tensor([0], dtype=torch.int64))
         self.decay = lambda: decay * (1 - torch.exp(-self.__ema.ema_t * 10 / bp_times).item())
         self.forward = self.__ema
 

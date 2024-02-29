@@ -12,9 +12,9 @@ from .imgtf import *
 from .utils import LOGGER, Path, IMG_FORMAT
 
 
-def ObjectArray(iter):
-    tmp = np.zeros(len(iter), dtype=object)
-    for i, obj in enumerate(iter): tmp[i] = obj
+def ObjectArray(iterable):
+    tmp = np.zeros(len(iterable), dtype=object)
+    for i, obj in enumerate(iterable): tmp[i] = obj
     return tmp
 
 
@@ -23,11 +23,11 @@ def bp_times(loader: DataLoader, epochs: int):
 
 
 def hold_out(cls_cnt: pd.DataFrame, scale: float, seed=0):
-    ''' :param cls_cnt: Dataframe[classes, img_id]
+    """ :param cls_cnt: Dataframe[classes, img_id]
         :param scale: 各类别分布在训练集中的比例
-        :return: 训练集 id 列表, 验证集 id 列表'''
+        :return: 训练集 id 列表, 验证集 id 列表"""
     cls_cnt = cls_cnt.copy(deep=True)
-    dtype = np.int64 if 'int' in str(next(iter(cls_cnt.dtypes))) else np.float64
+    dtype = np.int64 if "int" in str(next(iter(cls_cnt.dtypes))) else np.float64
     radio = scale / (1 - scale)
     # 打乱图像的次序
     idx = cls_cnt.index.values
@@ -53,26 +53,26 @@ def hold_out(cls_cnt: pd.DataFrame, scale: float, seed=0):
         data_pool[choose].append(i)
         # 输出当前的分割情况
         cur_scale = data_cnt[0] / data_cnt.sum(axis=0) - scale
-        pbar.set_description(f'Category scale error ∈ [{cur_scale.min():.3f}, {cur_scale.max():.3f}]')
+        pbar.set_description(f"Category scale error ∈ [{cur_scale.min():.3f}, {cur_scale.max():.3f}]")
     # 输出训练集、验证集信息
     data_cnt = data_cnt.round(3).astype(dtype)
-    LOGGER.info(f'Train Set ({len(data_pool[0])}): {data_cnt[0]}')
-    LOGGER.info(f'Eval Set ({len(data_pool[1])}): {data_cnt[1]}')
+    LOGGER.info(f"Train Set ({len(data_pool[0])}): {data_cnt[0]}")
+    LOGGER.info(f"Eval Set ({len(data_pool[1])}): {data_cnt[1]}")
     return data_pool
 
 
 def undersampling(cls_cnt: pd.DataFrame, n, seed=0):
-    ''' :param cls_cnt: Dataframe[classes, img_id]
+    """ :param cls_cnt: Dataframe[classes, img_id]
         :param n: 各类别实例的采样数量 (int, float, list, tuple)
-        :return: 训练集 id 列表, 验证集 id 列表'''
+        :return: 训练集 id 列表, 验证集 id 列表"""
     cls_cnt = cls_cnt.copy(deep=True)
-    dtype = np.int64 if 'int' in str(next(iter(cls_cnt.dtypes))) else np.float64
+    dtype = np.int64 if "int" in str(next(iter(cls_cnt.dtypes))) else np.float64
     np.random.seed(seed)
     cls_cnt_backup = cls_cnt
     n_cls = len(cls_cnt.columns)
     # 对参数 n 进行修改 / 校验
-    if not hasattr(n, '__len__'): n = [n] * n_cls
-    assert len(n) == n_cls, 'The parameter n does not match the number of categories'
+    if not hasattr(n, "__len__"): n = [n] * n_cls
+    assert len(n) == n_cls, "The parameter n does not match the number of categories"
     # 筛选出无标签数据
     g = dict(list(cls_cnt.groupby(cls_cnt.sum(axis=1) == 0, sort=False)))
     unlabeled, cls_cnt = map(lambda k: g.get(k, pd.DataFrame()), (True, False))
@@ -105,9 +105,9 @@ def undersampling(cls_cnt: pd.DataFrame, n, seed=0):
         data_pool[1] += idx[m:]
     # 输出训练集、验证集信息
     data_cnt = data_cnt.to_numpy()
-    LOGGER.info(f'Train Set ({len(data_pool[0])}): {data_cnt.round(3).astype(dtype)}')
+    LOGGER.info(f"Train Set ({len(data_pool[0])}): {data_cnt.round(3).astype(dtype)}")
     eval_cnt = cls_cnt_backup.sum().to_numpy() - data_cnt
-    LOGGER.info(f'Eval Set ({len(data_pool[1])}): {eval_cnt.round(3).astype(dtype)}')
+    LOGGER.info(f"Eval Set ({len(data_pool[1])}): {eval_cnt.round(3).astype(dtype)}")
     return data_pool
 
 
@@ -130,12 +130,12 @@ class ImagePool:
                 loader: Callable[[Path, tuple], np.ndarray] = load_img):
         if self.img_size != img_size:
             self.img_size = img_size
-            LOGGER.info(f'Change the image size to {img_size}')
+            LOGGER.info(f"Change the image size to {img_size}")
             # loader(file, img_size): 图像加载函数
             loader = partial(loader, img_size=img_size)
             # 启动多线程读取图像
             qbar = tqdm(ThreadPool(mp.cpu_count()).imap(loader, self.files),
-                        total=len(self.files), desc='Loading images')
+                        total=len(self.files), desc="Loading images")
             self.images = ObjectArray(tuple(qbar))
 
     def __iter__(self):
@@ -153,7 +153,7 @@ class _BaseDataset(Dataset):
     def __init__(self, imgpool, indexes=None):
         super().__init__()
         self.imgpool = imgpool
-        self.indexes = indexes if hasattr(indexes, '__len__') else np.arange(len(imgpool))
+        self.indexes = indexes if hasattr(indexes, "__len__") else np.arange(len(imgpool))
 
     def __iter__(self):
         return (self[i] for i in self.indexes)
@@ -168,7 +168,7 @@ class _BaseDataset(Dataset):
 
 
 class SimpleDataset(_BaseDataset):
-    ''' indexes: 数据集的 ID 列表'''
+    """ indexes: 数据集的 ID 列表"""
 
     def __init__(self,
                  imgpool: ImagePool,
@@ -193,7 +193,7 @@ class PairDataset(SimpleDataset):
 
 
 class MosaicDataset(_BaseDataset):
-    ''' loads images in a 4-mosaic (generating square images)'''
+    """ loads images in a 4-mosaic (generating square images)"""
 
     def __init__(self,
                  imgpool: ImagePool,
@@ -206,12 +206,12 @@ class MosaicDataset(_BaseDataset):
         self.aug = Transform(ColorJitter(aughyp),
                              GaussianBlur(aughyp))
         # 获取 Mosaic 图像随机裁剪参数
-        self.scale = aughyp.get('scale', .9)
-        self.trans = aughyp.get('trans', .3)
+        self.scale = aughyp.get("scale", .9)
+        self.trans = aughyp.get("trans", .3)
         for p in (self.scale, self.trans): assert 0 <= p <= 1
 
     def __getitem__(self, item):
-        ''' 使用 self.labeltf 进行标签转换: affine -> aggregate -> flip'''
+        """ 使用 self.labeltf 进行标签转换: affine -> aggregate -> flip"""
         s: int = self.imgpool.img_size
         # 随机选择 4 张图像
         item = [item] + np.random.choice(self.indexes, size=3).tolist()
@@ -244,13 +244,13 @@ class MosaicDataset(_BaseDataset):
 class CocoDetect:
 
     def __new__(cls, root, aughyp):
-        cache_t = (root / 'train.cache').lazy_obj(cls.make_index,
-                                                  imgdir=root / 'images/train2017',
-                                                  labeldir=root / 'labels/train2017')
+        cache_t = (root / "train.cache").lazy_obj(cls.make_index,
+                                                  imgdir=root / "images/train2017",
+                                                  labeldir=root / "labels/train2017")
         train = MosaicDataset(ImagePool(*cache_t), aughyp=aughyp.yaml())
-        cache_v = (root / 'val.cache').lazy_obj(cls.make_index,
-                                                imgdir=root / 'images/val2017',
-                                                labeldir=root / 'labels/val2017')
+        cache_v = (root / "val.cache").lazy_obj(cls.make_index,
+                                                imgdir=root / "images/val2017",
+                                                labeldir=root / "labels/val2017")
         val = MosaicDataset(ImagePool(*cache_v))
         return train, val
 
@@ -259,19 +259,19 @@ class CocoDetect:
                    labeldir: Path):
         img = imgdir.collect_file(formats=IMG_FORMAT)
         label = []
-        for f in tqdm(img, 'Loading labels'):
-            f = labeldir / f'{f.stem}.txt'
+        for f in tqdm(img, "Loading labels"):
+            f = labeldir / f"{f.stem}.txt"
             v = np.array(list(map(float, f.read_text().split()))).reshape(-1, 5)
             label.append(v)
         return img, label
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     np.random.seed(0)
 
     # 5000 张图像各个类别边界框数目统计结果
     example = (np.random.random([100, 3]) * 3).astype(np.int32)
-    example = pd.DataFrame(example, index=[f'train_{i}.jpg' for i in range(example.shape[0])])
+    example = pd.DataFrame(example, index=[f"train_{i}.jpg" for i in range(example.shape[0])])
     example *= np.array([4, 1, 9])
 
     for i in range(2):

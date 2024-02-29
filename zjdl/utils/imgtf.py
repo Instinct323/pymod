@@ -26,14 +26,14 @@ def resize(bgr, img_size):
 
 def load_img(file, img_size: int = None) -> np.ndarray:
     bgr = cv2.imread(str(file))
-    assert isinstance(bgr, np.ndarray), f'Error loading data from {file}'
+    assert isinstance(bgr, np.ndarray), f"Error loading data from {file}"
     if img_size:
         bgr = resize(bgr, img_size)[0]
     return bgr
 
 
 def letter_box(bgr, img_size=(640, 640), pad=BG_COLOR, stride=None):
-    ''' 边界填充至指定尺寸'''
+    """ 边界填充至指定尺寸"""
     img_size = to_2tuple(img_size)
     bgr, r = resize(bgr, img_size)
     # 放缩后的原始尺寸
@@ -70,7 +70,7 @@ class _augment:
 class RandomFlip(_augment):
 
     def __init__(self, hyp):
-        self.flips = hyp.get('fliplr', 0), hyp.get('flipud', 0)
+        self.flips = hyp.get("fliplr", 0), hyp.get("flipud", 0)
         for p in self.flips: assert 0 <= p <= 1
 
     def get_param(self):
@@ -87,7 +87,7 @@ class RandomFlip(_augment):
 class RandomCrop(_augment):
 
     def __init__(self, hyp):
-        self.radio = hyp.get('crop', 1)
+        self.radio = hyp.get("crop", 1)
         assert 0 <= self.radio <= 1
 
     def get_param(self):
@@ -107,7 +107,7 @@ class RandomCrop(_augment):
 class ColorJitter(_augment):
 
     def __init__(self, hyp):
-        self.hue, self.sat, self.value = (hyp.get(f'hsv_{i}', 0) for i in 'hsv')
+        self.hue, self.sat, self.value = (hyp.get(f"hsv_{i}", 0) for i in "hsv")
         assert 0 <= self.hue <= .5 and 0 <= self.sat <= 1 and 0 <= self.value <= 1
 
     def get_param(self):
@@ -131,10 +131,10 @@ class ColorJitter(_augment):
 
 
 class GaussianBlur(_augment):
-    ''' :param sigma: [min, std]'''
+    """ :param sigma: [min, std]"""
 
     def __init__(self, hyp, sigma=(0.1, 1.0)):
-        self.ksize = hyp.get('gb_kernel', 0)
+        self.ksize = hyp.get("gb_kernel", 0)
         self.sigma = sigma
 
     def get_param(self):
@@ -151,7 +151,7 @@ class Transform(list, _augment):
 
     def __init__(self, *tfs):
         key, t = sum((Counter(tf.get_param().keys()) for tf in tfs), Counter()).most_common(1)[0]
-        assert t == 1, f'Duplicate keyword argument <{key}>'
+        assert t == 1, f"Duplicate keyword argument <{key}>"
         super().__init__(tfs)
 
     def get_param(self):
@@ -168,12 +168,12 @@ class Transform(list, _augment):
         return img
 
 
-if __name__ == '__main__':
-    # cj = Transform(Path('../cfg/hyp.yaml'))
+if __name__ == "__main__":
+    # cj = Transform(Path("../cfg/hyp.yaml"))
 
-    img = load_img('../data/dog_cat.jfif', 400)
+    img = load_img("../data/dog_cat.jfif", 400)
     img = cv2.warpAffine(img, np.array([[1, 0, 100.],
                                         [0, 1, 100]]), (400,) * 2)
 
-    cv2.imshow('s', img)
+    cv2.imshow("s", img)
     cv2.waitKey(0)

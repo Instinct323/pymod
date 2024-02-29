@@ -8,20 +8,20 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 
 # 普通左对齐文本html设置: 12 号左对齐黑体
-common_l = lambda text: f'<html><head/><body><p><span style=" font-size:12pt; ' \
-                        f'font-weight:600;">{text}</span></p></body></html>'
+common_l = lambda text: f"<html><head/><body><p><span style=\" font-size:12pt; " \
+                        f"font-weight:600;\">{text}</span></p></body></html>"
 # 标题左对齐文本html设置: 12 号左对齐加粗蓝色
-head = lambda text: f'<html><head/><body><p><span style=" font-size:12pt; ' \
-                    f'font-weight:600; cor:#0da7ef;">{text}</span></p></body></html>'
+head = lambda text: f"<html><head/><body><p><span style=\" font-size:12pt; " \
+                    f"font-weight:600; cor:#0da7ef;\">{text}</span></p></body></html>"
 
 
-def select_file(handler, glob_pats=('*.*',), w_app=True):
+def select_file(handler, glob_pats=("*.*",), w_app=True):
     from PyQt5.QtWidgets import QFileDialog, QApplication
     # 请执行 sys.exit(0) 退出程序
     if not w_app: app = QApplication(sys.argv)
     dialog = QFileDialog()
-    file = dialog.getOpenFileName(caption='Select file',
-                                  filter=('; '.join(glob_pats).join('()') if glob_pats else None))[0]
+    file = dialog.getOpenFileName(caption="Select file",
+                                  filter=("; ".join(glob_pats).join("()") if glob_pats else None))[0]
     if file: return handler(Path(file))
 
 
@@ -30,7 +30,7 @@ def select_dir(handler, w_app=True):
     # 请执行 sys.exit(0) 退出程序
     if not w_app: app = QApplication(sys.argv)
     dialog = QFileDialog()
-    dire = dialog.getExistingDirectory(None, 'Select directory')
+    dire = dialog.getExistingDirectory(None, "Select directory")
     if dire: return handler(Path(dire))
 
 
@@ -58,12 +58,12 @@ class Window(QMainWindow):
         self.setWindowOpacity(opacity)
         # 窗口尺寸
         self.setFixedSize(720, 540)
-        self.setWindowTitle('Title')
+        self.setWindowTitle("Title")
         # 状态栏, 菜单栏
         self.setStatusBar(QStatusBar())
         self.setMenuBar(QMenuBar())
 
-        file = self.menuBar().addAction('file')
+        file = self.menuBar().addAction("file")
 
         # matplot
         self.fig = PltFigure()
@@ -78,7 +78,7 @@ class Window(QMainWindow):
         for i in range(4):
             fig = self.fig.subplot(2, 2, i + 1)
             x = np.random.normal(0, 1, 1000)
-            fig.hist(x, bins=50, color='orange')
+            fig.hist(x, bins=50, color="orange")
         # ---------------
         self.fig.show()
 
@@ -90,7 +90,7 @@ class Window(QMainWindow):
         lay.addWidget(self.fig.widget)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = Window()
     window.show()

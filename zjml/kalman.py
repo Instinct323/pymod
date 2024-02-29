@@ -3,10 +3,10 @@ import scipy.linalg
 
 
 class KalmenFilter:
-    ''' 卡尔曼滤波器 (单目标):
+    """ 卡尔曼滤波器 (单目标):
         :cvar _std_weight_position: 位置标准差权值
         :cvar _std_weight_velocity: 速度标准差权值
-        :ivar _motion_tran: 状态转移矩阵'''
+        :ivar _motion_tran: 状态转移矩阵"""
     _std_weight_position = 1 / 20
     _std_weight_velocity = 1 / 160
 
@@ -25,7 +25,7 @@ class KalmenFilter:
                          weight_vel, weight_vel, 1e-5, weight_vel])
 
     def initiate(self, measurement):
-        ''' 位置信息 -> 均值, 协方差'''
+        """ 位置信息 -> 均值, 协方差"""
         std = self._get_std(measurement[3], gain_pos=2, gain_vel=10)
         # 均值, 协方差
         mean = np.concatenate([measurement, np.zeros_like(measurement)])
@@ -33,7 +33,7 @@ class KalmenFilter:
         return mean, covariance
 
     def predict(self, mean, covariance):
-        ''' 预测: 最优估计, 后验估计协方差 -> 先验估计, 先验估计协方差'''
+        """ 预测: 最优估计, 后验估计协方差 -> 先验估计, 先验估计协方差"""
         std = self._get_std(mean[3])
         # 先验估计: x = F @ x
         mean = self._motion_tran @ mean
@@ -42,7 +42,7 @@ class KalmenFilter:
         return mean, covariance
 
     def project(self, mean, covariance):
-        ''' 将估计值, 协方差 映射到 检测空间'''
+        """ 将估计值, 协方差 映射到 检测空间"""
         weight_pos = self._std_weight_position * mean[3]
         std = np.array([weight_pos, weight_pos, 1e-1, weight_pos])
         # Pos and Vel -> Pos: x = H @ x
@@ -51,7 +51,7 @@ class KalmenFilter:
         return projected_mean, projected_cov
 
     def update(self, measurement, mean, covariance):
-        ''' 更新: 设备测量值, 先验估计, 先验估计协方差 -> 最优估计, 后验估计协方差'''
+        """ 更新: 设备测量值, 先验估计, 先验估计协方差 -> 最优估计, 后验估计协方差"""
         projected_mean, projected_cov = self.project(mean, covariance)
         # 计算卡尔曼增益
         kalman_gain = scipy.linalg.cho_solve(
@@ -64,10 +64,10 @@ class KalmenFilter:
 
 
 class SingleObjTrack(KalmenFilter):
-    ''' 单目标跟踪器
+    """ 单目标跟踪器
         :ivar init: 目标确认丢失, 重新初始化
         :ivar track: 目标未丢失则跟踪, 丢失则预测
-        :ivar mark_miss: 目标暂时丢失, 标记'''
+        :ivar mark_miss: 目标暂时丢失, 标记"""
     miss_time_thresh = 5
     confirm_time_thresh = 3
 
@@ -103,7 +103,7 @@ class SingleObjTrack(KalmenFilter):
         return isinstance(self.status[0], np.ndarray)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     sot = SingleObjTrack()
@@ -126,10 +126,10 @@ if __name__ == '__main__':
     predict = [sot.track(mea) for mea in detect]
     print(cnt_none(detect), cnt_none(predict))
 
-    plt.plot(x, y, label='origin', color='orange')
+    plt.plot(x, y, label="origin", color="orange")
     first_none = range_[0] + SingleObjTrack.miss_time_thresh - 1
     predict = np.array(filt_none(predict))[:, :2]
-    plt.plot(*predict[:first_none].T, label='track', color='deepskyblue')
-    plt.plot(*predict[first_none:].T, color='deepskyblue')
+    plt.plot(*predict[:first_none].T, label="track", color="deepskyblue")
+    plt.plot(*predict[first_none:].T, color="deepskyblue")
     plt.legend()
     plt.show()

@@ -7,15 +7,15 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-logging.basicConfig(format='%(message)s', level=logging.INFO)
+logging.basicConfig(format="%(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 # 重新封装 sum 函数, 以减少加 0 时产生的计算
 sum_ = lambda x: sum(x[1:], x[0])
 # 重新封装插值函数
-BilinearResize = partial(F.interpolate, mode='bilinear', align_corners=False)
+BilinearResize = partial(F.interpolate, mode="bilinear", align_corners=False)
 # 配合 YamlModel 类使用, 使其可以自动填充参数
-module_required = {k: [] for k in ('c1,c2', 'c1', 'n')}
+module_required = {k: [] for k in ("c1,c2", "c1", "n")}
 # 等比数列
 logspace = lambda start, stop, n: np.logspace(np.log10(start), np.log10(stop), n)
 make_divisible = lambda x, divisor=4: np.maximum(np.round_(x / divisor).astype(np.int64), 1) * divisor
@@ -71,7 +71,7 @@ def set_groups(self: nn.Conv2d, g: int, strict: bool = True):
     if self.groups != g:
         # 检查新的分组是否会破坏权重
         if strict and self.groups % g:
-            warnings.warn(f'Because groups({self.groups}) % g({g}) != 0, some of the weight will be lost')
+            warnings.warn(f"Because groups({self.groups}) % g({g}) != 0, some of the weight will be lost")
         # 转换为标准卷积
         c2, c1 = self.out_channels // self.groups, self.in_channels // self.groups
         w = torch.zeros_like(self.weight).repeat(1, self.groups, 1, 1)
@@ -82,8 +82,8 @@ def set_groups(self: nn.Conv2d, g: int, strict: bool = True):
             w_full = w
             # 检查新的分组是否合法
             c2, c1 = self.out_channels // g, self.in_channels // g
-            assert c1 * g == self.in_channels, f'in_channels({self.in_channels}) must be divisible by groups({g})'
-            assert c2 * g == self.out_channels, f'out_channels({self.out_channels}) must be divisible by groups({g})'
+            assert c1 * g == self.in_channels, f"in_channels({self.in_channels}) must be divisible by groups({g})"
+            assert c2 * g == self.out_channels, f"out_channels({self.out_channels}) must be divisible by groups({g})"
             # 转换为新的分组卷积
             w = torch.zeros_like(w_full[:, :1]).repeat(1, c1, 1, 1)
             for i in range(g):
@@ -94,5 +94,5 @@ def set_groups(self: nn.Conv2d, g: int, strict: bool = True):
         self.weight = nn.Parameter(w)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(make_divisible(5))

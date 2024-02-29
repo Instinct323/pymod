@@ -16,7 +16,7 @@ def file2bytes(src: Union[bytes, Path]) -> bytes:
 
 
 def bytes2str(src: bytes) -> str:
-    return ''.join(map(chr, src))
+    return "".join(map(chr, src))
 
 
 def str2bytes(src: str) -> bytes:
@@ -29,7 +29,7 @@ class PublicKey:
                  pem: Union[bytes, Path] = None,
                  key: rsa.RSAPublicKey = None):
         self.key = serialization.load_pem_public_key(file2bytes(pem)) if pem else key
-        assert self.key, 'Invalid initialization parameter'
+        assert self.key, "Invalid initialization parameter"
 
     def __call__(self,
                  src: Union[bytes, Path],
@@ -77,27 +77,27 @@ class PrivateKey:
         return pem
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import time
     import os
 
-    os.chdir(r'D:\Information\Download')
-    pub_f = Path('public.pem')
-    bin_f = Path('msg.bin')
+    os.chdir(r"D:\Information\Download")
+    pub_f = Path("public.pem")
+    bin_f = Path("msg.bin")
 
     if 1:
         # 优先运行
         pri = PrivateKey()
         pub = pri.public_key().dump_pem(pub_f)
-        print(pub.decode('utf-8'))
+        print(pub.decode("utf-8"))
 
-        input('wait: ')
+        input("wait: ")
         t0 = time.time()
         print(pri(bin_f))
         print(time.time() - t0)
 
     else:
         pub = PublicKey(pem=pub_f)
-        msg = b'aa'
+        msg = b"aa"
         cipher = pub(msg, bin_f)
         print(bytes2str(cipher))

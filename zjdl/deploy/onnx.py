@@ -5,15 +5,15 @@ import onnxruntime as ort
 
 
 def onnx_simplify(src, new=None):
-    ''' onnx 模型简化'''
+    """ onnx 模型简化"""
     import onnxsim, onnx
     model, check = onnxsim.simplify(onnx.load(src))
-    assert check, 'Failure to Simplify'
+    assert check, "Failure to Simplify"
     onnx.save(model, new if new else src)
 
 
 class OnnxModel(ort.InferenceSession):
-    ''' onnx 推理模型'''
+    """ onnx 推理模型"""
     device = property(lambda self: self.get_providers()[0][:-17])
 
     def __init__(self, src):
@@ -23,7 +23,7 @@ class OnnxModel(ort.InferenceSession):
                 break
             except:
                 pass
-        assert self.get_providers(), 'No available Execution Providers were found'
+        assert self.get_providers(), "No available Execution Providers were found"
         # 参考: ort.NodeArg
         self.io_node = list(map(list, (self.get_inputs(), self.get_outputs())))
         self.io_name = [[n.name for n in nodes] for nodes in self.io_node]
@@ -41,10 +41,10 @@ class OnnxModel(ort.InferenceSession):
         return cls(dst)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from pathlib import Path
 
-    file = Path(r'D:\Information\Python\mod\zjdl\cfg\weights\yolov7.onnx')
+    file = Path(r"D:\Information\Python\mod\zjdl\cfg\weights\yolov7.onnx")
     onnxm = OnnxModel(file)
 
     inp = np.random.random(onnxm.io_shape[0][0])

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Union
 
@@ -9,12 +10,12 @@ DEVICES = VINO_CORE.available_devices
 
 class VinoModel(ov.CompiledModel):
     # OpenVINO™ Runtime API 2.0: https://docs.openvino.ai/2022.1/openvino_2_0_inference_pipeline.html
-    cache_dir = Path('__openvino_cache__')
+    cache_dir = Path("__openvino_cache__")
 
     def __init__(self,
                  xml: Path,
                  device: Union[int, str] = 1):
-        assert xml.with_suffix('.bin').is_file(), 'bin file cannot be found'
+        assert xml.with_suffix(".bin").is_file(), "bin file cannot be found"
         self.device = DEVICES[device] if isinstance(device, int) else device
         super().__init__(VINO_CORE.compile_model(
             VINO_CORE.read_model(xml), device_name=self.device, config=self.get_cfg()))
@@ -42,28 +43,28 @@ class VinoModel(ov.CompiledModel):
 
     def get_cfg(self) -> dict:
         cfg = {}
-        if self.device != 'CPU':
+        if self.device != "CPU":
             self.cache_dir.mkdir(exist_ok=True)
-            cfg['CACHE_DIR'] = str(self.cache_dir)
+            cfg["CACHE_DIR"] = str(self.cache_dir)
         return cfg
 
     @classmethod
-    def from_onnx(cls, src, dst=Path('.'), half=False):
-        ''' :param src: model .onnx file
-            :param dst: Directory that stores the generated IR'''
-        assert src.suffix == '.onnx'
-        args = ['mo', f'-w {src}', f'-o {dst}']
-        if half: args.append('--compress_to_fp16')
-        os.system(' '.join(args))
-        return cls(dst / src.with_suffix('.xml').name)
+    def from_onnx(cls, src, dst=Path("."), half=False):
+        """ :param src: model .onnx file
+            :param dst: Directory that stores the generated IR"""
+        assert src.suffix == ".onnx"
+        args = ["mo", f"-w {src}", f"-o {dst}"]
+        if half: args.append("--compress_to_fp16")
+        os.system(" ".join(args))
+        return cls(dst / src.with_suffix(".xml").name)
 
 
-if __name__ == '__main__':
-    from mod import *
+if __name__ == "__main__":
+    import numpy as np
 
-    file = Path(r'D:\Information\Python\mod\zjdl\cfg\weights\yolov7.onnx')
-    vinom = VinoModel.from_onnx(file, dst=Path('__pycache__'), half=False) \
-        if 1 else VinoModel(Path(r'__pycache__\yolov7.xml'))
+    file = Path(r"D:\Information\Python\mod\zjdl\cfg\weights\yolov7.onnx")
+    vinom = VinoModel.from_onnx(file, dst=Path("__pycache__"), half=False) \
+        if 1 else VinoModel(Path(r"__pycache__\yolov7.xml"))
 
     inp = np.random.random(vinom.io_shape[0]).astype(np.float32)
-    print(timer(10)(vinom)(inp))
+    print(vinom(inp))

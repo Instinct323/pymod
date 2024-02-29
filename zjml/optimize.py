@@ -4,14 +4,14 @@ from typing import Callable, Optional
 import torch
 from tqdm import tqdm
 
-logging.basicConfig(format='%(message)s', level=logging.INFO)
+logging.basicConfig(format="%(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 torch.autograd.set_detect_anomaly(True)
 
 
 class minimize:
-    ''' :param x: The variable being optimized (torch.tensor)
+    """ :param x: The variable being optimized (torch.tensor)
         :param loss_fcn: Loss function with x as input
         :param lr: Learning rate
         :param patience: Tolerance for no progress in optimization
@@ -19,7 +19,7 @@ class minimize:
         :param max_iter: Maximum number of iterations
         :param prefix: Prefix of the progress bar
         :param title: Show the title
-        :return: optimal solution, min loss, log of loss'''
+        :return: optimal solution, min loss, log of loss"""
 
     def __new__(cls,
                 x: torch.tensor,
@@ -28,7 +28,7 @@ class minimize:
                 eval_fcn=None,
                 patience: Optional[int] = 50,
                 max_iter: Optional[int] = None,
-                prefix: str = 'Minimize',
+                prefix: str = "Minimize",
                 title: bool = True,
                 leave: bool = True):
         assert patience or max_iter
@@ -37,8 +37,8 @@ class minimize:
         cls.x = x
         cls.optimizer = torch.optim.Adam([x], lr=lr)
         # Record the optimal solution
-        cls.min_loss, cls.best_variant, cls.log = float('inf'), None, []
-        if title: LOGGER.info(('%10s' * 3) % ('', 'cur_loss', 'min_loss'))
+        cls.min_loss, cls.best_variant, cls.log = float("inf"), None, []
+        if title: LOGGER.info(("%10s" * 3) % ("", "cur_loss", "min_loss"))
         # Set class properties
         cls.prefix = prefix
         cls.leave = leave
@@ -80,17 +80,17 @@ class minimize:
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
-        pbar.set_description(('%10s' + '%10.4g' * 2) % (self.prefix, loss_value, self.min_loss))
+        pbar.set_description(("%10s" + "%10.4g" * 2) % (self.prefix, loss_value, self.min_loss))
         return is_better
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     x = torch.linspace(-3, 3, 50)
     # x + 0.3 x^2 - 0.5 x^3 + 4 sin(x) + noise
     y = x + 0.3 * x ** 2 - 0.5 * x ** 3 + 4 * torch.sin(x) + 5 * (torch.rand(len(x)) - 0.5)
-    plt.scatter(x, y, c='deepskyblue', label='true')
+    plt.scatter(x, y, c="deepskyblue", label="true")
 
 
     def cal_y(variant, x):
@@ -108,6 +108,6 @@ if __name__ == '__main__':
 
     best_var, min_loss, log = minimize(torch.ones(4), loss_fcn=loss, lr=1e-1, patience=50, max_iter=2000)
     print(best_var)
-    plt.plot(x, cal_y(best_var, x), c='orange', label='pred')
+    plt.plot(x, cal_y(best_var, x), c="orange", label="pred")
 
     plt.legend(), plt.show()

@@ -78,13 +78,12 @@ Version 1.9 (November 29, 2017)
 """
 
 from __future__ import print_function
+
+import imp
+import marshal
 import os
 import struct
-import marshal
 import zlib
-import sys
-import imp
-import types
 from uuid import uuid4 as uniquename
 
 
@@ -99,23 +98,21 @@ class CTOCEntry:
 
 
 class PyInstArchive:
-    PYINST20_COOKIE_SIZE = 24           # For pyinstaller 2.0
-    PYINST21_COOKIE_SIZE = 24 + 64      # For pyinstaller 2.1+
-    MAGIC = b'MEI\014\013\012\013\016'  # Magic number which identifies pyinstaller
+    PYINST20_COOKIE_SIZE = 24  # For pyinstaller 2.0
+    PYINST21_COOKIE_SIZE = 24 + 64  # For pyinstaller 2.1+
+    MAGIC = b"MEI\014\013\012\013\016"  # Magic number which identifies pyinstaller
 
     def __init__(self, path):
         self.filePath = path
 
-
     def open(self):
         try:
-            self.fPtr = open(self.filePath, 'rb')
+            self.fPtr = open(self.filePath, "rb")
             self.fileSize = os.stat(self.filePath).st_size
         except:
-            print('[*] Error: Could not open {0}'.format(self.filePath))
+            print("[*] Error: Could not open {0}".format(self.filePath))
             return False
         return True
-
 
     def close(self):
         try:
@@ -123,16 +120,15 @@ class PyInstArchive:
         except:
             pass
 
-
     def checkFile(self):
-        print('[*] Processing {0}'.format(self.filePath))
+        print("[*] Processing {0}".format(self.filePath))
         # Check if it is a 2.0 archive
         self.fPtr.seek(self.fileSize - self.PYINST20_COOKIE_SIZE, os.SEEK_SET)
         magicFromFile = self.fPtr.read(len(self.MAGIC))
 
         if magicFromFile == self.MAGIC:
-            self.pyinstVer = 20     # pyinstaller 2.0
-            print('[*] Pyinstaller version: 2.0')
+            self.pyinstVer = 20  # pyinstaller 2.0
+            print("[*] Pyinstaller version: 2.0")
             return True
 
         # Check for pyinstaller 2.1+ before bailing out
@@ -140,13 +136,12 @@ class PyInstArchive:
         magicFromFile = self.fPtr.read(len(self.MAGIC))
 
         if magicFromFile == self.MAGIC:
-            print('[*] Pyinstaller version: 2.1+')
-            self.pyinstVer = 21     # pyinstaller 2.1+
+            print("[*] Pyinstaller version: 2.1+")
+            self.pyinstVer = 21  # pyinstaller 2.1+
             return True
 
-        print('[*] Error : Unsupported pyinstaller version or not a pyinstaller archive')
+        print("[*] Error : Unsupported pyinstaller version or not a pyinstaller archive")
         return False
-
 
     def getCArchiveInfo(self):
         try:
@@ -155,20 +150,20 @@ class PyInstArchive:
 
                 # Read CArchive cookie
                 (magic, lengthofPackage, toc, tocLen, self.pyver) = \
-                struct.unpack('!8siiii', self.fPtr.read(self.PYINST20_COOKIE_SIZE))
+                    struct.unpack("!8siiii", self.fPtr.read(self.PYINST20_COOKIE_SIZE))
 
             elif self.pyinstVer == 21:
                 self.fPtr.seek(self.fileSize - self.PYINST21_COOKIE_SIZE, os.SEEK_SET)
 
                 # Read CArchive cookie
                 (magic, lengthofPackage, toc, tocLen, self.pyver, pylibname) = \
-                struct.unpack('!8siiii64s', self.fPtr.read(self.PYINST21_COOKIE_SIZE))
+                    struct.unpack("!8siiii64s", self.fPtr.read(self.PYINST21_COOKIE_SIZE))
 
         except:
-            print('[*] Error : The file is not a pyinstaller archive')
+            print("[*] Error : The file is not a pyinstaller archive")
             return False
 
-        print('[*] Python version: {0}'.format(self.pyver))
+        print("[*] Python version: {0}".format(self.pyver))
 
         # Overlay is the data appended at the end of the PE
         self.overlaySize = lengthofPackage
@@ -176,9 +171,8 @@ class PyInstArchive:
         self.tableOfContentsPos = self.overlayPos + toc
         self.tableOfContentsSize = tocLen
 
-        print('[*] Length of package: {0} bytes'.format(self.overlaySize))
+        print("[*] Length of package: {0} bytes".format(self.overlaySize))
         return True
-
 
     def parseTOC(self):
         # Go to the table of contents
@@ -189,37 +183,35 @@ class PyInstArchive:
 
         # Parse table of contents
         while parsedLen < self.tableOfContentsSize:
-            (entrySize, ) = struct.unpack('!i', self.fPtr.read(4))
-            nameLen = struct.calcsize('!iiiiBc')
+            (entrySize,) = struct.unpack("!i", self.fPtr.read(4))
+            nameLen = struct.calcsize("!iiiiBc")
 
             (entryPos, cmprsdDataSize, uncmprsdDataSize, cmprsFlag, typeCmprsData, name) = \
-            struct.unpack( \
-                '!iiiBc{0}s'.format(entrySize - nameLen), \
-                self.fPtr.read(entrySize - 4))
+                struct.unpack( \
+                    "!iiiBc{0}s".format(entrySize - nameLen), \
+                    self.fPtr.read(entrySize - 4))
 
-            name = name.decode('utf-8').rstrip('\0')
+            name = name.decode("utf-8").rstrip("\0")
             if len(name) == 0:
                 name = str(uniquename())
-                print('[!] Warning: Found an unamed file in CArchive. Using random name {0}'.format(name))
+                print("[!] Warning: Found an unamed file in CArchive. Using random name {0}".format(name))
 
             self.tocList.append( \
-                                CTOCEntry(                      \
-                                    self.overlayPos + entryPos, \
-                                    cmprsdDataSize,             \
-                                    uncmprsdDataSize,           \
-                                    cmprsFlag,                  \
-                                    typeCmprsData,              \
-                                    name                        \
-                                ))
+                CTOCEntry( \
+                    self.overlayPos + entryPos, \
+                    cmprsdDataSize, \
+                    uncmprsdDataSize, \
+                    cmprsFlag, \
+                    typeCmprsData, \
+                    name \
+                    ))
 
             parsedLen += entrySize
-        print('[*] Found {0} files in CArchive'.format(len(self.tocList)))
-
-
+        print("[*] Found {0} files in CArchive".format(len(self.tocList)))
 
     def extractFiles(self):
-        print('[*] Beginning extraction...please standby')
-        extractionDir = os.path.join(os.getcwd(), os.path.basename(self.filePath) + '_extracted')
+        print("[*] Beginning extraction...please standby")
+        extractionDir = os.path.join(os.getcwd(), os.path.basename(self.filePath) + "_extracted")
 
         if not os.path.exists(extractionDir):
             os.mkdir(extractionDir)
@@ -228,7 +220,7 @@ class PyInstArchive:
 
         for entry in self.tocList:
             basePath = os.path.dirname(entry.name)
-            if basePath != '':
+            if basePath != "":
                 # Check if path exists, create if not
                 if not os.path.exists(basePath):
                     os.makedirs(basePath)
@@ -240,44 +232,46 @@ class PyInstArchive:
                 data = zlib.decompress(data)
                 # Malware may tamper with the uncompressed size
                 # Comment out the assertion in such a case
-                assert len(data) == entry.uncmprsdDataSize # Sanity Check
+                assert len(data) == entry.uncmprsdDataSize  # Sanity Check
 
-            with open(entry.name, 'wb') as f:
+            with open(entry.name, "wb") as f:
                 f.write(data)
 
-            if entry.typeCmprsData == b's':
-            	print('[+] Possible entry point: {0}'.format(entry.name))
+            if entry.typeCmprsData == b"s":
+                print("[+] Possible entry point: {0}".format(entry.name))
 
-            elif entry.typeCmprsData == b'z' or entry.typeCmprsData == b'Z':
+            elif entry.typeCmprsData == b"z" or entry.typeCmprsData == b"Z":
                 self._extractPyz(entry.name)
 
-
     def _extractPyz(self, name):
-        dirName =  name + '_extracted'
+        dirName = name + "_extracted"
         # Create a directory for the contents of the pyz
         if not os.path.exists(dirName):
             os.mkdir(dirName)
 
-        with open(name, 'rb') as f:
+        with open(name, "rb") as f:
             pyzMagic = f.read(4)
-            assert pyzMagic == b'PYZ\0' # Sanity Check
+            assert pyzMagic == b"PYZ\0"  # Sanity Check
 
-            pycHeader = f.read(4) # Python magic value
+            pycHeader = f.read(4)  # Python magic value
 
             if imp.get_magic() != pycHeader:
-                print('[!] Warning: The script is running in a different python version than the one used to build the executable')
-                print('    Run this script in Python{0} to prevent extraction errors(if any) during unmarshalling'.format(self.pyver))
+                print(
+                    "[!] Warning: The script is running in a different python version than the one used to build the executable")
+                print(
+                    "    Run this script in Python{0} to prevent extraction errors(if any) during unmarshalling".format(
+                        self.pyver))
 
-            (tocPosition, ) = struct.unpack('!i', f.read(4))
+            (tocPosition,) = struct.unpack("!i", f.read(4))
             f.seek(tocPosition, os.SEEK_SET)
 
             try:
                 toc = marshal.load(f)
             except:
-                print('[!] Unmarshalling FAILED. Cannot extract {0}. Extracting remaining files.'.format(name))
+                print("[!] Unmarshalling FAILED. Cannot extract {0}. Extracting remaining files.".format(name))
                 return
 
-            print('[*] Found {0} files in PYZ archive'.format(len(toc)))
+            print("[*] Found {0} files in PYZ archive".format(len(toc)))
 
             # From pyinstaller 3.1+ toc is a list of tuples
             if type(toc) == list:
@@ -290,7 +284,7 @@ class PyInstArchive:
                 fileName = key
                 try:
                     # for Python > 3.3 some keys are bytes object some are str object
-                    fileName = key.decode('utf-8')
+                    fileName = key.decode("utf-8")
                 except:
                     pass
 
@@ -304,15 +298,15 @@ class PyInstArchive:
                     data = f.read(length)
                     data = zlib.decompress(data)
                 except:
-                    print('[!] Error: Failed to decompress {0}, probably encrypted. Extracting as is.'.format(fileName))
-                    open(destName + '.pyc.encrypted', 'wb').write(data)
+                    print("[!] Error: Failed to decompress {0}, probably encrypted. Extracting as is.".format(fileName))
+                    open(destName + ".pyc.encrypted", "wb").write(data)
                     continue
 
-                with open(destName + '.pyc', 'wb') as pycFile:
-                    pycFile.write(pycHeader)      # Write pyc magic
-                    pycFile.write(b'\0' * 4)      # Write timestamp
+                with open(destName + ".pyc", "wb") as pycFile:
+                    pycFile.write(pycHeader)  # Write pyc magic
+                    pycFile.write(b"\0" * 4)  # Write timestamp
                     if self.pyver >= 33:
-                        pycFile.write(b'\0' * 4)  # Size parameter added in Python 3.3
+                        pycFile.write(b"\0" * 4)  # Size parameter added in Python 3.3
                     pycFile.write(data)
 
 
@@ -328,16 +322,16 @@ def main(exe):
                 arch.parseTOC()
                 arch.extractFiles()
                 arch.close()
-                print('[*] Successfully extracted pyinstaller archive: {0}'.format(exe))
-                print('')
-                print('You can now use a python decompiler on the pyc files within the extracted directory')
+                print("[*] Successfully extracted pyinstaller archive: {0}".format(exe))
+                print("")
+                print("You can now use a python decompiler on the pyc files within the extracted directory")
                 return
 
         arch.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from pathlib import Path
 
-    exe = Path(r'D:\Information\Download\罗技调用检测，请先运行我.exe')
+    exe = Path(r"D:\Information\Download\罗技调用检测，请先运行我.exe")
     main(exe)

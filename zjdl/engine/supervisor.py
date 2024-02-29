@@ -50,11 +50,11 @@ class SimCLR(Trainer):
 
 
 class MaskedAutoEncoder(Trainer):
-    ''' 仅适用于经典 ViT
+    """ 仅适用于经典 ViT
         :param npatch: patches 的总数
         :param pmask: patches 的固定掩码
         :param drop: patches 的遮蔽比例
-        :param downsample: 复原图像的下采样比例'''
+        :param downsample: 复原图像的下采样比例"""
 
     def __init__(self, model, project, m_title, hyp,
                  npatch, pmask=None, drop=.75, downsample=4):
@@ -79,7 +79,7 @@ class MaskedAutoEncoder(Trainer):
         return F.mse_loss(pred[:, mmask], image[:, mmask])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     x = np.random.random([100, 5])
     y = np.random.randint(0, 3, 100)
     print(linear_probing(x, y))
