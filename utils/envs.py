@@ -1,5 +1,6 @@
 import datetime
 import os
+import sys
 from pathlib import Path
 
 from zjexe import execute
@@ -31,6 +32,29 @@ def git_push(*repositories,
         os.chdir(repo), print(repo.center(50, "-"))
         for cmd in ("git status", "git add .",
                     f"git commit -m \"{msg}\"", "git push origin master"): execute(cmd, check=False)
+
+
+class HeaderSearchPaths:
+    f = Path(sys.executable).parent / "ext.pth"
+
+    @classmethod
+    def load(cls):
+        return set(cls.f.read_text().splitlines()) if cls.f.is_file() else set()
+
+    @classmethod
+    def dump(cls, ext):
+        cls.f.write_text("\n".join(p for p in ext if Path(p).is_dir()))
+        return ext
+
+    @classmethod
+    def add(cls, *paths):
+        ext = cls.load()
+        return cls.dump(ext | set(map(str, paths)))
+
+    @classmethod
+    def remove(cls, *paths):
+        ext = cls.load()
+        return cls.dump(ext - set(map(str, paths)))
 
 
 class PythonEnv:
@@ -94,4 +118,5 @@ if __name__ == "__main__":
     add_path()
     os.chdir(os.getenv("dl"))
 
+    # PythonEnv.install("pywin32")
     git_push("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib")
