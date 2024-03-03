@@ -39,7 +39,9 @@ class HeaderSearchPaths:
 
     @classmethod
     def load(cls):
-        return set(cls.f.read_text().splitlines()) if cls.f.is_file() else set()
+        return set(
+            p for p in cls.f.read_text().splitlines() if p
+        ) if cls.f.is_file() else set()
 
     @classmethod
     def dump(cls, ext):
