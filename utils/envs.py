@@ -34,8 +34,8 @@ def git_push(*repositories,
                     f"git commit -m \"{msg}\"", "git push origin master"): execute(cmd, check=False)
 
 
-class HeaderSearchPaths:
-    f = Path(sys.executable).parent / "ext.pth"
+class PythonExtLibs:
+    f = Path(sys.executable).parent / "ext-lib.pth"
 
     @classmethod
     def load(cls):
@@ -45,16 +45,17 @@ class HeaderSearchPaths:
 
     @classmethod
     def dump(cls, ext):
-        cls.f.write_text("\n".join(p for p in ext if Path(p).is_dir()))
+        ext = [p for p in ext if Path(p).is_dir()]
+        cls.f.write_text("\n".join(ext)) if ext else cls.f.unlink(missing_ok=True)
         return ext
 
     @classmethod
-    def add(cls, *paths):
+    def add(cls, paths):
         ext = cls.load()
         return cls.dump(ext | set(map(str, paths)))
 
     @classmethod
-    def remove(cls, *paths):
+    def remove(cls, paths):
         ext = cls.load()
         return cls.dump(ext - set(map(str, paths)))
 
@@ -121,4 +122,5 @@ if __name__ == "__main__":
     os.chdir(os.getenv("dl"))
 
     # PythonEnv.install("pywin32")
+    PythonExtLibs.dump([r"D:\Workbench\data\ros-humble", r"D:\Workbench\data\ros-noetic"])
     git_push("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib")
