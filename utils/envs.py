@@ -45,8 +45,9 @@ class PythonExtLibs:
 
     @classmethod
     def dump(cls, ext):
-        ext = [p for p in ext if Path(p).is_dir()]
-        cls.f.write_text("\n".join(ext)) if ext else cls.f.unlink(missing_ok=True)
+        ext = [str(p.absolute()) for p in map(Path, ext) if p.is_dir()]
+        cls.f.write_text("\n".join(ext)) \
+            if ext else cls.f.unlink(missing_ok=True)
         return ext
 
     @classmethod
