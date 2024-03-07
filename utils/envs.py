@@ -35,7 +35,7 @@ def git_push(*repositories,
 
 
 class PythonExtLibs:
-    f = Path(sys.executable).parent / "ext-lib.pth"
+    f = Path(sys.executable).parent / "extlib.pth"
 
     @classmethod
     def load(cls):
@@ -123,5 +123,5 @@ if __name__ == "__main__":
     os.chdir(os.getenv("dl"))
 
     # PythonEnv.install("pywin32")
-    PythonExtLibs.dump([r"D:\Workbench\data\ros-noetic"])
+    # PythonExtLibs.dump([r"D:\Workbench\data\ros_noetic", r"D:\Workbench\data\ros_humble"])
     git_push("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib")
