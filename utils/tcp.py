@@ -54,7 +54,6 @@ class DataIO(Memory):
         self.register("o_data", "list", [0] * o_len)
         self.register("i_flag", "bool")
         self.register("o_flag", "bool")
-        self.register("ready", "bool")
         # 删除冗余变量
         self.get_ready()
 
@@ -158,7 +157,7 @@ class TcpSocket(socket.socket):
                 LOGGER.warning("No connection requests were listened for")
 
 
-def chat(input_func, addr=None, timeout=1e-3, exit_code=r"\exit", encoding="utf-8"):
+def chat(input_func, addr=None, timeout=1e-3, exit_code=r"exit", encoding="utf-8"):
     with TcpSocket(timeout=timeout) as tcp:
         try:
             if tcp.connect_auto(addr=addr):
@@ -186,50 +185,61 @@ def chat(input_func, addr=None, timeout=1e-3, exit_code=r"\exit", encoding="utf-
             LOGGER.error(f"{type(reason).__name__}: {reason}")
 
 
-def transfer_async(dataio, addr=None, timeout=1e-4):
-    """ :param dataio: DataIO 实例
-        :param addr: 服务端地址
-        :param timeout: 传输数据时的超时时间"""
-    t_recv, t_send, t_wait, momentum = (0,) * 3 + (0.1,)
-    with TcpSocket(timeout=timeout) as tcp:
-        try:
-            if tcp.connect_auto(addr=addr):
-                LOGGER.info(f"The data transmission channel is enabled")
-                dataio.ns.ready = True
-                while True:
-                    t0 = time.time()
-                    # 发送数据
-                    send = dataio.send()
-                    if send is not None:
+class Transfer(mp.Process):
+
+    def __init__(self, dataio, addr=None, timeout=1e-4):
+        super().__init__()
+        self._is_ready = False
+        self._dataio = dataio
+        self._addr = addr
+        self._timeout = timeout
+        self.start()
+
+    def wait_for_ready(self):
+        while not self._is_ready: pass
+
+    def run(self):
+        t_recv, t_send, t_wait, momentum = (0,) * 3 + (0.1,)
+        with TcpSocket(timeout=self._timeout) as tcp:
+            try:
+                if tcp.connect_auto(addr=self._addr):
+                    LOGGER.info(f"The data transmission channel is enabled")
+                    self._is_ready = True
+                    while True:
+                        t0 = time.time()
+                        # 发送数据
+                        send = dataio.send()
+                        if send is not None:
+                            try:
+                                tcp.upload(pickle.dumps(send))
+                                t_send = momentum * (time.time() - t0) * 1e3 + (1 - momentum) * t_send
+                                t0 = time.time()
+                            except socket.timeout:
+                                pass
+                            except pickle.PickleError as reason:
+                                LOGGER.warning(f"{type(reason).__name__}: {reason}")
+                        # 接收对方发送的数据
                         try:
-                            tcp.upload(pickle.dumps(send))
-                            t_send = momentum * (time.time() - t0) * 1e3 + (1 - momentum) * t_send
+                            recv = pickle.loads(tcp.download())
+                            dataio.recv(recv)
+                            t_recv = momentum * (time.time() - t0) * 1e3 + (1 - momentum) * t_recv
                             t0 = time.time()
                         except socket.timeout:
                             pass
                         except pickle.PickleError as reason:
                             LOGGER.warning(f"{type(reason).__name__}: {reason}")
-                    # 接收对方发送的数据
-                    try:
-                        recv = pickle.loads(tcp.download())
-                        dataio.recv(recv)
-                        t_recv = momentum * (time.time() - t0) * 1e3 + (1 - momentum) * t_recv
-                        t0 = time.time()
-                    except socket.timeout:
-                        pass
-                    except pickle.PickleError as reason:
-                        LOGGER.warning(f"{type(reason).__name__}: {reason}")
-                    # 输出网络迟延
-                    t_wait = momentum * (time.time() - t0) * 1e3 + (1 - momentum) * t_wait
-                    print("\r" + (" " * 4).join(map(lambda s, t: f"T-{s}: {t:.2f} ms",
-                                                    ("recv", "send", "wait"), (t_recv, t_send, t_wait))), end="")
-                LOGGER.info(f"End of data transmission")
-        except Exception as reason:
-            LOGGER.error(f"{type(reason).__name__}: {reason}")
+                        # 输出网络迟延
+                        t_wait = momentum * (time.time() - t0) * 1e3 + (1 - momentum) * t_wait
+                        print("\r" + (" " * 4).join(map(lambda s, t: f"T-{s}: {t:.2f} ms",
+                                                        ("recv", "send", "wait"), (t_recv, t_send, t_wait))), end="")
+                    LOGGER.info(f"End of data transmission")
+            except Exception as reason:
+                LOGGER.error(f"{type(reason).__name__}: {reason}")
 
 
 if __name__ == "__main__":
     chat_flag = False
+    server_addr = ("0.0.0.0", 22)
 
     if chat_flag:
         import os
@@ -244,40 +254,45 @@ if __name__ == "__main__":
             return data
 
 
-        chat(input_func)
+        chat(input_func, addr=server_addr)
 
     else:
-        from pymod.zjplot import rainbow
-        from tqdm import tqdm
-
-        import matplotlib.pyplot as plt
-
         dataio = DataIO(3, 3)
-        t = round(1e4)
+        tcp_com = Transfer(dataio, addr=server_addr)
 
-        tcp_com = mp.Process(target=transfer_async, args=(dataio,))
-        tcp_com.start()
+        if server_addr:
+            while True:
+                recv = dataio.read()
+                if recv is not None:
+                    dataio.write(recv)
 
-        # 等待 TCP 连接成功
-        while not dataio.ns.ready: pass
+        else:
+            from pymod.zjplot import rainbow
+            from tqdm import tqdm
 
-        for color in tqdm(rainbow[1: 5]):
-            y = [0]
-            t0 = time.time()
+            import matplotlib.pyplot as plt
 
-            # 发送状态量, 接收控制量
-            for i in range(t):
-                dataio.write((y[-1],) * 3)
-                y.append(dataio.i_data[0])
+            t = round(1e4)
 
-            # 得到运行时间
-            cost = time.time() - t0
-            dataio.write((0,))
-            time.sleep(1)
+            tcp_com.wait_for_ready()
 
-            rate = round(cost * 1e3 / y[-1], 2)
-            x = np.linspace(0, cost, t + 1)
-            plt.plot(x, y, color=color, label=f"{rate} ms")
+            for color in tqdm(rainbow[1: 5]):
+                y = [0]
+                t0 = time.time()
 
-        plt.legend()
-        plt.show()
+                # 发送状态量, 接收控制量
+                for i in range(t):
+                    dataio.write((y[-1],) * 3)
+                    y.append(dataio.i_data[0])
+
+                # 得到运行时间
+                cost = time.time() - t0
+                dataio.write((0,))
+                time.sleep(1)
+
+                rate = round(cost * 1e3 / y[-1], 2)
+                x = np.linspace(0, cost, t + 1)
+                plt.plot(x, y, color=color, label=f"{rate} ms")
+
+            plt.legend()
+            plt.show()
