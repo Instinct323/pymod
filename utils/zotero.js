@@ -24,6 +24,7 @@ function log(msg, level = 0, duration = 5000) {
 }
 
 
+// 提取 DOI
 async function getDoi(item) {
     let doi = item.getField("DOI");
     if (!doi) {
@@ -48,7 +49,7 @@ async function getDoi(item) {
 async function fillArxivDoi(item) {
     const url = item.getField("url");
     const pat = new RegExp("https?://arxiv\.org/abs/");
-    let is_arxiv = !!url.match(pat);
+    const is_arxiv = !!url.match(pat);
 
     if (is_arxiv && !(await getDoi(item))) {
         let arxiv_id = url.split("/").pop();
@@ -64,18 +65,18 @@ async function fillArxivDoi(item) {
 // 合并元数据
 async function mergeMetadata(item, newItem, cover = true) {
     // Fields: https://www.zotero.org/support/dev/client_coding/javascript_api/search_fields
-    let etype = [];
     item.setCreators(newItem.getCreators());    // 作者
     // 覆盖元数据
-    for (let field of fields) {
+    const etype = fields.filter(field => {
         if (cover || newItem.getField(field)) {
             try {
                 item.setField(field, newItem.getField(field));
+                return false;
             } catch (e) {
-                etype.push(field);
+                return true;
             }
         }
-    }
+    });
     // 输出错误信息
     let msg = "";
     for (let field of etype) {
@@ -125,10 +126,10 @@ class MetadataUpdater {
                 // 中文标题, 忽略
                 item.addTag(this.tags[3]);
                 this.cnt[3]++;
-                await item.saveTx();
             }
             item.removeTag(this.tags[0]);
             this.cnt[0]--;
+            await item.saveTx();
             this.info();
         }
     }
@@ -171,8 +172,8 @@ class MetadataUpdater {
 }
 
 
+// Discard: 清空元数据
 async function clearMetadata() {
-    // 清空元数据
     let cnt = 0;
     for (let item of items) {
         if (await getDoi(item)) {
