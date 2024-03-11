@@ -80,7 +80,7 @@ async function loadMetadata(doi) {
 
 
 // 合并元数据
-async function mergeMetadata(item, newItem, cover = true) {
+async function mergeMetadata(item, newItem, cover = false) {
     item.setCreators(newItem.getCreators());    // 作者
     const etype = FIELDS.filter(field => {
         if (!(cover || newItem.getField(field))) {
