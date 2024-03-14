@@ -165,7 +165,7 @@ class InertiaOpt:
             if p[1] >= best[-1][1]: best.append(p)
         # 绘制最优适应度曲线
         best = np.array(best).T
-        for i in "xy": getattr(plt, f"{i}ticks")([], [])
+        for i in "xy": getattr(plt, f"{i}ticks")([])
         plt.plot(*best, color="gray", alpha=.5, linestyle="--")
         # 绘制各个超参数的散点
         for k in sorted(hyp):

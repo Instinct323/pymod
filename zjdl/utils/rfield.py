@@ -91,7 +91,7 @@ class ReceptiveField:
         for i, (title, heatmap) in enumerate(task):
             plt.subplot(1, len(task), i + 1)
             plt.title(title)
-            plt.xticks([], []), plt.yticks([], [])
+            plt.xticks([]), plt.yticks([])
             plt.imshow(heatmap, vmin=0, vmax=1, **imshow_kw)
 
     def effective(self, state_dict=None):

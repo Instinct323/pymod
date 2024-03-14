@@ -219,7 +219,7 @@ if __name__ == "__main__":
         # 绘制最优路径
         fig = plt.subplot(1, 3, i + 1)
         plt.title(labels[i])
-        plt.xticks([], []), plt.yticks([], [])
+        plt.xticks([]), plt.yticks([])
         for key in "right", "top":
             fig.spines[key].set_color("None")
         plt.plot(*POS[unit].T, c=colors[i])

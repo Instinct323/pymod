@@ -212,9 +212,9 @@ if __name__ == "__main__":
 
     else:
         fig = figure3d()
-        fig.set_xticks([], [])
-        fig.set_yticks([], [])
-        fig.set_zticks([], [])
+        fig.set_xticks([])
+        fig.set_yticks([])
+        fig.set_zticks([])
 
         rot = SE3d.rot
         trans = SE3d.trans

@@ -37,12 +37,12 @@ def embedding_similarity(fe, w, h):
     # 绘制余弦相似度
     fig, subs = plt.subplots(h, w)
     for i, sub in enumerate(subs.flatten()):
-        for j in "xy": getattr(sub, f"set_{j}ticks")([], [])
+        for j in "xy": getattr(sub, f"set_{j}ticks")([])
         sub.imshow(similarity[i])
     plt.show()
 
 
-def image_regression(image, fe, downsample=2.,
+def image_regression(image, fe, downsample=2., e=0.5,
                      epochs=1000, lr=5e-3, weight_decay=0., file=None):
     hi, wi, ci = image.shape
     h, w = np.round(np.array((hi, wi)) / downsample).astype(np.int64)
@@ -52,9 +52,10 @@ def image_regression(image, fe, downsample=2.,
     x = from_np(fe(w, h))[None]
     # 创建模型和迭代器
     from .common import Conv
+    c1, c2 = x.shape[1], round(x.shape[1] * e)
     model = nn.Sequential(
-        Conv(x.shape[1], x.shape[1] // 2, 1, act=nn.ReLU),
-        Conv(x.shape[1] // 2, ci, 1, act=nn.Sigmoid)
+        Conv(c1, c2, 1, act=nn.ReLU),
+        Conv(c2, ci, 1, act=nn.Sigmoid)
     ).cuda().float()
     print(model)
     optim = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
