@@ -8,7 +8,6 @@ from model.common import LOCAL
 from torch import nn
 
 from .crosstab import Crosstab
-from .loss import ContrastiveLoss
 from .trainer import Trainer
 
 
@@ -25,28 +24,17 @@ def linear_probing(x, y, hlayer=tuple(), cv=5, seed=0, **mlp_kwd) -> Crosstab:
 
 class SimSiam(Trainer):
 
-    def __init__(self, model, project, m_title, hyp,
+    def __init__(self, model, project, hyp,
                  head: Union[nn.Conv2d, nn.Linear]):
         self.head = model.head = head
-        super().__init__(model, project, m_title, hyp)
+        super().__init__(model, project, hyp)
 
-    def loss(self, origin, aug, target) -> torch.Tensor:
+    def loss(self, origin, aug) -> torch.Tensor:
         proj = self.model(torch.cat([origin, aug], dim=0))
         pred = self.head(proj).chunk(2, dim=0)
         proj = proj.detach().chunk(2, dim=0)
         return - F.cosine_similarity(pred[0], proj[1], dim=-1, eps=1e-6).mean() \
                - F.cosine_similarity(pred[1], proj[0], dim=-1, eps=1e-6).mean()
-
-
-class SimCLR(Trainer):
-
-    def __init__(self, model, project, m_title, hyp):
-        self.cl = ContrastiveLoss(g=1)
-        model.t = self.cl.param_t
-        super().__init__(model, project, m_title, hyp)
-
-    def loss(self, origin, aug, target) -> torch.Tensor:
-        return self.cl(self.model(torch.cat([origin, aug], dim=0)))
 
 
 class MaskedAutoEncoder(Trainer):
@@ -56,14 +44,14 @@ class MaskedAutoEncoder(Trainer):
         :param drop: patches 的遮蔽比例
         :param downsample: 复原图像的下采样比例"""
 
-    def __init__(self, model, project, m_title, hyp,
+    def __init__(self, model, project, hyp,
                  npatch, pmask=None, drop=.75, downsample=4):
         self.pmask = pmask if pmask is not None else torch.ones(npatch, dtype=torch.bool)
         self.pperm = torch.nonzero(self.pmask).flatten().tolist()
         self.select = round(len(self.pperm) * (1 - drop))
         # 下采样函数
         self.downsample = lambda x: x[..., downsample // 2::downsample, downsample // 2::downsample]
-        super().__init__(model, project, m_title, hyp)
+        super().__init__(model, project, hyp)
 
     def loss(self, image, target) -> torch.Tensor:
         random.shuffle(self.pperm)
