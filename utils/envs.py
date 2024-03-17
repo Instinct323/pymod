@@ -123,6 +123,5 @@ if __name__ == "__main__":
     os.chdir(os.getenv("dl"))
 
     # PythonEnv.install("pywin32")
-    print(PythonExtLibs.load())
-    # PythonExtLibs.dump([r"D:\Workbench\pymod", r"D:\Workbench\ros_noetic", r"D:\Workbench\ros_humble"])
+    # PythonExtLibs.dump([r"D:\Workbench\pymod", r"D:\Workbench\ros_humble"])
     git_push("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib")
