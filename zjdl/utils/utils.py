@@ -193,26 +193,30 @@ class Capture(cv2.VideoCapture):
     def __init__(self,
                  file: str = 0,
                  delay: int = 0,
-                 dpi: list = [1280, 720]):
+                 dpi: list = None):
         super().__init__(file)
         if not self.isOpened():
             raise RuntimeError("Failed to initialize video capture")
         self.delay = delay
         # 设置相机的分辨率
-        if not file and dpi:
+        if dpi:
             self.set(cv2.CAP_PROP_FRAME_WIDTH, dpi[0])
             self.set(cv2.CAP_PROP_FRAME_HEIGHT, dpi[1])
 
     def __iter__(self):
-        return self
+        def generator():
+            while True:
+                ok, image = self.read()
+                if not ok: break
+                if self.delay:
+                    cv2.imshow("Capture", image)
+                    cv2.waitKey(self.delay)
+                yield image
 
-    def __next__(self):
-        ok, image = self.read()
-        if not ok: raise StopIteration
-        if self.delay:
-            cv2.imshow("Capture", image)
-            cv2.waitKey(self.delay)
-        return image
+        return generator()
+
+    def __len__(self):
+        return round(self.get(cv2.CAP_PROP_FRAME_COUNT))
 
     def flow(self):
         delay, self.delay = self.delay, 0
