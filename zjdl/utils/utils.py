@@ -184,22 +184,23 @@ class Path(WindowsPath if os.name == "nt" else PosixPath, _path):
         f.extractall(self.parent if path is None else path, pwd=pwd)
 
 
-class Capture(cv2.VideoCapture):
+class VideoCap(cv2.VideoCapture):
     """ 视频捕获
-        :param file: 视频文件名称 (默认连接摄像头)
+        :param src: 视频文件名称 (默认连接摄像头)
         :param delay: 视频帧的滞留时间 (ms)
         :param dpi: 相机分辨率"""
 
     def __init__(self,
-                 file: str = 0,
+                 src: str = 0,
                  delay: int = 0,
                  dpi: list = None):
-        super().__init__(file)
+        super().__init__(src)
         if not self.isOpened():
             raise RuntimeError("Failed to initialize video capture")
         self.delay = delay
         # 设置相机的分辨率
         if dpi:
+            assert src == 0, "Only camera can set resolution"
             self.set(cv2.CAP_PROP_FRAME_WIDTH, dpi[0])
             self.set(cv2.CAP_PROP_FRAME_HEIGHT, dpi[1])
 
@@ -209,9 +210,11 @@ class Capture(cv2.VideoCapture):
                 ok, image = self.read()
                 if not ok: break
                 if self.delay:
-                    cv2.imshow("Capture", image)
+                    cv2.imshow("frame", image)
                     cv2.waitKey(self.delay)
                 yield image
+            # 回到开头
+            self.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
         return generator()
 
@@ -233,7 +236,7 @@ class Capture(cv2.VideoCapture):
                 hsv = np.full_like(rgb, fill_value=255)
                 hsv[..., 0] = h * 90 / np.pi
                 hsv[..., 2] = cv2.normalize(v, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-                cv2.imshow("Capture", cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR))
+                cv2.imshow("frame", cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR))
                 cv2.waitKey(delay)
             gray1 = gray2
         self.delay = delay

@@ -1,7 +1,7 @@
 import cv2 as cv
 import mediapipe as mp
 
-from pymod.zjdl.utils.utils import Capture
+from pymod.zjdl.utils.utils import VideoCap
 
 draw_utils = mp.solutions.drawing_utils
 draw_styles = mp.solutions.drawing_styles
@@ -18,7 +18,7 @@ def hand_gesture(*args, **kwargs):
     # 启动检测器
     with hands.Hands(*args, **kwargs) as detector:
         # 逐帧进行识别
-        for img in Capture():
+        for img in VideoCap():
             result = detector.process(img)
             # 绘制检测结果
             if result.multi_hand_landmarks:
@@ -38,7 +38,7 @@ def face_detect(*args, **kwargs):
     # 启动检测器
     with fd.FaceDetection(*args, **kwargs) as detector:
         # 逐帧进行识别
-        for img in Capture():
+        for img in VideoCap():
             result = detector.process(img).detections
             # 绘制检测结果
             if result:

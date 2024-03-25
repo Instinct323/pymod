@@ -7,7 +7,7 @@ import numpy as np
 import pyautogui
 import wmi
 
-from pymod.zjdl.utils.utils import Capture
+from pymod.zjdl.utils.utils import VideoCap
 
 
 def set_brightness(value):
@@ -35,7 +35,7 @@ class Monitor:
 
     def __init__(self):
         self.env()
-        self.video = Capture()
+        self.video = VideoCap()
         self._momentum = 1 - pow(0.1, self.time_interval / self.sensitivity)
         print(f"The momentum is set to {self._momentum:.3f}\n")
         print(("%10s" * 6) % ("Size (MB)", "r_Mean", "f_Mean", "r_Var", "f_Var", "Stat"))
@@ -111,7 +111,7 @@ def SightSaver(env_range=[.06, .7],
     g_scr = lambda scr: scr_range[0] + scr_range[1] * scr
     # 记录当前屏幕亮度
     cur_br, steps = ulimit, ulimit // stride
-    for img in Capture(dpi=[640, 360]):
+    for img in VideoCap(dpi=[640, 360]):
         env = get_mean(img[-180:])
         screen = get_mean(np.flip(pyautogui.screenshot(), axis=-1))
         # f(env) = radio * g(screen)
