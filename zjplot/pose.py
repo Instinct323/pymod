@@ -3,7 +3,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 
-class _SEnd:
+class _PoseNd:
     dtype = np.float32
     dim = None
     # 位置, 各个轴的方向向量
@@ -43,7 +43,7 @@ class _SEnd:
         return str(self.s) + "\n"
 
 
-class SE2d(_SEnd):
+class Pose2d(_PoseNd):
     dim = 2
 
     def apply(self, x: np.ndarray, y: np.ndarray) -> tuple:
@@ -64,7 +64,7 @@ class SE2d(_SEnd):
         return (self.rela_tf if relative else self.abs_tf)(mat)
 
 
-class SE3d(_SEnd):
+class Pose3d(_PoseNd):
     dim = 3
 
     def apply(self, x: np.ndarray, y: np.ndarray, z: np.ndarray) -> tuple:
@@ -86,7 +86,7 @@ class SE3d(_SEnd):
 
             :example:
             >>> rpy = [30, 20, 10]
-            >>> rot = SE3d.rot
+            >>> rot = Pose3d.rot
 
             >>> a = rot(*rpy[::-1])
             >>> b = rot(yaw=rpy[2]) @ rot(pitch=rpy[1]) @ rot(roll=rpy[0])
@@ -100,10 +100,10 @@ class SE3d(_SEnd):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    rot = SE3d.rot
-    trans = SE3d.trans
+    rot = Pose3d.rot
+    trans = Pose3d.trans
 
-    se = SE3d().abs_tf(rot(30, 20)).abs_tf(trans(1, 2, 3))
+    se = Pose3d().abs_tf(rot(30, 20)).abs_tf(trans(1, 2, 3))
 
     fig = plt.subplot(projection="3d")
 
