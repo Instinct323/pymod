@@ -221,16 +221,17 @@ class Hourglass(nn.Module):
 @register_module("c1,c2")
 class Bottleneck(nn.Module):
 
-    def __init__(self, c1, c2, s=1, g=1, d=1, e=0.5):
+    def __init__(self, c1, c2, s=1, g=1, d=1, e=0.25):
         super().__init__()
         c_ = make_divisible(c2 * e, divisor=4)
         self.btn1 = Conv(c1, c_, 1)
-        self.btn2 = Conv(c_, c2, 3, s, g, d, act=None)
+        self.btn2 = Conv(c_, c_, 3, s, g, d)
+        self.btn3 = Conv(c_, c2, 1, act=None)
         self.downs = nn.Identity() if c1 == c2 and s == 1 else Conv(c1, c2, 1, s, act=None)
         self.act = self.btn1.act
 
     def forward(self, x):
-        return self.act(self.downs(x) + self.btn2(self.btn1(x)))
+        return self.act(self.downs(x) + self.btn3(self.btn2(self.btn1(x))))
 
 
 @register_module("c1")
