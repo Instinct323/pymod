@@ -32,8 +32,6 @@ class ChromosomeBase:
 
 class GeneticOpt:
     """ 遗传算法
-        :param chromosome: 染色体类
-        :param n_unit: 染色体群体规模
         :param cross_proba: 交叉概率
         :param var_proba: 变异概率
         :param well_radio: 最优个体比例
