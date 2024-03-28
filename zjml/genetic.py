@@ -83,9 +83,10 @@ class GeneticOpt:
 
     def fit(self, epochs: int,
             patience: int = np.inf,
-            prefix: str = "GA-fit") -> np.ndarray:
+            prefix: str = "GA-fit"):
         """ :param epochs: 训练轮次
-            :param patience: 允许搜索无进展的次数"""
+            :param patience: 允许搜索无进展的次数
+            :param prefix: 进度条前缀"""
         pbar = trange(epochs)
         angry = 0
         # 最优个体数, 随机选取数
