@@ -12,6 +12,7 @@ __openvino_cache__
 .idea
 *.exe
 desktop.ini
+.clion.source.upload.marker
 
 # datasets and projects
 data
