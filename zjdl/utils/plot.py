@@ -89,8 +89,8 @@ class ParamUtilization:
             weight = weight[i]
             # 对权重向量单位化, 以内积作为余弦相似度
             vec = weight / norm[:, None]
-            cos = (np.abs(vec @ vec.T) - np.eye(c2)).clip(max=1)
-            sin = np.sqrt(1 - cos ** 2)
+            cos = np.abs(vec @ vec.T).clip(max=1)
+            sin = np.sqrt(1 - cos ** 2) + np.eye(c2)
             # 差异程度 (取最小): 正弦值 * norm 相对大小
             diff = sin * norm[:, None] / norm
             score = np.array([diff[i, i:].min() for i in range(c2 - 1)])
