@@ -164,10 +164,9 @@ def prime_filter(n):
         1229"""
     is_prime = [True] * (n + 1)
     # 枚举 [2, sqrt(n)]
-    for i in range(2, math.isqrt(n) + 1):
-        if is_prime[i]:
-            for c in range(i ** 2, n + 1, i):
-                is_prime[c] = False
+    for i in filter(is_prime.__getitem__, range(2, math.isqrt(n) + 1)):
+        for c in range(i ** 2, n + 1, i):
+            is_prime[c] = False
     return is_prime
 
 
