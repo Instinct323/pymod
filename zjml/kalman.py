@@ -119,7 +119,7 @@ if __name__ == "__main__":
     range_ = 10, n // 2
     detect = [np.array([cx, cy, 1, 1]) for cx, cy in zip(x, y)]
     for i in range(*range_): detect[i] = None
-    filt_none = lambda seq: list(filter(lambda i: np.any(i), seq))
+    filt_none = lambda seq: list(filter(np.any, seq))
     cnt_none = lambda seq: len(seq) - len(filt_none(seq))
 
     # 单目标跟踪下的 x-y 坐标轨迹

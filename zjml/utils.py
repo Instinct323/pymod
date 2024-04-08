@@ -30,7 +30,7 @@ def adjusted_r_squared(pred, target, n_features):
     n_samples = pred.size
     tss = np.square(target - target.mean()).sum()
     rss = np.square(pred - target).sum()
-    adjusted = (n_samples - 1) / max([n_samples - n_features - 1, 1])
+    adjusted = (n_samples - 1) / max(n_samples - n_features - 1, 1)
     return 1 - rss / tss * adjusted
 
 
@@ -131,7 +131,7 @@ class HexagonalMesh:
         reth = np.stack([query[:, :-2], query[:, 2:]])
         # 竖直相邻
         query = np.stack([query[i, is_even: is_even + self._w + 1]
-                          for i, is_even in enumerate(map(lambda i: i & 1, range(self._h)))])
+                          for i, is_even in enumerate(map((1).__and__, range(self._h)))])
         query = np.concatenate([padv, query, padv], 0)
         retv = np.stack([query[:-2, :-1], query[:-2, 1:], query[2:, :-1], query[2:, 1:]])
         return np.concatenate([reth, retv], 0)

@@ -79,7 +79,7 @@ class Artist:
     def partition(self, img, shape):
         """ 前景图像分割"""
         img = self.imread(img, warn_only=False)[0]
-        # self.stride = max([round(img.shape[i] / shape[i]) for i in range(2)])
+        # self.stride = max(round(img.shape[i] / shape[i]) for i in range(2))
         img = cv2.resize(img, np.array(shape[::-1]) * self.stride)
         # 对图像分割到若干个单元格
         cells = sum(map(lambda x: np.split(x, shape[1], axis=1),
@@ -128,7 +128,7 @@ class Artist:
                 # 分别对两队列中的图像进行拼接, 并填充边界
                 img_queue = img_queue[:ctr], img_queue[ctr:]
                 img_queue = list(map(np.concatenate, img_queue))
-                max_h = max([j.shape[0] for j in img_queue])
+                max_h = max(j.shape[0] for j in img_queue)
                 img_queue[0] = pad_vert(img_queue[0], bottom=0, top=max_h - img_queue[0].shape[0] + self.pad_size[1])
                 img_queue[1] = pad_vert(img_queue[1], bottom=max_h - img_queue[1].shape[0] + self.pad_size[1], top=0)
                 # 填充前景图像的边界

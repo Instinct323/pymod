@@ -49,7 +49,7 @@ class Monitor:
             print(("\r" + "%10.3f" * 5 + "%10s") % (size, self._running_mean, float_mean,
                                                     self._running_var, float_var, stat), end="")
             # 短暂休眠
-            res_time = max([0, self.time_interval - (time.time() - t0)])
+            res_time = max(0, self.time_interval - (time.time() - t0))
             if res_time: time.sleep(res_time)
 
     def env(self):
@@ -61,7 +61,7 @@ class Monitor:
 
     def get_size(self):
         """ 获取占用空间信息"""
-        size = sum([file.stat().st_size for file in self.log_path.iterdir()])
+        size = sum(file.stat().st_size for file in self.log_path.iterdir())
         return size / pow(2, 20)
 
     def guard(self, i, img):
@@ -107,7 +107,7 @@ def SightSaver(env_range=[.06, .7],
     env_range[1] -= env_range[0]
     scr_range[1] -= scr_range[0]
     # 环境、画面亮度转换函数
-    f_env = lambda env: max([0, env - env_range[0]]) / env_range[1]
+    f_env = lambda env: max(0, env - env_range[0]) / env_range[1]
     g_scr = lambda scr: scr_range[0] + scr_range[1] * scr
     # 记录当前屏幕亮度
     cur_br, steps = ulimit, ulimit // stride
@@ -116,7 +116,7 @@ def SightSaver(env_range=[.06, .7],
         screen = get_mean(np.flip(pyautogui.screenshot(), axis=-1))
         # f(env) = radio * g(screen)
         radio = f_env(env) / g_scr(screen)
-        bright = max([0, min([ulimit, stride * round(steps * radio)])])
+        bright = max(0, min(ulimit, stride * round(steps * radio)))
         print("\t\t".join([f"\rEnv: {env:.3f}", f"Screen: {screen:.3f} / {mean:.3f}",
                            f"Bright: {bright}"]), end="")
         # 设置屏幕亮度

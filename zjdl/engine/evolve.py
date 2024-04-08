@@ -120,7 +120,7 @@ class InertiaOpt:
             previous = round((self.hyp[key] - lower_lim) / pace)
             # 根据是否到达上 / 下限确定动量
             m_forced = {0: 1, range_: -1}.get(previous, 0)
-            momentum = np.random.choice((-1, 1)) if not (m_greed or m_forced) else np.sign(sum((m_greed, m_forced)))
+            momentum = np.random.choice((-1, 1)) if not (m_greed or m_forced) else np.sign(sum(m_greed, m_forced))
             # m_greed, m_forced 符号相反时不再搜索
             skip = not momentum
             if not skip:

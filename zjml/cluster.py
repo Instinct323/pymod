@@ -94,11 +94,11 @@ class Dist_Cluster:
                 clf_result.append(sample_dist[:, idx].min())
         # 计算 loss 值
         if self._mode == "max":
-            loss = sum([dists.max() + .05 * dists.mean() for dists in clf_result])
+            loss = sum(dists.max() + .05 * dists.mean() for dists in clf_result)
         elif self._mode == "mean":
-            loss = sum([dists.mean() for dists in clf_result])
+            loss = sum(dists.mean() for dists in clf_result)
         elif self._mode == "sum":
-            loss = sum([dists.sum() for dists in clf_result])
+            loss = sum(dists.sum() for dists in clf_result)
         else:
             raise KeyError("mode 参数出错")
         return loss

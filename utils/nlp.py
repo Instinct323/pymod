@@ -47,7 +47,7 @@ class EnglishProcessor:
 
     def tokenize(self, sent):
         result = nltk.tokenize.word_tokenize(sent)
-        return map(lambda w: w.lower(), result)
+        return map(str.lower(), result)
 
     def pos_tag(self, sent):
         return nltk.pos_tag(self.tokenize(sent))

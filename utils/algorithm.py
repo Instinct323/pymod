@@ -201,8 +201,9 @@ def map_euler_fun(n):
     return value
 
 
-def try_div(n, factor={}):
+def try_div(n, factor=None):
     """ 试除法分解"""
+    factor = factor or {}
     i, bound = 2, math.isqrt(n)
     while i <= bound:
         if n % i == 0:
@@ -226,7 +227,7 @@ def all_factor(n):
     factor = [1]
     for i in prime:
         tmp = []
-        for p in map(lambda x: i ** x, range(1, prime[i] + 1)):
+        for p in map(i.__pow__, range(1, prime[i] + 1)):
             tmp += [p * j for j in factor]
         factor += tmp
     return factor

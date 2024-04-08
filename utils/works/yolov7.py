@@ -5,7 +5,7 @@ from pymod.zjdl.utils.utils import *
 
 def make_index(image_dir):
     """ Make an index file for the dataset"""
-    for folder in filter(lambda p: p.is_dir(), image_dir.iterdir()):
+    for folder in filter(Path.is_dir, image_dir.iterdir()):
         txt = image_dir.parent / (folder.stem + ".txt")
         with open(txt, "w") as f:
             for file in tqdm(list(folder.iterdir()), desc=txt.name):
@@ -32,7 +32,7 @@ def prune_dataset(image_dir, label_dir, cls_pool=None, min_n_boxes=1):
     if cls_pool: cls_pool = {cls: i for i, cls in enumerate(
         range(cls_pool) if isinstance(cls_pool, int) else cls_pool)}
     # Read the image and clear any image that has no corresponding txt
-    for image_folder in filter(lambda p: p.is_dir(), image_dir.iterdir()):
+    for image_folder in filter(Path.is_dir(), image_dir.iterdir()):
         unlink_count = 0
         label_folder = label_dir / image_folder.stem
         # Creating a progress bar

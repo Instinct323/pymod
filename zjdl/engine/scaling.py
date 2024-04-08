@@ -40,7 +40,7 @@ class ModelScaling:
             r_stride = stride / img_size
             r = np.arange(np.round_(.5 / r_stride) * r_stride, r_max + 0.01, r_stride)
             d = np.array([cfg["depth_multiple"]]) if d_keep else np.arange(1, flops + 1.01)
-            d, r = map(lambda x: x.flatten(), np.meshgrid(d, r))
+            d, r = map(np.ndarray.flatten, np.meshgrid(d, r))
             w = np.sqrt(flops / (d / depth * r ** 2))
             w = np.round_(w * width / w_stride) * w_stride
             # 计算相似度

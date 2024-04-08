@@ -21,7 +21,7 @@ class LAME:
                  nc: Union[int, List[int]],
                  affinity: Callable = rbf_affinity,
                  max_iter: int = 100):
-        self.nc = nc if isinstance(nc, int) else np.cumsum([1 if x == 2 else x for x in nc])
+        self.nc = nc if isinstance(nc, int) else np.cumsum(1 if x == 2 else x for x in nc)
         self.affinity = affinity
         self.max_iter = max_iter
 
