@@ -144,7 +144,7 @@ def rem_theorem(mods, rems, lcm_fcn=math.prod):
         :param mods: 模数集
         :param rems: 余数集
         :param lcm_fcn: 最小公倍数的求解函数 (模数集全为质数时使用 math.prod)
-        :return: 满足给定条件的余数项"""
+        :return: lcm, 余数项"""
     lcm = lcm_fcn(mods)
     # 费马小定理求逆元, 要求 a,p 互质
     inv = lambda a, p: pow(a, p - 2, p)
@@ -152,7 +152,7 @@ def rem_theorem(mods, rems, lcm_fcn=math.prod):
     for p, r in zip(mods, rems):
         a = lcm // p
         result += r * a * inv(a, p)
-    return result % lcm
+    return lcm, result % lcm
 
 
 def prime_filter(n):
@@ -160,7 +160,7 @@ def prime_filter(n):
         :return: 质数标志
         :example:
         >>> is_prime = prime_filter(10000)
-        >>> is_prime[2:].count(True)
+        >>> sum(is_prime[2:])
         1229"""
     is_prime = [True] * (n + 1)
     # 枚举 [2, sqrt(n)]
@@ -200,9 +200,9 @@ def map_euler_fun(n):
     return value
 
 
-def try_div(n, factor=None):
+def try_div(n):
     """ 试除法分解"""
-    factor = factor or {}
+    factor = {}
     i, bound = 2, math.isqrt(n)
     while i <= bound:
         if n % i == 0:
@@ -213,7 +213,7 @@ def try_div(n, factor=None):
                 cnt += 1
                 n //= i
             # 记录幂次, 更新边界
-            factor[i] = factor.get(i, 0) + cnt
+            factor[i] = cnt
             bound = math.isqrt(n)
         i += 1
     if n > 1: factor[n] = 1
@@ -299,7 +299,7 @@ class prime_factor(dict):
 
     def main(self, n, gain):
         # 试除法求解
-        if n < 7e5: return self.try_divide(n, gain=gain)
+        if n < 7e5: return self.try_div(n, gain=gain)
         # 米勒罗宾判素
         if miller_rabin(n): return self.add(n, gain)
         # pollard rho 求解因数
@@ -310,7 +310,7 @@ class prime_factor(dict):
         # 递归求解剩余部分
         if n > 1: self.main(n, gain=gain)
 
-    def try_divide(self, n, gain=1):
+    def try_div(self, n, gain=1):
         """ 试除法分解"""
         i, bound = 2, math.isqrt(n)
         while i <= bound:
@@ -337,7 +337,7 @@ def next_perm(seq):
         r = next(it.dropwhile(filt2, range(n - 1, l, -1)))
         seq[l], seq[r] = seq[r], seq[l]
         # 逆转逆序区
-        seq[l + 1:] = reversed(seq[l + 1:])
+        seq[l + 1:] = seq[-1:l:-1]
         return seq
     except StopIteration:
         return None
