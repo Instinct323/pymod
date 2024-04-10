@@ -3,6 +3,8 @@ import itertools as it
 import math
 import operator
 import random
+from collections import Counter
+from typing import Dict, List
 
 
 class DisjointSet:
@@ -277,16 +279,13 @@ def pollard_rho(n):
     return n
 
 
-class prime_factor(dict):
+class prime_factor(Counter):
     """ 质因数分解
         require: miller_rabin, pollard_rho"""
 
     def __init__(self, n):
         super().__init__()
         self.main(n, gain=1)
-
-    def add(self, n, cnt):
-        self[n] = self.get(n, 0) + cnt
 
     def count(self, n, fac):
         # 试除并记录幂次
@@ -301,7 +300,7 @@ class prime_factor(dict):
         # 试除法求解
         if n < 7e5: return self.try_div(n, gain=gain)
         # 米勒罗宾判素
-        if miller_rabin(n): return self.add(n, gain)
+        if miller_rabin(n): return self.update({n: gain})
         # pollard rho 求解因数
         fac = pollard_rho(n)
         n, cnt = self.count(n, fac)
@@ -318,10 +317,10 @@ class prime_factor(dict):
                 # 计数 + 整除
                 n, cnt = self.count(n, i)
                 # 记录幂次, 更新边界
-                self.add(i, cnt * gain)
+                self.update({i: cnt * gain})
                 bound = math.isqrt(n)
             i += 1
-        if n > 1: self.add(n, gain)
+        if n > 1: self.update({n: gain})
 
 
 def next_perm(seq):
@@ -360,16 +359,15 @@ def manacher(string):
     return max(p)
 
 
-def dijkstra(source, adj):
+def dijkstra(src: int,
+             adj: Dict[int, Dict]):
     """ 单源最短路径 (不带负权)
-        :param source: 源点
+        :param src: 源点
         :param adj: 图的邻接表"""
-    n = len(adj)
-    # 记录单源最短路, 未访问标记
+    n, undone = len(adj), [(0, src)]
+    # 单源最短路, 未访问标记
     info = [[float("inf"), True] for _ in range(n)]
-    info[source][0] = 0
-    # 记录未完成搜索的点 (优先队列)
-    undone = [(0, source)]
+    info[src][0] = 0
     while undone:
         # 找到离源点最近的点作为中间点 m
         m = heapq.heappop(undone)[1]
@@ -384,14 +382,15 @@ def dijkstra(source, adj):
     return info
 
 
-def spfa(source, adj):
+def spfa(src: int,
+         adj: Dict[int, Dict]):
     """ 单源最短路径 (带负权)
-        :param source: 源点
+        :param src: 源点
         :param adj: 图的邻接表"""
-    n, undone = len(adj), [(0, source)]
-    # 单源最短路, 是否在队, 入队次数
+    n, undone = len(adj), [(0, src)]
+    # 单源最短路, 在队标记, 入队次数
     info = [[float("inf"), False, 0] for _ in range(n)]
-    info[source][0] = 0
+    info[src][0] = 0
     while undone:
         # 队列: 弹出中间点
         m = heapq.heappop(undone)[1]
@@ -400,66 +399,72 @@ def spfa(source, adj):
         for i in adj[m]:
             tmp = info[m][0] + adj[m][i]
             if info[i][0] > tmp:
-                cnt = info[i][-1]
+                cnt = info[i][2]
                 # 入队: 被更新点
                 if not info[i][1]:
                     cnt += 1
                     heapq.heappush(undone, (tmp, i))
                     # 终止: 存在负环
-                    if cnt > n: return False
+                    if cnt > n: return None
                 info[i] = [tmp, True, cnt]
     return info
 
 
-def floyd(adj):
+def floyd(adj: List[List]):
     """ 多源最短路径 (带负权)
         :param adj: 图的邻接矩阵"""
     # import itertools as it
     n = len(adj)
     for m in range(n):
         for i, j in it.combinations(it.chain(range(m), range(m + 1, n)), 2):
-            adj[i][j] = min(adj[i][j], adj[i][m] + adj[m][j])
+            # 有向边写法
+            # adj[i][j] = min(adj[i][j], adj[i][m] + adj[m][j])
+            # adj[j][i] = min(adj[j][i], adj[j][m] + adj[m][i])
+            # 无向边写法
+            adj[i][j] = adj[j][i] = min(adj[i][j], adj[i][m] + adj[m][j])
 
 
-def topo_sort(in_degree, adj):
+def topo_sort(in_degree: List[int],
+              adj: Dict[int, Dict]):
     """ AOV 网拓扑排序 (最小字典序)
         :param in_degree: 入度表
         :param adj: 图的邻接表"""
+    order = []
     undone = [i for i, v in enumerate(in_degree) if v == 0]
     heapq.heapify(undone)
-    order = []
     while undone:
-        v = heapq.heappop(undone)
-        order.append(v)
+        m = heapq.heappop(undone)
+        order.append(m)
         # 删除该结点, 更新入度表
-        for i in adj[v]:
+        for i in adj[m]:
             in_degree[i] -= 1
             if in_degree[i] == 0: heapq.heappush(undone, i)
-    return order if len(order) == len(in_degree) else False
+    return order if len(order) == len(in_degree) else None
 
 
-def prim(source, adj):
+def prim(src: int,
+         adj: Dict[int, Dict]):
     """ 最小生成树
-        :param source: 源点
+        :param src: 源点
         :param adj: 图的邻接表"""
-    edges, n = [], len(adj)
+    n, edges = len(adj), []
     # 未完成搜索的边
-    undone = list(adj[source].items())
+    undone = [(v, i) for i, v in adj[src].items()]
     heapq.heapify(undone)
     # 和树的最小距离, 最近结点, 未完成标志
-    info = [[adj[source].get(i, float("inf")), source, True] for i in range(n)]
-    info[source][-1] = False
+    info = [[adj[src].get(i, float("inf")), src, True] for i in range(n)]
+    info[src][2] = False
     while undone:
         # 未被选取的顶点中, 离树最近的点
-        v = heapq.heappop(undone)[1]
-        if info[v][-1]:
-            info[v][-1] = False
-            edges.append((info[v][1], v))
+        m = heapq.heappop(undone)[1]
+        if info[m][2]:
+            info[m][2] = False
+            edges.append((info[m][1], m))
             # 更新最近结点
-            for i in adj[v]:
-                if info[i][0] > adj[v][i]:
-                    info[i][:2] = adj[v][i], v
-                    heapq.heappush(undone, (adj[v][i], i))
+            for i in adj[m]:
+                if info[i][0] > adj[m][i]:
+                    info[i][:2] = adj[m][i], m
+                    heapq.heappush(undone, (adj[m][i], i))
     return edges
 
 
@@ -482,6 +487,5 @@ def wythoff_game(x):
 
 
 if __name__ == "__main__":
-    one, singular = wythoff_game(100)
-    print(*one, sep="\n")
-    print(len(singular))
+    x = prime_factor(720)
+    print(x)
