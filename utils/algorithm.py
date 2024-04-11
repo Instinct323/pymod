@@ -342,18 +342,17 @@ def next_perm(seq):
         return None
 
 
-def manacher(string):
-    """ 最长回文串长度"""
-    string = "#".join(string.join("^$"))
-    center, border = 0, 0
+def manacher(s):
+    """ 最长回文子串"""
+    s = "#".join(s.join("^$"))
     # 以对应字符为中心 最长回文串的半径
-    p = [0] * len(string)
-    is_same = lambda i0, i1: i0 >= 0 and i1 < len(string) and string[i0] == string[i1]
-    for i in range(1, len(string) - 1):
-        # 利用回文串的对称性进行赋值
-        p[i] = min(max(0, border - i), p[max(0, 2 * center - i)])
+    p = [0] * len(s)
+    center, border = 0, 0
+    for i in range(1, len(s) - 1):
+        # 利用回文串的对称性进行赋值, 利用 min 防止越界
+        p[i] = min(p[max(0, 2 * center - i)], max(0, border - i))
         # 中心扩展法
-        while is_same(i - p[i] - 1, i + p[i] + 1): p[i] += 1
+        while s[i - p[i] - 1] == s[i + p[i] + 1]: p[i] += 1
         # 更新回文串中心, 回文串右端点 ("#")
         if i + p[i] > border: center, border = i, i + p[i]
     return max(p)
