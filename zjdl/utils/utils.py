@@ -46,9 +46,11 @@ class timer:
         @wraps(func)
         def handler(*args, **kwargs):
             t0 = time.time()
-            for i in range(self.repeat): func(*args, **kwargs)
+            for i in range(self.repeat): res = func(*args, **kwargs)
             cost = (time.time() - t0) * 1e3
-            return cost / self.repeat if self.avg else cost
+            cost = cost / self.repeat if self.avg else cost
+            print(f"{func.__name__}: {cost:.3f}")
+            return res
 
         return handler
 
