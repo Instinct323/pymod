@@ -48,7 +48,7 @@ class LossLandScape:
         plt.show()
 
 
-class ParamUtilization:
+class CombinedCost:
     decimals = 3
 
     @classmethod
@@ -105,7 +105,7 @@ class ParamUtilization:
 
         if isinstance(model_or_sdit, nn.Module):
             def solve(model, path):
-                # 如果有属性 weight 则计算参数利用率
+                # 如果有属性 weight 则计算合并成本
                 if hasattr(model, "weight"):
                     info = cls._parse_weight(model.weight.data)
                     if info: result[path[1:]] = info
