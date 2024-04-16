@@ -163,21 +163,24 @@ class _BaseDataset(Dataset):
 
     def __add__(self, other):
         _c = copy.copy(self)
-        _c.indexes = _c.indexes + other.indexes
+        _c.indexes = self.indexes + other.indexes
         return _c
+
+    def __iadd__(self, other):
+        self.indexes += other.indexes
+        return self
 
 
 class SimpleDataset(_BaseDataset):
-    """ indexes: 数据集的 ID 列表"""
+    """ :param indexes: 数据集的 ID 列表"""
+    tf_types = [ColorJitter, RandomFlip, GaussianBlur]
 
     def __init__(self,
                  imgpool: ImagePool,
                  indexes: Sequence = None,
-                 aughyp: dict = {}):
+                 aughyp: dict = None):
         super().__init__(imgpool, indexes)
-        self.aug = Transform(ColorJitter(aughyp),
-                             RandomFlip(aughyp),
-                             GaussianBlur(aughyp)) if aughyp else None
+        self.aug = Transform(*(tf(aughyp) for tf in self.tf_types)) if aughyp else None
 
     def __getitem__(self, item):
         img, label = self.imgpool[self.indexes[item]]
