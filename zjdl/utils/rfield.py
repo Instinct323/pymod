@@ -13,15 +13,15 @@ to_2tuple = lambda x: x if isinstance(x, collections.abc.Iterable) and not isins
 class ReceptiveField:
     """ :param model: 需要进行可视化的模型
         :param tar_layer: 感兴趣的层, 其所输出特征图需有 4 个维度 [B, C, H, W]
-        :param img_size: 测试时使用的图像尺寸
-        :cvar n_sample: 生成的随机图像的数量, 详见 effective 方法"""
-    n_sample = 8
+        :param img_size: 测试时使用的图像尺寸"""
+
+    def make_input(self, n_sample):
+        return torch.rand([n_sample, 3, *self.img_size], requires_grad=True)
 
     def __init__(self,
                  model: nn.Module,
                  tar_layer: Union[int, nn.Module],
                  img_size: Union[int, Tuple[int, int]],
-                 in_channels: int = 3,
                  use_cuda: bool = False,
                  use_copy: bool = False):
         # 注册前向传播的挂钩
@@ -31,9 +31,9 @@ class ReceptiveField:
             lambda module, x, y: setattr(self, "_fmap", y)
         )
         # 验证 tar_layer 的输出为特征图
-        self.img_size = (in_channels,) + to_2tuple(img_size)
+        self.img_size = to_2tuple(img_size)
         self.model = model.eval()
-        self.model(torch.zeros([1, *self.img_size]))
+        self.model(self.make_input(1))
         assert self._fmap.dim() == 4, f"Invalid selection of tar_layer {type(tar_layer)}"
         # 对模型进行深拷贝
         if use_copy:
@@ -68,14 +68,14 @@ class ReceptiveField:
 
     def effective(self, state_dict=None):
         """ :param state_dict: 模型权值, 如果提供则绘制训练后的感受野"""
-        x = torch.rand([self.n_sample, *self.img_size], requires_grad=True)
+        x = self.make_input(8)
         # 加载模型参数
         if state_dict: self.model.load_state_dict(state_dict, strict=False)
         return self._backward(x)
 
     def theoretical(self, light=1.):
         """ :param light: 理论感受野的亮度 [0, 1]"""
-        x = torch.ones([1, *self.img_size], requires_grad=True)
+        x = self.make_input(1)
         return (self._backward(x) > 0) * light
 
     def _replace(self, model):
@@ -94,7 +94,7 @@ class ReceptiveField:
         i = tuple(x // 2 for x in fmap.shape[2:])
         fmap[..., i[0], i[1]].sum().backward()
         # 取出原图像的梯度, 并对 B C 维度求取最大值
-        res = x.grad.abs().view(-1, *self.img_size[1:]).max(dim=0)[0].sqrt().cpu().data.numpy()
+        res = x.grad.abs().flatten(0, 1).max(dim=0)[0].sqrt().cpu().data.numpy()
         return res / (res.max() + 1e-8)
 
 
@@ -104,8 +104,8 @@ if __name__ == "__main__":
     # Step 1: 刚完成初始化的模型, 权重<完全随机>, 表 "训练前"
     m = resnet18()
     print(m)
-    m.layer3[1].conv1.dilation = 2
-    m.layer3[1].conv1.padding = 2
+    # m.layer3[1].conv1.dilation = 2
+    # m.layer3[1].conv1.padding = 2
 
     # Step 2: 训练完成后的 state_dict, 等待 ReceptiveField 加载
     state_dict = resnet18(pretrained=True).state_dict()
