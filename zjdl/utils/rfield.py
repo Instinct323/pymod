@@ -24,6 +24,7 @@ class ReceptiveField:
                  img_size: Union[int, Tuple[int, int]],
                  use_cuda: bool = False,
                  use_copy: bool = False):
+        self.img_size = to_2tuple(img_size)
         # 注册前向传播的挂钩
         self._fmap = None
         tar_layer = model[tar_layer] if isinstance(tar_layer, int) else tar_layer
@@ -31,9 +32,9 @@ class ReceptiveField:
             lambda module, x, y: setattr(self, "_fmap", y)
         )
         # 验证 tar_layer 的输出为特征图
-        self.img_size = to_2tuple(img_size)
         self.model = model.eval()
-        self.model(self.make_input(1))
+        with torch.no_grad():
+            self.model(self.make_input(1))
         assert self._fmap.dim() == 4, f"Invalid selection of tar_layer {type(tar_layer)}"
         # 对模型进行深拷贝
         if use_copy:
@@ -44,6 +45,7 @@ class ReceptiveField:
         # 原地替换网络层
         self._replace(self.model)
         self.device = torch.device("cuda:0" if use_cuda else "cpu")
+        self.model.to(self.device)
 
     def __enter__(self):
         return self
@@ -88,7 +90,7 @@ class ReceptiveField:
             self._replace(m)
 
     def _backward(self, x):
-        self.model.to(self.device)(x.to(self.device))
+        self.model(x.to(self.device))
         fmap, self._fmap = self._fmap, None
         # 获取特征图中心点的坐标, 并反向传播该点的梯度
         i = tuple(x // 2 for x in fmap.shape[2:])
