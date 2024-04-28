@@ -122,6 +122,6 @@ if __name__ == "__main__":
     add_path()
     os.chdir(os.getenv("dl"))
 
-    # PythonEnv.install("pywin32")
+    PythonEnv.install("pyinstaller")
     # PythonExtLibs.dump([r"D:\Workbench\pymod", r"D:\Workbench\ros_humble\py"])
     git_push("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib")
