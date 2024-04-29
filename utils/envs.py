@@ -5,25 +5,7 @@ from pathlib import Path
 
 from zjexe import execute
 
-
-def add_path():
-    env_path = os.environ["PATH"].split(os.pathsep)
-
-    # Window
-    if os.name == "nt":
-        env = Path("D:/Software/envs/cv")
-        conda = Path("D:/Software/Anaconda3/condabin")
-        ext_path = [env, conda, env / "Scripts"]
-
-    # Linux
-    else:
-        env = Path("/home/slam602/.conda/envs/torch/bin")
-        conda = Path("/opt/miniconda/bin")
-        ext_path = [env, conda]
-
-    ext_path = [str(p) for p in ext_path if str(p) not in env_path]
-    os.environ["PATH"] = os.pathsep.join(ext_path + env_path)
-    return ext_path
+SCRIPTS = Path(sys.executable).parent / "Scripts"
 
 
 def git_push(*repositories,
@@ -62,46 +44,54 @@ class PythonExtLibs:
 
 
 class PythonEnv:
+    _pip = SCRIPTS / "pip"
+    _jupyter = SCRIPTS / "jupyter"
 
-    @staticmethod
-    def install(pkg, uninstall=False, upgrade=False):
+    @classmethod
+    def install(cls, pkg, uninstall=False, upgrade=False):
         main = "uninstall -y" if uninstall else ("install" + upgrade * " --upgrade")
-        execute(f"pip {main} --no-cache-dir {pkg}")
+        execute(f"{cls._pip} {main} --no-cache-dir {pkg}")
 
-    @staticmethod
-    def load_requirements(file="requirements.txt"):
-        execute(f"pip install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html")
+    @classmethod
+    def load_requirements(cls, file="requirements.txt"):
+        execute(f"{cls._pip} install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html")
 
     @classmethod
     def jupyter(cls, root="D:/Workbench", cfg=False, reinstall=False):
         if reinstall:
-            tar = ("jupyte", "jupyter-client", "jupyter-console", "jupyter-core",
+            tar = ("jupyter", "jupyter-client", "jupyter-console", "jupyter-core",
                    "jupyterlab-pygments", "jupyterlab-widgets", "notebook==6.1.0",
                    "jupyter_contrib_nbextensions")
             for pkg in tar: cls.install(pkg, uninstall=True)
             for pkg in tar: cls.install(pkg)
-            execute(f"jupyter contrib nbextension install --use")
+            execute(f"{cls._jupyter} contrib nbextension install --use")
 
         os.chdir(root)
-        execute(f"jupyter notebook" + cfg * " --generate-config")
+        execute(f"{cls._jupyter} notebook" + cfg * " --generate-config")
 
     @classmethod
     def config(cls):
         for k, v in (("timeout", 6000),
                      ("index-url", "https://pypi.tuna.tsinghua.edu.cn/simple"),
                      ("trusted-host", "pypi.tuna.tsinghua.edu.cn")):
-            execute(f"pip config set global.{k} {v}")
+            execute(f"{cls._pip} config set global.{k} {v}")
 
 
 class CondaEnv(PythonEnv):
+
+    @staticmethod
+    def add_path():
+        conda = Path("D:/Software/Anaconda3/condabin" if os.name == "nt" else "/opt/miniconda/bin")
+        if conda.is_dir() and str(conda) not in os.environ["PATH"]:
+            os.environ["PATH"] = str(conda) + os.pathsep + os.environ["PATH"]
 
     @staticmethod
     def create(name, version=(3, 8, 15)):
         version = ".".join(map(str, version))
         execute(f"conda create -n {name} python=={version}")
 
-    @staticmethod
-    def install(pkg, uninstall=False, upgrade=False):
+    @classmethod
+    def install(cls, pkg, uninstall=False, upgrade=False):
         main = "uninstall -y" if uninstall else ("upgrade" if upgrade else "install")
         execute(f"conda {main} {pkg}")
 
@@ -119,9 +109,8 @@ class CondaEnv(PythonEnv):
 
 
 if __name__ == "__main__":
-    add_path()
     os.chdir(os.getenv("dl"))
 
-    # PythonEnv.install("urllib3")
+    PythonEnv.install("pyinstaller", uninstall=True)
     # PythonExtLibs.dump([r"D:\Workbench\pymod", r"D:\Workbench\ros_humble\py"])
     git_push("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib")

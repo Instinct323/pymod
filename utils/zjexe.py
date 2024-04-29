@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 import time
 from pathlib import Path
 
@@ -22,7 +23,7 @@ def pyc2py(pyc):
 
 
 class Installer:
-    """ cite: https://hebitzj.blog.csdn.net/article/details/135430884
+    """ cite: https://blog.csdn.net/qq_55745968/article/details/135430884
 
         :param main: 主程序文件
         :param console: 是否显示控制台
@@ -32,7 +33,7 @@ class Installer:
 
         :ivar opt_mode: 模式参数 (不适用于 spec)
         :ivar opt_general: 通用的参数"""
-    exe = "pyinstaller"
+    exe = Path(sys.executable).parent / "Scripts" / "pyinstaller"
 
     def __init__(self,
                  main: Path,
@@ -164,8 +165,6 @@ class Installer:
 
 
 if __name__ == "__main__":
-    # 添加环境变量, 加入 pyinstaller 所在路径
-    os.environ["PATH"] = r"D:/Software/envs/cv/Scripts;" + os.environ["PATH"]
     # website: https://upx.github.io/
     upx_dir = None  # "D:/Software/_tool/upx"
 
@@ -176,6 +175,8 @@ if __name__ == "__main__":
                     console=False,
                     icon=Path("D:/Information/Source/icon/pika.ico"))
 
+    # note: 随版本迭代, 代码与视频有所不符, 不需要像视频演示那样一步一步走
+    # note: 配置好上面几个路径, 直接运行就可以
     isl.clean()
     # Step 1: one-dir 打包, 生成 exclude.txt
     if not isl.exclude.is_file():
@@ -184,7 +185,7 @@ if __name__ == "__main__":
     if isl.load_exclude():
         isl.install(one_file=True)
         # Step 3: 修改 spec 文件, 生成最终的 exe 文件
-        isl.clean()
+        isl.clean(build=True)
         if upx_dir: isl.opt_general.append(f"--upx-dir {upx_dir}")
         isl.modify_spec()
         isl.install(spec=True)
