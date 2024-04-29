@@ -22,38 +22,17 @@ def pyc2py(pyc):
 
 
 class Installer:
-    # cite: https://hebitzj.blog.csdn.net/article/details/135430884
+    """ cite: https://hebitzj.blog.csdn.net/article/details/135430884
+
+        :param main: 主程序文件
+        :param console: 是否显示控制台
+        :param icon: 图标文件
+        :param paths: 搜索路径 (非必需)
+        :param hiddenimports: 导入模块 (非必需)
+
+        :ivar opt_mode: 模式参数 (不适用于 spec)
+        :ivar opt_general: 通用的参数"""
     exe = "pyinstaller"
-
-    @staticmethod
-    def check_src(mark="if typecode in ('BINARY', 'EXTENSION'):"):
-        from pathlib import Path
-        from PyInstaller.building import api
-        file = Path(api.__file__)
-
-        with file.open("r") as f:
-            lines = f.readlines()
-            for i in range(len(lines)):
-                # 查找代码的插入位置
-                if lines[i].strip() == mark:
-                    # 查找是否已插入代码
-                    for j in range(i + 1, i + 10):
-                        if "getattr(EXE, 'my_exclude', [])" in lines[j]: return True
-
-                    # 未插入代码
-                    sep = "-" * 15
-                    content = [rf"{i + 1:<8d}{mark}",
-                               rf"{i + 2:<12d}# {sep} ↓ INSERT ↓ {sep}",
-                               rf"{i + 3:<12d}if dest_name.replace('\\', '/') in getattr(EXE, 'my_exclude', []):",
-                               rf"{i + 4:<16d}print('Skip:', dest_name)",
-                               rf"{i + 5:<16d}continue",
-                               rf"{i + 6:<12d}# {sep} ↑ INSERT ↑ {sep}"]
-                    content = "\n".join(content)
-                    raise RuntimeError(f"Please modify {file} first\n\n{content}")
-
-        # 版本要求: 5.8.0 以上
-        import PyInstaller
-        raise RuntimeError(f"Fail to solve PyInstaller {PyInstaller.__version__}")
 
     def __init__(self,
                  main: Path,
@@ -69,20 +48,26 @@ class Installer:
         self.main = main.absolute()
         self.spec = Path(f"{self.main.stem}.spec").absolute()
         self.exclude = Path("exclude.txt").absolute()
-        # 记录打包参数
-        self.options = ["-c" if console else "-w"]
+        # 模式参数 (不适用于 spec)
+        self.opt_mode = ["-c" if console else "-w"]
         if icon:
-            self.options.append(f"-i {icon.absolute()}")
+            self.opt_mode.append(f"-i {icon.absolute()}")
+        # 通用的参数
+        self.opt_general = []
         for p in paths:
-            self.options.append(f"-p {p}")
+            self.opt_general.append(f"-p {p}")
         for m in hiddenimports:
-            self.options.append(f"--hidden-import {m}")
+            self.opt_general.append(f"--hidden-import {m}")
 
     def install(self, one_file=True, spec=False):
-        opt = self.spec if spec else " ".join(map(str, self.options + ["-F" if one_file else "-D", self.main]))
-        execute(f"{self.exe} {opt}")
+        """ :param one_file: 单文件打包 / 多文件打包
+            :param spec: 使用 spec 文件打包"""
+        opt_mode = " ".join(self.opt_mode + ["-F" if one_file else "-D"])
+        opt_general = " ".join(self.opt_general)
+        target = self.spec if spec else (opt_mode + " " + str(self.main))
+        execute(f"{self.exe} {opt_general} {target}")
 
-    def clear(self, build=True, dist=True):
+    def clean(self, build=False, dist=True):
         fs = []
         if build: fs.append("build")
         if dist: fs.append("dist")
@@ -133,38 +118,73 @@ class Installer:
     def modify_spec(self):
         with self.spec.open("r") as f:
             lines = f.readlines()
-        # 在第 3 行插入代码
-        for i, code in enumerate(
-                ("# todo: Loads the list of excluded files",
-                 "from pathlib import Path",
-                 "EXE.my_exclude = Path('exclude.txt').read_text().splitlines()")):
-            lines.insert(i + 2, code + "\n")
-        # 保存文件
-        with self.spec.open("w") as f:
-            f.writelines(lines)
+        if not lines[2].startswith("# todo: "):
+            # 在第 3 行插入代码
+            for i, code in enumerate(
+                    ("# todo: Loads the list of excluded files",
+                     "from pathlib import Path",
+                     "EXE.my_exclude = Path('exclude.txt').read_text().splitlines()")):
+                lines.insert(i + 2, code + "\n")
+            # 保存文件
+            with self.spec.open("w") as f:
+                f.writelines(lines)
 
     def __repr__(self):
-        return f"{type(self).__name__}({self.main}, options={self.options})"
+        return f"{type(self).__name__}({self.main}, opt_general={self.opt_general}, opt_mode={self.opt_mode})"
+
+    @staticmethod
+    def check_src(mark="if typecode in ('BINARY', 'EXTENSION'):"):
+        from pathlib import Path
+        from PyInstaller.building import api
+        file = Path(api.__file__)
+
+        with file.open("r") as f:
+            lines = f.readlines()
+            for i in range(len(lines)):
+                # 查找代码的插入位置
+                if lines[i].strip() == mark:
+                    # 查找是否已插入代码
+                    for j in range(i + 1, i + 10):
+                        if "getattr(EXE, 'my_exclude', [])" in lines[j]: return True
+
+                    # 未插入代码
+                    sep = "-" * 15
+                    content = [rf"{i + 1:<8d}{mark}",
+                               rf"{i + 2:<12d}# {sep} ↓ INSERT ↓ {sep}",
+                               rf"{i + 3:<12d}if dest_name.replace('\\', '/') in getattr(EXE, 'my_exclude', []):",
+                               rf"{i + 4:<16d}print('Skip:', dest_name)",
+                               rf"{i + 5:<16d}continue",
+                               rf"{i + 6:<12d}# {sep} ↑ INSERT ↑ {sep}"]
+                    content = "\n".join(content)
+                    raise RuntimeError(f"Please modify {file} first\n\n{content}")
+
+        # 版本要求: 5.8.0 以上
+        import PyInstaller
+        raise RuntimeError(f"Fail to solve PyInstaller {PyInstaller.__version__}")
 
 
 if __name__ == "__main__":
     # 添加环境变量, 加入 pyinstaller 所在路径
-    os.environ['PATH'] = r"D:/Software/envs/cv/Scripts;" + os.environ["PATH"]
+    os.environ["PATH"] = r"D:/Software/envs/cv/Scripts;" + os.environ["PATH"]
+    # website: https://upx.github.io/
+    upx_dir = None  # "D:/Software/_tool/upx"
 
     # 校验源代码的修改情况, 否则提供修改建议
+    print(Installer.__doc__, "\n")
     Installer.check_src()
     isl = Installer(Path("D:/Workbench/Repository/Deal/pyinstaller/__exp__/zjqt.py"),
                     console=False,
                     icon=Path("D:/Information/Source/icon/pika.ico"))
 
+    isl.clean()
     # Step 1: one-dir 打包, 生成 exclude.txt
-    isl.clear(build=False)
-    isl.dump_exclude()
+    if not isl.exclude.is_file():
+        isl.dump_exclude()
+    # Step 2: one-file 打包, 生成 spec 文件
     if isl.load_exclude():
-        # Step 2: one-file 打包, 生成 spec 文件
-        isl.clear(build=False)
         isl.install(one_file=True)
         # Step 3: 修改 spec 文件, 生成最终的 exe 文件
-        isl.clear()
+        isl.clean()
+        if upx_dir: isl.opt_general.append(f"--upx-dir {upx_dir}")
         isl.modify_spec()
         isl.install(spec=True)
