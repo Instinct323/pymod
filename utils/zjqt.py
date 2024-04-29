@@ -115,6 +115,7 @@ class Window(QMainWindow):
         super().__init__()
         self.central = QWidget()
         self.setCentralWidget(self.central)
+        # self.setWindowIcon(QIcon("icon.ico"))
         # 只显示关闭按钮
         self.setWindowFlags(Qt.WindowCloseButtonHint)
         self.setWindowOpacity(opacity)

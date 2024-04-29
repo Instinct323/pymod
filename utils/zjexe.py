@@ -98,9 +98,9 @@ class Installer:
         if int(PyInstaller.__version__[0]) == 5: src = src.parent
         # one-dir 打包
         self.install(one_file=False, spec=False)
-        # 确保程序正在运行
+        # 确保程序正在运行, 而且所有函数均被调用过
         while not find_exe(self.main.stem + ".exe"):
-            input("Verify that the program is running: ")
+            input("Verify that the program is running (and all the functions have been called): ")
         # 尝试删除依赖项
         exclude = []
         for fmt in fmts:
@@ -157,7 +157,9 @@ class Installer:
                                rf"{i + 5:<16d}continue",
                                rf"{i + 6:<12d}# {sep} ↑ INSERT ↑ {sep}"]
                     content = "\n".join(content)
-                    raise RuntimeError(f"Please modify {file} first\n\n{content}")
+                    # 输出路径链接
+                    raise RuntimeError(f"Please modify source code first\n\n"
+                                       f"File \"{file}\", line {i + 1}\n\n" + content)
 
         # 版本要求: 5.8.0 以上
         import PyInstaller
@@ -166,17 +168,16 @@ class Installer:
 
 if __name__ == "__main__":
     # website: https://upx.github.io/
+    # note: 安装后务必删除缓存 C:/Users/{Yourname}/AppData/Local/pyinstaller
     upx_dir = None  # "D:/Software/_tool/upx"
 
-    # 校验源代码的修改情况, 否则提供修改建议
+    # Step 0: 校验源代码的修改情况, 否则提供修改建议
     print(Installer.__doc__, "\n")
     Installer.check_src()
     isl = Installer(Path("D:/Workbench/Repository/Deal/pyinstaller/__exp__/zjqt.py"),
                     console=False,
                     icon=Path("D:/Information/Source/icon/pika.ico"))
 
-    # note: 随版本迭代, 代码与视频有所不符, 不需要像视频演示那样一步一步走
-    # note: 配置好上面几个路径, 直接运行就可以
     isl.clean()
     # Step 1: one-dir 打包, 生成 exclude.txt
     if not isl.exclude.is_file():
