@@ -3,7 +3,6 @@ import time
 from pathlib import Path
 from typing import Union
 
-import thop
 import torch.onnx
 import yaml
 
@@ -112,21 +111,20 @@ class YamlModel(nn.Module):
     def profile(self, x=None, repeat=5):
         x = self.example_input() if x is None else x
         information = np.zeros(3)
-        print("\n" + fstring("", "time (ms)", "FLOPs", "params", "module"))
+        print("\n" + fstring("", "time (ms)", "params", "module"))
         for m, x in self.forward_feature(x, profile=True):
             # 测试该模块的性能
             t0 = time.time()
             for _ in range(repeat): m(x)
             cost = (time.time() - t0) / repeat * 1e3
-            # GFLOPs, params
-            flops = int(thop.profile(m, (x,), verbose=False, report_missing=True)[0])
+            # params
             params = sum(p.numel() for p in m.parameters())
-            print(fstring(m.i, cost, flops, params, m.t, decimals=2))
+            print(fstring(m.i, cost, params, m.t, decimals=2))
             # 完成性能测试
-            information += cost, flops, params
+            information += cost, params
         # 输出模型的性能测试结果
-        cost, flops, params = information
-        print(fstring("", float(cost), int(flops), int(params), "--Total--"))
+        cost, params = information
+        print(fstring("", float(cost), int(params), "--Total--"))
         return information
 
     def pop(self, index):

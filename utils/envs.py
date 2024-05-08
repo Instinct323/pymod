@@ -49,6 +49,7 @@ class PythonEnv:
 
     @classmethod
     def install(cls, pkg, uninstall=False, upgrade=False):
+        # 安装路径: python -m site
         main = "uninstall -y" if uninstall else ("install" + upgrade * " --upgrade")
         execute(f"{cls._pip} {main} --no-cache-dir {pkg}")
 
@@ -78,12 +79,12 @@ class PythonEnv:
 
 
 class CondaEnv(PythonEnv):
+    path = Path("D:/Software/Anaconda3/condabin" if os.name == "nt" else "/opt/miniconda/bin")
 
-    @staticmethod
-    def add_path():
-        conda = Path("D:/Software/Anaconda3/condabin" if os.name == "nt" else "/opt/miniconda/bin")
-        if conda.is_dir() and str(conda) not in os.environ["PATH"]:
-            os.environ["PATH"] = str(conda) + os.pathsep + os.environ["PATH"]
+    @classmethod
+    def add_path(cls):
+        if cls.path.is_dir() and str(cls.path) not in os.environ["PATH"]:
+            os.environ["PATH"] = str(cls.path) + os.pathsep + os.environ["PATH"]
 
     @staticmethod
     def create(name, version=(3, 8, 15)):
@@ -92,6 +93,7 @@ class CondaEnv(PythonEnv):
 
     @classmethod
     def install(cls, pkg, uninstall=False, upgrade=False):
+        # note: 注意 envs 文件夹的权限问题
         main = "uninstall -y" if uninstall else ("upgrade" if upgrade else "install")
         execute(f"conda {main} {pkg}")
 
@@ -111,6 +113,7 @@ class CondaEnv(PythonEnv):
 if __name__ == "__main__":
     os.chdir(os.getenv("dl"))
 
-    # PythonEnv.install("pyinstaller==6.3.0")
+    # PythonEnv.install("torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121")
     # PythonExtLibs.dump([r"D:\Workbench\pymod", r"D:\Workbench\ros_humble\py"])
     git_push("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib")
+    PythonEnv.load_requirements(r"D:\Workbench\pymod\requirements.txt")

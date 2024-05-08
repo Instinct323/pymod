@@ -1,51 +1,54 @@
-torch==1.9.0+cu111
-torchvision==0.10.0+cu111
-
-# --- OpenMMLab ---
-openmim
-mmcls
-mmcv==2.0.0
-mmengine
-mmeval
-mmdet
-mmpretrain
-mmsegmentation
-mmyolo
-# mmgen
+# torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # --- other ---
-grad-cam
 jupyter
-netron
+opencv-python
 openpyxl
 optuna
 pyyaml
 scikit-learn
-thop
-timm
+tqdm
 xlrd
 
+# --- torch ---
+grad-cam
+timm
+
 # --- deploy ---
+netron
 onnxruntime-gpu
 openvino-dev[onnx]
 
+# --- Qt ---
+pyqt5
+pyside2
+# pyinstaller
+
 # --- useless ---
-mediapipe
-seaborn
-tensorboard
+# mediapipe
+# seaborn
+# tensorboard
+# thop
 
 # --- nlp ---
 # nltk
 # jieba
 
 # --- pdf ---
-pdfminer
-pdfminer3k
-pdfminer.six
-pymupdf
-pypdf2
+# pdfminer
+# pdfminer3k
+# pdfminer.six
+# pymupdf
+# pypdf2
 
-# --- Qt ---
-pyqt5
-pyside2
-# pyinstaller
+# --- OpenMMLab ---
+# openmim
+# mmcls
+# mmcv==2.0.0
+# mmengine
+# mmeval
+# mmdet
+# mmpretrain
+# mmsegmentation
+# mmyolo
+# mmgen

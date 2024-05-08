@@ -4,8 +4,6 @@ import sys
 import time
 from pathlib import Path
 
-import psutil
-
 
 def execute(cmd, check=True):
     ret = print(cmd) or os.system(cmd)
@@ -13,6 +11,7 @@ def execute(cmd, check=True):
 
 
 def find_exe(name):
+    import psutil
     for p in psutil.process_iter():
         if p.name() == name: return p
 

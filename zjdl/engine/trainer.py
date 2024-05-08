@@ -35,9 +35,9 @@ def select_device(device="", batch_size=None, verbose=True):
 
 class CosineLR(torch.optim.lr_scheduler.LambdaLR):
 
-    def __init__(self, optimizer, lrf, epochs, verbose=False):
+    def __init__(self, optimizer, lrf, epochs):
         lr_lambda = lambda x: lrf + (1 + math.cos(math.pi * x / epochs)) / 2 * (1 - lrf)
-        super().__init__(optimizer, lr_lambda, verbose=verbose)
+        super().__init__(optimizer, lr_lambda)
 
 
 class Trainer:
