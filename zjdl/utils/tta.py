@@ -25,7 +25,7 @@ class LAME:
         self.affinity = affinity
         self.max_iter = max_iter
 
-    def laplacianOptim(self, logp, kernel):
+    def laplacian_optim(self, logp, kernel):
         entropy = float("inf")
         p = softmax(logp)
         for i in range(self.max_iter):
@@ -43,11 +43,11 @@ class LAME:
         logp = np.log(p + 1e-10)
         kernel = self.affinity(feats / np.linalg.norm(feats, axis=-1, keepdims=True))
         if isinstance(self.nc, int):
-            return self.laplacianOptim(logp, kernel)
+            return self.laplacian_optim(logp, kernel)
         else:
             assert p.shape[-1] == self.nc[-1]
             # 类别数大于 2 时才会求解
-            return np.concatenate([np.exp(x) if x.shape[-1] == 1 else self.laplacianOptim(x, kernel)
+            return np.concatenate([np.exp(x) if x.shape[-1] == 1 else self.laplacian_optim(x, kernel)
                                    for x in np.split(logp, self.nc, axis=-1)], axis=-1)
 
 
