@@ -5,6 +5,7 @@ from typing import Union
 
 import torch.onnx
 import yaml
+from torch.cuda import amp
 
 from .common import *
 
@@ -99,11 +100,13 @@ class YamlModel(nn.Module):
             output.append(x)
         if not profile: yield output
 
+    @amp.autocast()
     def forward(self, x, tarlayer=-1):
         # imgae: uint8 -> float
         if x.dtype == torch.uint8: x = x.float() / 255
         # 获取所有层的输出并筛选
-        abs_idx = lambda idx, n: [i % n for i in ([idx] if isinstance(idx, int) else idx)]
+        is_int = lambda idx: isinstance(idx, int) or (isinstance(idx, torch.Tensor) and idx.ndim == 0)
+        abs_idx = lambda idx, n: [i % n for i in ([idx] if is_int(idx) else idx)]
         tarlayer = abs_idx(tarlayer, n=len(self.main))
         output = next(self.forward_feature(x, max(tarlayer), profile=False))
         return output[-1] if len(tarlayer) == 1 else [output[i] for i in tarlayer]

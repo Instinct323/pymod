@@ -5,6 +5,7 @@ jupyter
 opencv-python
 openpyxl
 optuna
+pandas
 pyyaml
 scikit-learn
 tqdm

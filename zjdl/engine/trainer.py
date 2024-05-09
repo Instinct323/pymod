@@ -5,10 +5,15 @@ from pathlib import Path
 
 import torch
 import yaml
+from torch import nn
 from torch.cuda import amp
 
 logging.basicConfig(format="%(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
+
+
+def is_parallel(model):
+    return type(model) in (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel)
 
 
 def select_device(device="", batch_size=None, verbose=True):
@@ -73,6 +78,7 @@ class Trainer:
             hyp_file.write_text(yaml.dump(hyp))
         self.hyp = hyp
         # 如果是 YamlModel 类型, 保存模型的配置文件
+        model = model.module if is_parallel(model) else model
         cfg = getattr(model, "cfg", None)
         if isinstance(cfg, dict): (self.project / "cfg.yaml").write_text(yaml.dump(cfg))
         # 根据设备对模型进行设置
