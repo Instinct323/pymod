@@ -116,4 +116,3 @@ if __name__ == "__main__":
     # PythonEnv.install("torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121")
     # PythonExtLibs.dump([r"D:\Workbench\pymod", r"D:\Workbench\ros_humble\py"])
     git_push("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib")
-    PythonEnv.load_requirements(r"D:\Workbench\pymod\requirements.txt")

@@ -12,6 +12,8 @@ from model.ema import EmaModel
 from model.model import YamlModel, Conv
 from utils.utils import *
 
+os.environ["TORCH_LOGS"] = "+dynamo"
+
 
 def random_dropout(x, p=0.4):
     p = 1 - random.uniform(0, p)
@@ -28,6 +30,7 @@ BATCH_SIZE = 1000
 
 if __name__ == "__main__":
     m = YamlModel(CFG).DP()
+    m = torch.compile(m)
     # m.profile()
     ema = EmaModel(m, bp_times=50).DP()
 
