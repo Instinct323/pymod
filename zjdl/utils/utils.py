@@ -105,7 +105,9 @@ def try_except(func):
 class Path(WindowsPath if os.name == "nt" else PosixPath, _path):
 
     def fsize(self, unit: str = "B"):
-        return self.stat().st_size / 1024 ** ("B", "KB", "MB", "GB").index(unit) if self.is_file() else 0.
+        size = self.stat().st_size if self.is_file() else (
+            sum(p.stat().st_size for p in self.glob("**/*") if p.is_file()))
+        return size / 1024 ** ("B", "KB", "MB", "GB").index(unit)
 
     def lazy_obj(self, fget, **fld_kwd):
         f_load_dump = {

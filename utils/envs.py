@@ -1,10 +1,12 @@
 import datetime
 import os
+import shutil
 import sys
 from pathlib import Path
 
 from zjexe import execute
 
+USERPATH = Path(os.path.expanduser("~"))
 SCRIPTS = Path(sys.executable).parent / "Scripts"
 
 
@@ -58,6 +60,12 @@ class PythonEnv:
         execute(f"{cls._pip} install -r {str(file)} -f https://download.pytorch.org/whl/torch_stable.html")
 
     @classmethod
+    def clean(cls):
+        if os.name == "nt":
+            cache = USERPATH / "AppData" / "Local" / "pip" / "cache"
+            shutil.rmtree(cache, ignore_errors=True)
+
+    @classmethod
     def jupyter(cls, root="D:/Workbench", cfg=False, reinstall=False):
         if reinstall:
             tar = ("jupyter", "jupyter-client", "jupyter-console", "jupyter-core",
@@ -79,27 +87,23 @@ class PythonEnv:
 
 
 class CondaEnv(PythonEnv):
-    path = Path("D:/Software/Anaconda3/condabin" if os.name == "nt" else "/opt/miniconda/bin")
+    _conda = Path("D:/Software/Anaconda3/condabin" if os.name == "nt" else "/opt/miniconda/bin") / "conda"
 
     @classmethod
-    def add_path(cls):
-        if cls.path.is_dir() and str(cls.path) not in os.environ["PATH"]:
-            os.environ["PATH"] = str(cls.path) + os.pathsep + os.environ["PATH"]
-
-    @staticmethod
-    def create(name, version=(3, 8, 15)):
+    def create(cls, name, version=(3, 8, 15)):
         version = ".".join(map(str, version))
-        execute(f"conda create -n {name} python=={version}")
+        execute(f"{cls._conda} create -n {name} python=={version}")
 
     @classmethod
     def install(cls, pkg, uninstall=False, upgrade=False):
         # note: 注意 envs 文件夹的权限问题
         main = "uninstall -y" if uninstall else ("upgrade" if upgrade else "install")
-        execute(f"conda {main} {pkg}")
+        execute(f"{cls._conda} {main} {pkg}")
 
-    @staticmethod
-    def clean():
-        execute("conda clean -ay")
+    @classmethod
+    def clean(cls):
+        super().clean()
+        execute(f"{cls._conda} clean -ay")
 
     @classmethod
     def config(cls):
@@ -107,7 +111,7 @@ class CondaEnv(PythonEnv):
         for p in ("--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/",
                   "--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/",
                   "--set show_channel_urls yes"):
-            execute(f"conda config {p}")
+            execute(f"{cls._conda} config {p}")
 
 
 if __name__ == "__main__":
