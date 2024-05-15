@@ -70,7 +70,8 @@
   <!-- 书籍的卷号（“第 x 卷”或“第 x 册”） -->
   <macro name="book-volume">
     <choose>
-      <if type="article article-journal article-magazine article-newspaper periodical" match="none">
+      <!-- 会议论文: 取消卷号 -->
+      <if type="article article-journal article-magazine article-newspaper periodical paper-conference" match="none">
         <choose>
           <if is-numeric="volume">
             <group delimiter=" ">
@@ -120,6 +121,12 @@
         </if>
       </choose>
     </group>
+    <!-- 会议论文: 在专著名后添加 [C] -->
+    <choose>
+      <if type="paper-conference" match="any">
+        <text macro="type-code" prefix="[" suffix="]"/>
+      </if>
+    </choose>
   </macro>
   <!-- 版本项 -->
   <macro name="edition">
@@ -222,11 +229,11 @@
       <group delimiter=": ">
         <text variable="title"/>
         <group delimiter="&#8195;">
-          <choose>
+          <!-- <choose>
             <if variable="container-title" type="paper-conference" match="none">
               <text macro="book-volume"/>
             </if>
-          </choose>
+          </choose> -->
           <choose>
             <if type="bill legal_case legislation patent regulation report standard" match="any">
               <text variable="number"/>
@@ -234,7 +241,7 @@
           </choose>
         </group>
       </group>
-      <choose>
+      <!-- <choose>
         <if variable="container-title" type="paper-conference" match="none">
           <choose>
             <if variable="event-date">
@@ -243,9 +250,17 @@
             </if>
           </choose>
         </if>
-      </choose>
+      </choose> -->
     </group>
-    <text macro="type-code" prefix="[" suffix="]"/>
+    <!-- 会议论文: 标题后的 [C] 替换为 [A] -->
+    <choose>
+      <if type="paper-conference" match="any">
+        <text value="[A]"/>
+      </if>
+      <else>
+        <text macro="type-code" prefix="[" suffix="]"/>
+      </else>
+    </choose>
   </macro>
   <!-- 文献类型标识 -->
   <macro name="type-code">
@@ -327,7 +342,19 @@
       <text macro="url-doi"/>
     </group>
   </macro>
-  <!-- 专著中的析出文献: 会议 paper-conference, 弃用 -->
+  <!-- 会议论文: 引用样式 (荷碧TongZJ 新增) -->
+  <macro name="paper-conference-layout">
+    <group delimiter=". " suffix=".">
+      <text macro="author"/>
+      <text macro="title"/>
+      <text macro="container-title"/>
+      <text macro="secondary-contributor"/>
+      <text macro="edition"/>
+      <text macro="publishing"/>
+      <text macro="url-doi"/>
+    </group>
+  </macro>
+  <!-- 专著中的析出文献: 原会议论文引用样式, 弃用 -->
   <macro name="chapter-in-book-layout">
     <group delimiter=". " suffix=".">
       <text macro="author"/>
@@ -398,8 +425,8 @@
       </else-if>
       <else-if type="paper-conference" variable="container-title" match="any">
         <!-- <text macro="chapter-in-book-layout"/> -->
-        <!-- 会议使用与专著相同的格式 -->
-        <text macro="monograph-layout"/>
+        <!-- 会议论文: 使用的引用格式 -->
+        <text macro="paper-conference-layout"/>
       </else-if>
       <else>
         <text macro="monograph-layout"/>
