@@ -26,7 +26,7 @@ class ParticleSwarmOpt:
         self._lr = lr
         # 记录最优个体
         if best_unit:
-            self.best_unit = np.array(best_unit, dtype=DTYPE)
+            self.best_unit = np.array(best_unit, dtype=DTYPE)[0]
             self.best_fitness = self.fitness(self.best_unit[None])
         else:
             self.best_unit = None

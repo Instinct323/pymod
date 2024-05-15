@@ -15,4 +15,3 @@ gb_kernel: 5  # kernel_size of GuassianBlur
 
 flipud: 0.  # image flip up-down (probability)
 fliplr: 0.5  # image flip left-right (probability)
-

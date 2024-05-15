@@ -49,7 +49,7 @@ if __name__ == "__main__":
     print("fitness:", fitness)
 
     # 记录器
-    result = Result(PROJECT, ("acc",))
+    result = Result(PROJECT, ("lr", "acc"))
 
     for epoch in trainer:
         # 训练模型
@@ -73,7 +73,7 @@ if __name__ == "__main__":
                 cnt += len(pred)
                 correct += (pred == tar).sum().item()
             acc = correct / cnt
-            result.record((acc,))
+            result.record((trainer.lr, acc))
             print(f"Epoch {epoch}, Accuracy {acc:.4f}")
 
             save_list = ["last.pt"]

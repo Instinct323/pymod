@@ -7,6 +7,7 @@ import torch
 import yaml
 from torch import nn
 from torch.cuda import amp
+from typing import Union
 
 logging.basicConfig(format="%(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ def is_parallel(model):
 
 
 def select_device(device="", batch_size=None, verbose=True):
-    """ device: "cpu" or "0" or "0,1,2,3" """
+    """ device: 'cpu' or '0' or '0,1,2,3' """
     # 判断 GPU 可用状态, 设置环境变量
     cuda = device.lower() != "cpu" and torch.cuda.is_available()
     os.environ["CUDA_VISIBLE_DEVICES"] = device if cuda else "-1"
@@ -60,7 +61,10 @@ class Trainer:
     training = property(lambda self: self.model.training)
     lr = property(lambda self: self._optim.param_groups[0]["lr"])
 
-    def __init__(self, model, project, hyp):
+    def __init__(self,
+                 model: nn.Module,
+                 project: Path,
+                 hyp: Union[Path, dict]):
         self.project = project
         self.project.mkdir(parents=True, exist_ok=True)
         LOGGER.info(f"Logging results to {self.project}")
@@ -78,7 +82,7 @@ class Trainer:
             hyp_file.write_text(yaml.dump(hyp))
         self.hyp = hyp
         # 如果是 YamlModel 类型, 保存模型的配置文件
-        model = model.module if is_parallel(model) else model
+        assert isinstance(model, nn.Module)
         cfg = getattr(model, "cfg", None)
         if isinstance(cfg, dict): (self.project / "cfg.yaml").write_text(yaml.dump(cfg))
         # 根据设备对模型进行设置
@@ -100,8 +104,12 @@ class Trainer:
             while self._cur_epoch < self._epochs:
                 yield self._cur_epoch
                 self._cur_epoch += 1
+                self._lr_scheduler.step()
 
         return generator()
+
+    def __len__(self):
+        return self._epochs
 
     @staticmethod
     def cuda_memory(divisor=1e9) -> float:
@@ -111,7 +119,10 @@ class Trainer:
         file = self.project / file
         if not file.is_file(): return {}
         # 若文件存在, 则加载 checkpoint
-        ckpt = torch.load(file, map_location=self.device)
+        try:
+            ckpt = torch.load(file, map_location=self.device)
+        except:
+            ckpt = torch.load(file, map_location="cpu")
         self._optim.load_state_dict(ckpt["optim"])
         self._lr_scheduler.load_state_dict(ckpt["sche"])
         self.model.load_state_dict(ckpt["model"], strict=True)

@@ -14,7 +14,8 @@ class EmaModel:
                  model: nn.Module,
                  bp_times: int = 2000,
                  decay: float = .999):
-        self.__model = model.module if is_parallel(model) else model
+        assert isinstance(model, nn.Module)
+        self.__model = model
         # 冻结 ema 的所有参数, 并将参数加入 model
         self.__ema = self.__model.ema = copy.deepcopy(self.__model)
         for p in self.__ema.parameters(): setattr(p, "requires_grad", False)

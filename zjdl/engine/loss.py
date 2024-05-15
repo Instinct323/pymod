@@ -100,7 +100,7 @@ class MultiCrossEntropy(nn.Module):
                 nll = - (t * torch.log(p) + (1 - t) * torch.log(1 - p))
             # 大于两个类别: softmax + nll
             else:
-                nll = - (F.log_softmax(odd, dim=-1) * F.one_hot(hardlabel[..., i], odd.size(-1))).sum(dim=-1)
+                nll = - F.log_softmax(odd, dim=-1).gather(1, hardlabel[..., i][:, None])[:, 0]
                 p = torch.exp(- nll) if self.gamma else None
             # FocalLoss
             if self.gamma:
