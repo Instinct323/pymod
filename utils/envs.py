@@ -117,6 +117,5 @@ class CondaEnv(PythonEnv):
 if __name__ == "__main__":
     os.chdir(os.getenv("dl"))
 
-    # PythonEnv.install("torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121")
     # PythonExtLibs.dump([r"D:\Workbench\pymod", r"D:\Workbench\ros_humble\py"])
     git_push("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib")

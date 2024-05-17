@@ -1,6 +1,7 @@
 # torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # --- other ---
+brotli
 jupyter
 opencv-python
 openpyxl
