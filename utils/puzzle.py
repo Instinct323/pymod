@@ -1,4 +1,5 @@
 import logging
+import random
 import string
 from itertools import product
 from pathlib import Path
@@ -31,7 +32,10 @@ class AsciiArt:
 
 class DictOrder:
 
-    def __init__(self, length=10, skip=13, char=string.ascii_lowercase):
+    def __init__(self,
+                 length: int = 6,
+                 skip: int = random.randint(4, 14),
+                 char: str = string.ascii_lowercase):
         self.skip = skip
         self.iter = product(char, repeat=length)
 
@@ -49,8 +53,13 @@ class Artist:
         :param material: 隐藏图像素材包的路径
         :param pad_width: 隐藏图像的侧边距"""
 
-    def __init__(self, img, material=None, shape=[2, 3],
-                 dpi=1280, pad_width=0.05, pad_value=255):
+    def __init__(self,
+                 img: Path,
+                 material: Path,
+                 shape: tuple = (2, 3),
+                 dpi: int = 1280,
+                 pad_width: float = 0.05,
+                 pad_value: int = 255):
         # 对前景图像进行分割, 并读取隐藏图像的素材包
         self.stride = dpi
         self.cells = self.partition(img, shape)
@@ -89,15 +98,19 @@ class Artist:
     def parse_material(self, material):
         """ 隐藏图像素材包解析"""
         if material:
-            material = list(material.iterdir())
+            material = [folder for folder in material.iterdir() if folder.is_dir()]
             assert len(material) == len(self.cells), f"The number of material packs should be {len(self.cells)}"
             # 素材图像的宽度
             w = self.stride - 2 * self.pad_size[0]
             for i in np.arange(len(material)):
                 # 取出素材包路径
+                orders = iter(DictOrder())
                 folder, material[i] = material[i], []
-                for j, file in zip(DictOrder(), folder.iterdir()):
-                    file = file.rename(file.parent / f"{j}{file.suffix}")
+                for file in folder.iterdir():
+                    j = Path()
+                    while j.exists():
+                        j = file.parent / f"{next(orders)}{file.suffix}"
+                    file = file.rename(j)
                     img, check = self.imread(file)
                     # 进行边界填充并进行尺寸变换
                     if check:
@@ -111,8 +124,11 @@ class Artist:
 
     def puzzle(self):
         """ 拼接前景图像与素材包图像"""
-        pad_vert = lambda x, bottom, top: cv2.copyMakeBorder(x, bottom=bottom, top=top,
-                                                             left=0, right=0, **self.pad_kwarg)
+        concat = lambda x: np.concatenate(x, axis=0) if x else np.array([])
+        pad_vert = lambda x, bottom, top: (
+            cv2.copyMakeBorder(x, bottom=bottom, top=top, left=0, right=0, **self.pad_kwarg)) \
+            if x.size else np.full((bottom + top, self.stride, 3), 255, dtype=np.uint8)
+
         for i, cell in enumerate(self.cells):
             img_queue = self.material[i]
             # np.random.shuffle(img_queue)
@@ -127,21 +143,22 @@ class Artist:
                 ctr = loss.argmin() + 1
                 # 分别对两队列中的图像进行拼接, 并填充边界
                 img_queue = img_queue[:ctr], img_queue[ctr:]
-                img_queue = list(map(np.concatenate, img_queue))
+                img_queue = list(map(concat, img_queue))
                 max_h = max(j.shape[0] for j in img_queue)
                 img_queue[0] = pad_vert(img_queue[0], bottom=0, top=max_h - img_queue[0].shape[0] + self.pad_size[1])
                 img_queue[1] = pad_vert(img_queue[1], bottom=max_h - img_queue[1].shape[0] + self.pad_size[1], top=0)
                 # 填充前景图像的边界
-                cell = pad_vert(cell, bottom=self.pad_size[1], top=self.pad_size[1])
+                cell = pad_vert(cell, bottom=self.pad_size[1] * 3, top=self.pad_size[1] * 3)
                 img_queue.insert(1, cell)
                 cell = np.concatenate(img_queue)
             cv2.imwrite(f"{i + 1}_artist.png", cell)
+            LOGGER.info(f"The part {i + 1} has been saved as {i + 1}_artist.png")
         LOGGER.info(f"The generated image has been saved in {Path.cwd()}")
 
 
 if __name__ == "__main__":
     import os
 
-    os.chdir(Path(r"D:\Workbench\data\tmp"))
+    os.chdir(Path("D:/Workbench/data/Camera"))
 
-    Artist(Path("1.jpg"), material=Path("mat"), shape=[2, 3])
+    Artist(Path("exp.jpg"), material=Path(), shape=(3, 3), dpi=2000)
