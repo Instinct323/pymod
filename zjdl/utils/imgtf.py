@@ -1,15 +1,23 @@
+import re
 from collections import Counter
+from pathlib import Path
+from typing import Union, Iterable
 
 import cv2
 import numpy as np
-import torch
+from tqdm import tqdm
 
 BG_COLOR = 114
+# {"bmp", "webp", "pfm", "ppm", "ras", "pnm", "dib", "tiff", "pbm", "pic",
+# "hdr", "tif", "sr", "jp2", "jpg", "pgm", "pxm", "exr", "png", "jpe", "jpeg"}
+IMG_FORMAT = set(re.findall(r"\\\*\.(\w+)", cv2.imread.__doc__))
+
 to_2tuple = lambda x: x if x is None or isinstance(x, (list, tuple)) else (x,) * 2
 clip_abs = lambda x, a: np.clip(x, a_min=-a, a_max=a)
 
 
 def to_tensor(img, pdim=(-1, -3, -2)):
+    import torch
     img = torch.from_numpy(np.ascontiguousarray(img[..., ::-1]))
     return img.permute(0, *pdim) if img.dim() == 4 else img.permute(*pdim)
 
@@ -17,7 +25,7 @@ def to_tensor(img, pdim=(-1, -3, -2)):
 def resize(bgr, img_size):
     h, w = bgr.shape[:2]
     img_size = to_2tuple(img_size)
-    r = min(img_size[0] / h, img_size[1] / w)
+    r = min(img_size[1] / h, img_size[0] / w)
     new_shape = tuple(map(round, (h * r, w * r)))
     if new_shape != (h, w):
         bgr = cv2.resize(bgr, new_shape[::-1])
@@ -32,26 +40,67 @@ def load_img(file, img_size: int = None) -> np.ndarray:
     return bgr
 
 
+def check_imgfile(file: Path):
+    """ 检查图像文件状态"""
+    assert file.is_file(), f"File not found: {file}"
+    assert file.suffix[1:] in IMG_FORMAT, f"Unsupported image format: {file.suffix}"
+    assert not re.search(r"[\u4e00-\u9fa5]", file.stem), f"Invalid image name: {file}"
+    return file
+
+
 def letter_box(bgr, img_size=(640, 640), pad=BG_COLOR, stride=None):
     """ 边界填充至指定尺寸"""
     img_size = to_2tuple(img_size)
+    pad = (pad,) * 3 if isinstance(pad, int) else pad
     bgr, r = resize(bgr, img_size)
     # 放缩后的原始尺寸
     h, w = bgr.shape[:2]
-    dh, dw = img_size[0] - h, img_size[1] - w
+    dh, dw = img_size[1] - h, img_size[0] - w
     # 最小化边界尺寸
     if stride: dh, dw = map(lambda x: x % stride, (dh, dw))
     dh, dw = map(lambda x: x / 2, (dh, dw))
     # 添加边界
     top, bottom = map(round, (dh - 0.1, dh + 0.1))
     left, right = map(round, (dw - 0.1, dw + 0.1))
-    bgr = cv2.copyMakeBorder(bgr, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(pad,) * 3)  # add border
+    bgr = cv2.copyMakeBorder(bgr, top, bottom, left, right, cv2.BORDER_CONSTANT, value=pad)  # add border
     return bgr, r, (dh, dw)
 
 
 def img_mul(img, alpha):
     img = img.astype(np.float16)
     return np.uint8(np.clip((img * alpha).round(), a_min=0, a_max=255))
+
+
+def img2video(src: Union[Path, str, Iterable[np.ndarray]],
+              dst: Union[Path, str],
+              width: int = 1920,
+              aspect_radio: float = 4 / 3,
+              fps: int = 30,
+              pad: int = 255):
+    """ 图像序列转视频
+        :param src: 图像文件或图像数组
+        :param dst: 视频文件名称
+        :param width: 视频宽度
+        :param aspect_radio: 视频宽高比
+        :param fps: 视频帧率
+        :param pad: 边界填充颜色"""
+    img_size = width, round(width / aspect_radio)
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    assert Path(dst).suffix == ".mp4", "The video format must be mp4"
+    # 预处理图像
+    if isinstance(src, str): src = Path(src)
+    if isinstance(src, Path):
+        assert src.is_dir(), "The source path must be a directory"
+        src = list(map(check_imgfile, src.iterdir()))
+        src = tqdm(map(load_img, src), total=len(src))
+    else:
+        src = tqdm(src)
+    src.set_description("Processing video")
+    # 逐帧写入视频
+    video = cv2.VideoWriter(str(dst), fourcc, fps, img_size)
+    for img in src:
+        video.write(letter_box(img, img_size, pad=pad)[0])
+    video.release()
 
 
 class _augment:

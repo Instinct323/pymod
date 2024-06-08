@@ -12,9 +12,6 @@ logging.basicConfig(format="[%(levelname)s] %(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 STOP_WORDS = r"\/:*?'<>|"
-# {"bmp", "webp", "pfm", "ppm", "ras", "pnm", "dib", "tiff", "pbm", "pic",
-# "hdr", "tif", "sr", "jp2", "jpg", "pgm", "pxm", "exr", "png", "jpe", "jpeg"}
-IMG_FORMAT = set(re.findall(r"\\\*\.(\w+)", cv2.imread.__doc__))
 
 
 def colorstr(msg, *setting):
@@ -124,7 +121,7 @@ class Path(WindowsPath if os.name == "nt" else PosixPath, _path):
             f_load_dump(data, **fld_kwd)
         return data
 
-    def collect_file(self, formats=IMG_FORMAT):
+    def collect_file(self, formats):
         formats = [formats] if isinstance(formats, str) else formats
         pools = [], []
         # 收集该目录下的所有文件

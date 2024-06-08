@@ -49,8 +49,9 @@ class DictOrder:
 
 class Artist:
     """ :param img: 前景图像文件
-        :param shape: 前景图像的目标分割形状
         :param material: 隐藏图像素材包的路径
+        :param shape: 前景图像的目标分割形状
+        :param dpi: 前景图像的宽度
         :param pad_width: 隐藏图像的侧边距"""
 
     def __init__(self,
@@ -148,7 +149,7 @@ class Artist:
                 img_queue[0] = pad_vert(img_queue[0], bottom=0, top=max_h - img_queue[0].shape[0] + self.pad_size[1])
                 img_queue[1] = pad_vert(img_queue[1], bottom=max_h - img_queue[1].shape[0] + self.pad_size[1], top=0)
                 # 填充前景图像的边界
-                cell = pad_vert(cell, bottom=self.pad_size[1] * 3, top=self.pad_size[1] * 3)
+                cell = pad_vert(cell, bottom=self.pad_size[1] * 4, top=self.pad_size[1] * 4)
                 img_queue.insert(1, cell)
                 cell = np.concatenate(img_queue)
             cv2.imwrite(f"{i + 1}_artist.png", cell)
@@ -161,4 +162,4 @@ if __name__ == "__main__":
 
     os.chdir(Path("D:/Workbench/data/Camera"))
 
-    Artist(Path("exp.jpg"), material=Path(), shape=(3, 3), dpi=2000)
+    Artist(Path("exp.jpg"), material=Path(), shape=(3, 3), dpi=2000, pad_value=230)
