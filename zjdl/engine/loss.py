@@ -1,8 +1,9 @@
+from typing import Union
+
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
-from typing import Union
 
 
 def kl_divergence(p, q, eps=1e-6):

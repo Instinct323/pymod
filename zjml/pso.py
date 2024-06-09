@@ -1,8 +1,8 @@
 from typing import Sequence, Optional
 
 import numpy as np
-from tqdm import trange
 import pandas as pd
+from tqdm import trange
 
 DTYPE = np.float32
 EPS = np.finfo(DTYPE).eps

@@ -2,12 +2,12 @@ import logging
 import math
 import os
 from pathlib import Path
+from typing import Union
 
 import torch
 import yaml
 from torch import nn
 from torch.cuda import amp
-from typing import Union
 
 logging.basicConfig(format="%(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)

@@ -1,14 +1,39 @@
 import logging
+import math
 import random
 import string
+from functools import partial
 from itertools import product
-from pathlib import Path
+from typing import Callable
 
-import cv2
-import numpy as np
+from ..zjdl.utils.imgtf import *
 
 logging.basicConfig(format="[%(levelname)s] %(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
+
+
+def star_trails(src: np.ndarray,
+                decay: float = 0.98,
+                pixel_lowlim: int = 10,
+                agg_fun: Callable = partial(np.max, axis=0)):
+    """ 制作星轨
+        :param src: 图像数组 [B, H, W, C]
+        :param decay: 亮度衰减系数"""
+    assert 0 < decay <= 1
+    size = min(len(src), round(math.log(pixel_lowlim / src.max(), decay)))
+    queue = src[:size]
+    pbar = tqdm(range(len(src)), desc="Processing star trails", postfix={"s": size})
+    # 增长队列
+    for i in range(size):
+        queue[:i] = img_mul(queue[:i], decay)
+        pbar.update()
+        yield agg_fun(queue[:i + 1])
+    # 循环队列
+    for i in range(size, len(src)):
+        queue = img_mul(queue, decay)
+        queue[i % size] = src[i]
+        pbar.update()
+        yield agg_fun(queue)
 
 
 class AsciiArt:
@@ -47,7 +72,7 @@ class DictOrder:
         return generator()
 
 
-class Artist:
+class Puzzle:
     """ :param img: 前景图像文件
         :param material: 隐藏图像素材包的路径
         :param shape: 前景图像的目标分割形状
@@ -152,8 +177,8 @@ class Artist:
                 cell = pad_vert(cell, bottom=self.pad_size[1] * 4, top=self.pad_size[1] * 4)
                 img_queue.insert(1, cell)
                 cell = np.concatenate(img_queue)
-            cv2.imwrite(f"{i + 1}_artist.png", cell)
-            LOGGER.info(f"The part {i + 1} has been saved as {i + 1}_artist.png")
+            cv2.imwrite(f"{i + 1}_puzzle.png", cell)
+            LOGGER.info(f"The part {i + 1} has been saved as {i + 1}_puzzle.png")
         LOGGER.info(f"The generated image has been saved in {Path.cwd()}")
 
 
@@ -162,4 +187,4 @@ if __name__ == "__main__":
 
     os.chdir(Path("D:/Workbench/data/Camera"))
 
-    Artist(Path("exp.jpg"), material=Path(), shape=(3, 3), dpi=2000, pad_value=230)
+    Puzzle(Path("exp.jpg"), material=Path(), shape=(3, 3), dpi=2000, pad_value=230)

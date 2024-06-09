@@ -4,11 +4,11 @@ from typing import Union
 import numpy as np
 import torch
 import torch.nn.functional as F
-from model.common import LOCAL
 from torch import nn
 
 from .crosstab import Crosstab
 from .trainer import Trainer
+from ..model.common import LOCAL
 
 
 def linear_probing(x, y, hlayer=tuple(), cv=5, seed=0, **mlp_kwd) -> Crosstab:
@@ -34,7 +34,7 @@ class SimSiam(Trainer):
         pred = self.head(proj).chunk(2, dim=0)
         proj = proj.detach().chunk(2, dim=0)
         return - F.cosine_similarity(pred[0], proj[1], dim=-1, eps=1e-6).mean() \
-               - F.cosine_similarity(pred[1], proj[0], dim=-1, eps=1e-6).mean()
+            - F.cosine_similarity(pred[1], proj[0], dim=-1, eps=1e-6).mean()
 
 
 class MaskedAutoEncoder(Trainer):

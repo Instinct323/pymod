@@ -2,14 +2,14 @@ import copy
 import multiprocessing as mp
 from functools import partial
 from multiprocessing.pool import ThreadPool
-from typing import Union, Callable, Sequence
+from typing import Callable, Sequence
 
 import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 
 from .bbox import *
 from .imgtf import *
-from .utils import LOGGER, Path, IMG_FORMAT
+from .utils import LOGGER, Path
 
 
 def ObjectArray(iterable):

@@ -1,6 +1,6 @@
+import random
 from typing import Sequence
 
-import random
 from optimize import *
 
 
@@ -28,7 +28,7 @@ class Dist_Cluster:
 
     def __init__(self, n_cluster: int,
                  dist_fun: Callable[[torch.tensor, torch.tensor],
-                                    torch.tensor] = Eu_dist,
+                 torch.tensor] = Eu_dist,
                  mode: str = "max",
                  init: Optional[Sequence[Sequence]] = None,
                  patience: int = 50,
