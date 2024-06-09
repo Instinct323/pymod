@@ -90,7 +90,7 @@ def img2video(src: Iterable,
     assert Path(dst).suffix == ".mp4", "The video format must be mp4"
     # 逐帧写入视频
     video = cv2.VideoWriter(str(dst), fourcc, fps, img_size)
-    for img in tqdm(src):
+    for img in src:
         if not isinstance(img, np.ndarray):
             # 从其他数据类型加载图像
             if isinstance(img, (str, Path)):
@@ -108,9 +108,10 @@ class VideoCap(cv2.VideoCapture):
         :param dpi: 相机分辨率"""
 
     def __init__(self,
-                 src: str = 0,
+                 src: Union[int, str, Path] = 0,
                  delay: int = 0,
                  dpi: list = None):
+        src = str(src) if isinstance(src, Path) else src
         super().__init__(src)
         if not self.isOpened():
             raise RuntimeError("Failed to initialize video capture")

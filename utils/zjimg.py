@@ -185,6 +185,18 @@ class Puzzle:
 if __name__ == "__main__":
     import os
 
+    # exp 1: n 宫格长图
     os.chdir(Path("D:/Workbench/data/Camera"))
-
     Puzzle(Path("exp.jpg"), material=Path(), shape=(3, 3), dpi=2000, pad_value=230)
+
+    # exp 2: 星轨制作
+    # 生成序列
+    src = Path("D:/Information/Download/tmp")
+    raw = src.parent / "raw.mp4"
+    if src.is_dir() and not raw.is_file():
+        img2video(src.iterdir(), raw)
+    # 星轨效果
+    target = src.parent / "target.mp4"
+    dst = src.parent / "final.mp4"
+    if target.is_file() and not dst.is_file():
+        img2video(star_trails(VideoCap(target), decay=0.98), dst)
