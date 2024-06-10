@@ -5,7 +5,6 @@ from typing import Union, Iterable
 
 import cv2
 import numpy as np
-from tqdm import tqdm
 
 BG_COLOR = 114
 # {"bmp", "webp", "pfm", "ppm", "ras", "pnm", "dib", "tiff", "pbm", "pic",

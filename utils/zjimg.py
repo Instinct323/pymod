@@ -6,6 +6,8 @@ from functools import partial
 from itertools import product
 from typing import Callable
 
+from tqdm import tqdm
+
 from ..zjdl.utils.imgtf import *
 
 logging.basicConfig(format="[%(levelname)s] %(message)s", level=logging.INFO)
