@@ -1,8 +1,6 @@
 import logging
-import math
 import random
 import string
-from functools import partial
 from itertools import product
 from typing import Callable
 
@@ -14,28 +12,22 @@ logging.basicConfig(format="[%(levelname)s] %(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 
-def star_trails(src: np.ndarray,
-                decay: float = 0.98,
-                pixel_lowlim: int = 10,
-                agg_fun: Callable = partial(np.max, axis=0)):
+def star_trails(src: Iterable[np.ndarray],
+                decay: float = 0.99,
+                agg_fun: Callable = np.maximum):
     """ 制作星轨
         :param src: 图像数组 [B, H, W, C]
         :param decay: 亮度衰减系数"""
     assert 0 < decay <= 1
-    size = min(len(src), round(math.log(pixel_lowlim / src.max(), decay)))
-    queue = src[:size]
-    pbar = tqdm(range(len(src)), desc="Processing star trails", postfix={"s": size})
-    # 增长队列
-    for i in range(size):
-        queue[:i] = img_mul(queue[:i], decay)
-        pbar.update()
-        yield agg_fun(queue[:i + 1])
-    # 循环队列
-    for i in range(size, len(src)):
-        queue = img_mul(queue, decay)
-        queue[i % size] = src[i]
-        pbar.update()
-        yield agg_fun(queue)
+    src = iter(tqdm(src))
+    # 处理第一张图像
+    cur = next(src)
+    yield cur
+    cur = cur.astype(np.float32)
+    # 处理后续图像
+    for img in src:
+        cur = agg_fun(cur * decay, img.astype(np.float32))
+        yield np.round(cur).astype(np.uint8)
 
 
 class AsciiArt:
@@ -189,11 +181,11 @@ if __name__ == "__main__":
 
     # exp 1: n 宫格长图
     os.chdir(Path("D:/Workbench/data/Camera"))
-    Puzzle(Path("exp.jpg"), material=Path(), shape=(3, 3), dpi=2000, pad_value=230)
+    Puzzle(Path("exp.jpg"), material=Path(), shape=(3, 3), dpi=2000, pad_value=255)
 
     # exp 2: 星轨制作
     # 生成序列
-    src = Path("D:/Information/Download/tmp")
+    src = Path("D:/Information/Data/dataset/dali-star-trails")
     raw = src.parent / "raw.mp4"
     if src.is_dir() and not raw.is_file():
         img2video(src.iterdir(), raw)
@@ -201,4 +193,9 @@ if __name__ == "__main__":
     target = src.parent / "target.mp4"
     dst = src.parent / "final.mp4"
     if target.is_file() and not dst.is_file():
-        img2video(star_trails(VideoCap(target), decay=0.98), dst)
+        result = []
+        for img in star_trails(VideoCap(target)):
+            result.append(img)
+            cv2.imshow("s", img)
+            cv2.waitKey(1)
+        img2video(result, dst)

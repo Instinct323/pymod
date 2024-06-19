@@ -73,7 +73,7 @@ def img_mul(img, alpha):
 
 def img2video(src: Iterable,
               dst: Union[Path, str],
-              width: int = 1920,
+              width: int = 1280,
               aspect_radio: float = 4 / 3,
               fps: int = 30,
               pad: int = 255):
@@ -85,7 +85,7 @@ def img2video(src: Iterable,
         :param fps: 视频帧率
         :param pad: 边界填充颜色"""
     img_size = width, round(width / aspect_radio)
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    fourcc = cv2.VideoWriter_fourcc(*"H264")
     assert Path(dst).suffix == ".mp4", "The video format must be mp4"
     # 逐帧写入视频
     video = cv2.VideoWriter(str(dst), fourcc, fps, img_size)
