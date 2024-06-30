@@ -17,8 +17,8 @@ def runge_kutta(pdfunc, init, dt, n):
     return np.stack(ret)
 
 
-def laida_bound(data):
-    """ 拉以达边界
+def pauta_criterion(data):
+    """ 拉依达边界
         :param data: 单指标向量"""
     std = np.std(data)
     mean = np.mean(data)
