@@ -4,6 +4,8 @@ import sys
 import time
 from pathlib import Path
 
+os.system("chcp 65001")
+
 
 def execute(cmd, check=True):
     ret = print(cmd) or os.system(cmd)
@@ -129,9 +131,6 @@ class Installer:
             with self.spec.open("w") as f:
                 f.writelines(lines)
 
-    def __repr__(self):
-        return f"{type(self).__name__}({self.main}, opt_general={self.opt_general}, opt_mode={self.opt_mode})"
-
     @staticmethod
     def check_src(mark="if typecode in ('BINARY', 'EXTENSION'):"):
         from pathlib import Path
@@ -164,6 +163,9 @@ class Installer:
         import PyInstaller
         raise RuntimeError(f"Fail to solve PyInstaller {PyInstaller.__version__}")
 
+    def __repr__(self):
+        return f"{type(self).__name__}({self.main}, opt_general={self.opt_general}, opt_mode={self.opt_mode})"
+
 
 if __name__ == "__main__":
     # website: https://upx.github.io/
@@ -186,6 +188,6 @@ if __name__ == "__main__":
         isl.install(one_file=True)
         # Step 3: 修改 spec 文件, 生成最终的 exe 文件
         isl.clean(build=True)
-        if upx_dir: isl.opt_general.append(f"--upx-dir {upx_dir}")
+        if upx_dir: isl.opt_general.append(f"--upx-dir {Path(upx_dir).resolve()}")
         isl.modify_spec()
         isl.install(spec=True)
