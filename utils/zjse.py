@@ -64,7 +64,7 @@ def nearest_timestamp(query: Iterable[int], value: Iterable[int], max_ts_diff: f
     print(f"Matching success rate: {cnt / len(query):.2%}")
 
 
-def trajectory_align(pts1: np.ndarray, pts2: np.ndarray):
+def align_trajectory(pts1: np.ndarray, pts2: np.ndarray):
     """ Closed-form solution of absolute orientation using unit quaternions """
     assert pts1.ndim == 2 and pts1.shape[1] == 3 and pts1.shape == pts2.shape
     pts1, pts2 = map(np.float64, (pts1, pts2))
@@ -73,11 +73,11 @@ def trajectory_align(pts1: np.ndarray, pts2: np.ndarray):
     pts1, pts2 = pts1 - centroid1, pts2 - centroid2
     s = np.sqrt(np.square(pts2).sum() / np.square(pts1).sum())
     # 单位四元数
-    lut = pts1.T @ pts2
-    sumn = np.array([[np.diag(lut).sum() / 2, lut[1, 2] - lut[2, 1], lut[2, 0] - lut[0, 2], lut[0, 1] - lut[1, 0]],
-                     [0, (lut[0, 0] - lut[1, 1] - lut[2, 2]) / 2, lut[1, 0] + lut[0, 1], lut[2, 0] + lut[0, 2]],
-                     [0, 0, (- lut[0, 0] + lut[1, 1] - lut[2, 2]) / 2, lut[2, 1] + lut[1, 2]],
-                     [0, 0, 0, (- lut[0, 0] - lut[1, 1] + lut[2, 2]) / 2]])
+    Sxx, Sxy, Sxz, Syx, Syy, Syz, Szx, Szy, Szz = (pts1.T @ pts2).flatten()
+    sumn = np.array([[(Sxx + Syy + Szz) / 2, Syz - Szy, Szx - Sxz, Sxy - Syx],
+                     [0, (Sxx - Syy - Szz) / 2, Syx + Sxy, Szx + Sxz],
+                     [0, 0, (- Sxx + Syy - Szz) / 2, Szy + Syz],
+                     [0, 0, 0, (- Sxx - Syy + Szz) / 2]])
     sumn += sumn.T
     eig_val, eig_vec = np.linalg.eig(sumn)
     w, x, y, z = eig_vec[:, eig_val.argmax()]
@@ -91,16 +91,10 @@ def trajectory_align(pts1: np.ndarray, pts2: np.ndarray):
     return s, R, t
 
 
-def abs_trajectory_error(pred: Iterable[SE3], gt: Iterable[SE3]):
-    """ 绝对轨迹误差"""
-    for tp, tgt in zip(pred, gt):
-        pass
-
-
-def rel_pose_error(pred: Iterable[SE3], gt: Iterable[SE3]):
-    """ 相对位姿误差"""
-    for tp, tgt in zip(pred, gt):
-        pass
+def abs_trans_error(pred: np.ndarray, gt: np.ndarray):
+    """ 绝对位移误差 (RMSE)"""
+    assert pred.ndim == 2 and pred.shape[1] == 3 and pred.shape == gt.shape
+    return np.sqrt(np.square(pred - gt).sum(axis=-1).mean())
 
 
 def eval_trajectory(pred: str, gt: str, plot: bool = True):
@@ -114,10 +108,8 @@ def eval_trajectory(pred: str, gt: str, plot: bool = True):
     # 对齐轨迹
     pts1, pts2 = np.stack([x.t.t for x in pred_se]), np.stack([x.t.t for x in gt_se])
     # pts2 = (2.5 * SO3.from_quat([0.5, 0.1, 0.2, 0.3]).as_matrix() @ pts2.T).T + np.random.uniform(0, 0.2, pts2.shape)
-    s, R, t = trajectory_align(pts1, pts2)
+    s, R, t = align_trajectory(pts1, pts2)
     pts1 = (s * R.as_matrix() @ pts1.T).T + t
-    # fixme: 计算误差
-
     # 绘制轨迹
     if plot:
         import matplotlib.pyplot as plt
@@ -125,6 +117,7 @@ def eval_trajectory(pred: str, gt: str, plot: bool = True):
         fig.plot(*pts1.T, "deepskyblue", label="pred")
         fig.plot(*pts2.T, "orange", label="GT")
         plt.show()
+    return abs_trans_error(pts1, pts2)
 
 
 if __name__ == "__main__":
@@ -134,4 +127,5 @@ if __name__ == "__main__":
 
     os.chdir(r"D:\Workbench\data\dataset-room4_512_16\dso")
 
-    eval_trajectory("gt_imu.csv", "gt_imu.csv")
+    ate = eval_trajectory("gt_imu.csv", "gt_imu.csv")
+    print(ate)
