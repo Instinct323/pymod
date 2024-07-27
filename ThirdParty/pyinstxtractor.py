@@ -311,7 +311,7 @@ class PyInstArchive:
 
 
 def main(exe):
-    # todo: 不使用命令行参数, 直接传参
+    # 不使用命令行参数, 直接传参
     os.chdir(exe.parent)
     exe = exe.relative_to(Path.cwd())
 
