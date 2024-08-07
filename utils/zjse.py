@@ -13,6 +13,12 @@ class Translation:
     def __init__(self, tx, ty, tz):
         self.t = np.array([tx, ty, tz])
 
+    def as_matrix(self):
+        return self.t[:, None]
+
+    def __neg__(self):
+        return Translation(*(-self.t))
+
 
 class SE3:
     """ 特殊欧式群"""
