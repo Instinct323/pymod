@@ -1,5 +1,5 @@
 import bisect
-from typing import Iterable
+from typing import Iterable, Dict
 
 import numpy as np
 from scipy.spatial import transform
@@ -51,9 +51,22 @@ class SE3:
             for line in f:
                 line = line.replace("\t", " ").replace(",", " ").strip()
                 if not line or line.startswith("#"): continue
+                line = list(map(float, line.split()))
+                # timestamp, tx, ty, tz
+                if len(line) in (3, 4):
+                    pose = np.array(line[-3:])
+                    yield pose if len(line) & 1 else (int(line[0]), pose)
                 # timestamp, tx, ty, tz, qw, qx, qy, qz
-                ts, *args = map(float, line.split())
-                yield int(ts), cls(SO3.from_quat(np.append(args[4:], args[3])), Translation(*args[:3]))
+                if len(line) in (7, 8):
+                    pose = cls(SO3.from_quat(np.append(line[-3:], line[-4])), Translation(*line[-7: -4]))
+                    yield pose if len(line) & 1 else (int(line[0]), pose)
+                # timestamp, 4x4 matrix
+                elif len(line) in (12, 13, 16, 17):
+                    m = np.array(line[len(line) & 1:]).reshape(-1, 4)
+                    pose = cls(SO3.from_matrix(m[:3, :3]), Translation(*m[:3, 3]))
+                    yield (int(line[0]), pose) if len(line) & 1 else pose
+                else:
+                    raise NotImplementedError(f"Unsupported format: {line}")
 
 
 def nearest_timestamp(query: Iterable[int], value: Iterable[int], max_ts_diff: float = float("inf")):
@@ -103,14 +116,12 @@ def abs_trans_error(pred: np.ndarray, gt: np.ndarray):
     return np.sqrt(np.square(pred - gt).sum(axis=-1).mean())
 
 
-def eval_trajectory(pred: str, gt: str, plot: bool = True):
-    pred_org = dict(SE3.from_file(pred))
-    gt_org = dict(SE3.from_file(gt))
-    pred_se, gt_se = [], []
+def eval_trajectory(pred: Dict[int, SE3], gt: Dict[int, SE3], plot: bool = True):
     # 对齐时间戳
-    for tp, tgt in nearest_timestamp(pred_org.keys(), gt_org.keys()):
-        pred_se.append(pred_org[tp])
-        gt_se.append(gt_org[tgt])
+    pred_se, gt_se = [], []
+    for tp, tgt in nearest_timestamp(pred.keys(), gt.keys()):
+        pred_se.append(pred[tp])
+        gt_se.append(gt[tgt])
     # 对齐轨迹
     pts1, pts2 = np.stack([x.t.t for x in pred_se]), np.stack([x.t.t for x in gt_se])
     # pts2 = (2.5 * SO3.from_quat([0.5, 0.1, 0.2, 0.3]).as_matrix() @ pts2.T).T + np.random.uniform(0, 0.2, pts2.shape)
