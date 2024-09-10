@@ -7,7 +7,8 @@ from pathlib import Path
 from zjexe import execute
 
 USERPATH = Path(os.path.expanduser("~"))
-SCRIPTS = Path(sys.executable).parent / "Scripts"
+SCRIPTS = Path(sys.executable).parent
+if os.name == "nt": SCRIPTS = SCRIPTS / "Scripts"   # Windows
 
 
 def git_push(*repositories,
@@ -64,15 +65,18 @@ class PythonEnv:
         if os.name == "nt":
             cache = USERPATH / "AppData" / "Local" / "pip" / "cache"
             shutil.rmtree(cache, ignore_errors=True)
+        else:
+            raise NotImplementedError
 
     @classmethod
     def jupyter(cls, root="D:/Workbench", cfg=False, reinstall=False):
         if reinstall:
             tar = ("jupyter", "jupyter-client", "jupyter-console", "jupyter-core",
-                   "jupyterlab-pygments", "jupyterlab-widgets", "notebook==6.1.0",
+                   "jupyterlab-pygments", "jupyterlab-widgets", "notebook",
                    "jupyter_contrib_nbextensions")
             for pkg in tar: cls.install(pkg, uninstall=True)
-            for pkg in tar: cls.install(pkg)
+            cls.install("notebook==6.1.0")
+            cls.install("jupyter")
             execute(f"{cls._jupyter} contrib nbextension install --use")
 
         os.chdir(root)
