@@ -7,8 +7,8 @@ from pathlib import Path
 from zjexe import execute
 
 USERPATH = Path(os.path.expanduser("~"))
-SCRIPTS = Path(sys.executable).parent
-if os.name == "nt": SCRIPTS = SCRIPTS / "Scripts"   # Windows
+SCRIPTS = Path(sys.executable).parent   # Default for Linux
+if os.name == "nt": SCRIPTS = SCRIPTS / "Scripts"   # Special for Windows
 
 
 def git_push(*repositories,
