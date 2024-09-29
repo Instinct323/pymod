@@ -2,13 +2,21 @@ import datetime
 import os
 import shutil
 import sys
+from ctypes import windll
 from pathlib import Path
 
 from zjexe import execute
 
 USERPATH = Path(os.path.expanduser("~"))
-SCRIPTS = Path(sys.executable).parent   # Default for Linux
-if os.name == "nt": SCRIPTS = SCRIPTS / "Scripts"   # Special for Windows
+SCRIPTS = Path(sys.executable).parent  # Default for Linux
+if os.name == "nt": SCRIPTS = SCRIPTS / "Scripts"  # Special for Windows
+
+
+def elevate():
+    if windll.shell32.IsUserAnAdmin(): return
+    # 以管理员身份运行
+    windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+    sys.exit()
 
 
 def git_push(*repositories,
@@ -31,8 +39,7 @@ class PythonExtLibs:
     @classmethod
     def dump(cls, ext):
         ext = [str(p.absolute()) for p in map(Path, ext) if p.is_dir()]
-        cls.f.write_text("\n".join(ext)) \
-            if ext else cls.f.unlink(missing_ok=True)
+        cls.f.write_text("\n".join(ext)) if ext else cls.f.unlink(missing_ok=True)
         return ext
 
     @classmethod
@@ -120,6 +127,7 @@ class CondaEnv(PythonEnv):
 
 if __name__ == "__main__":
     os.chdir(os.getenv("dl"))
+    # elevate()
 
     # PythonEnv.jupyter()
     # PythonExtLibs.dump([r"D:\Workbench\pymod", r"D:\Workbench\ros_humble\py"])

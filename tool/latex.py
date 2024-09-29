@@ -26,4 +26,4 @@ def cases(rows: Union[tuple, list], sep="\n") -> str:
 
 
 if __name__ == '__main__':
-    print(matrix([r"\cos(-\theta)", r"\sin(-\theta)", r"\sin(-\theta)", r"\cos(-\theta)"], (2, 2), bracket="["))
+    print(matrix(["vt", "0", "0"], (3, 1), bracket="["))

@@ -35,12 +35,6 @@ class MsgBox:
         windll.user32.MessageBoxW(0, str(msg), "error", 0x10)
         sys.exit()
 
-    @staticmethod
-    def elevate():
-        if windll.shell32.IsUserAnAdmin(): return
-        windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
-        sys.exit()
-
 
 class SingletonExecutor:
     # 根据所运行的 py 文件生成程序标识

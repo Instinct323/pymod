@@ -22,7 +22,7 @@ def random_dropout(x, p=0.4):
 
 CFG = Path("cfg/cnn/mnist.yaml")
 HYP = Path("cfg/hyp.yaml")
-PROJECT = Path("runs")
+PROJECT = Path("runs/mnist")
 DATA = Path("data")
 
 BATCH_SIZE = 1000
@@ -49,18 +49,20 @@ if __name__ == "__main__":
     print("fitness:", fitness)
 
     # 记录器
-    result = Result(PROJECT, ("lr", "acc"))
+    result = Result(PROJECT, ("lr", "acc", "loss"))
 
     for epoch in trainer:
         # 训练模型
         model_orig.train()
         qbar = tqdm(trainset)
-        for img, tar in qbar:
+        loss_mean = 0
+        for i, (img, tar) in enumerate(qbar):
             img = img.cuda()
             pred = model_call(random_dropout(img))
-            loss = F.cross_entropy(pred, tar.cuda()) + ema_mse(img, pred)
+            loss = F.cross_entropy(pred, tar.cuda()) + 0.05 * ema_mse(img, pred)
+            loss_mean = (loss_mean * i + loss.item()) / (i + 1)
             trainer.bp_gradient(loss)
-            qbar.set_description(f"Epoch {epoch}, loss {loss.item()}")
+            qbar.set_description(f"Epoch {epoch}, loss {loss_mean}")
         trainer.save_ckpt()
 
         # 验证模型
@@ -73,7 +75,7 @@ if __name__ == "__main__":
                 cnt += len(pred)
                 correct += (pred == tar).sum().item()
             acc = correct / cnt
-            result.record((trainer.lr, acc))
+            result.record((trainer.lr, acc, loss_mean))
             print(f"Epoch {epoch}, Accuracy {acc:.4f}")
 
             save_list = ["last.pt"]

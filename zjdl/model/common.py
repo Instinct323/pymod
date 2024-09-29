@@ -58,7 +58,7 @@ class Conv(nn.Conv2d):
             kernel = m.weight.data.clone()
             bn_w, bn_b = m.bn.unpack(detach=True)
             # 合并 nn.Conv 与 BatchNorm
-            m.weight.data, m.bias = kernel * bn_w.view(-1, 1, 1, 1), nn.Parameter(bn_b, requires_grad=True)
+            m.weight.data, m.bias = kernel * bn_w.view(-1, 1, 1, 1), nn.Parameter(bn_b)
             m.bn = nn.Identity()
 
 
@@ -402,6 +402,20 @@ class DropBlock(nn.Module):
             if self.norm:
                 x *= np.prod(x.shape[-2:]) / kmask.sum(dim=(2, 3), keepdims=True)
         return x
+
+
+@register_module("c1", "n")
+class NetVLAD(nn.Module):
+
+    def __init__(self, c1, n):
+        super().__init__()
+        self.conv = Conv(c1, n, 1, act=None)
+        self.cluster = nn.Parameter(torch.randn(n, c1, 1, 1))
+
+    def forward(self, x):
+        w = F.softmax(self.conv(x), dim=1)
+        x = (x[:, None] - self.cluster) * w[:, :, None]
+        return x.sum(dim=1)
 
 
 class AvgPool(nn.Module):
