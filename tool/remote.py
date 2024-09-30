@@ -2,7 +2,7 @@ import datetime
 import os
 from pathlib import Path
 
-from zjexe import execute
+from zjcmd import *
 
 
 class RemoteHost:
@@ -37,7 +37,7 @@ class GitRepo:
         self.remote = remote
 
     def activate(self):
-        os.chdir(self.path)
+        os.chdir(self.path), print(colorstr(self, "blue", "bold"))
         execute("git status")
         return self
 
@@ -57,6 +57,9 @@ class GitRepo:
         execute(f"git pull {self.remote} {self.branch}")
         return self
 
+    def __repr__(self):
+        return f"GitRepo<{self.path}, {self.branch}, {self.remote}>"
+
 
 if __name__ == '__main__':
     # myjammy = RemoteHost("root", "127.0.0.1", 30021)
@@ -64,5 +67,4 @@ if __name__ == '__main__':
 
     for p in ("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib"):
         repo = GitRepo(p).activate()
-
         repo.add().commit(f"update on {datetime.datetime.today()}").push()

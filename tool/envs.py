@@ -4,7 +4,7 @@ import sys
 from ctypes import windll
 from pathlib import Path
 
-from zjexe import execute
+from zjcmd import execute
 
 USERPATH = Path(os.path.expanduser("~"))
 SCRIPTS = Path(sys.executable).parent  # Default for Linux
