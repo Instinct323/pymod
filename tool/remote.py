@@ -39,18 +39,23 @@ class GitRepo:
     def activate(self):
         os.chdir(self.path)
         execute("git status")
+        return self
 
     def add(self, *files):
         execute(f"git add " + (" ".join(files) if files else "."))
+        return self
 
     def commit(self, msg):
         execute(f"git commit -m \"{msg}\"", check=False)
+        return self
 
     def push(self):
         execute(f"git push {self.remote} {self.branch}")
+        return self
 
     def pull(self):
         execute(f"git pull {self.remote} {self.branch}")
+        return self
 
 
 if __name__ == '__main__':
@@ -58,8 +63,6 @@ if __name__ == '__main__':
     # print(myjammy.upload(r"D:\Information\Notes", "/home/workbench/tmp"))
 
     for p in ("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib"):
-        repo = GitRepo(p)
-        repo.activate()
-        repo.add()
-        repo.commit(f"update on {datetime.datetime.today()}")
-        repo.push()
+        repo = GitRepo(p).activate()
+
+        repo.add().commit(f"update on {datetime.datetime.today()}").push()
