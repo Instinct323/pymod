@@ -1,4 +1,3 @@
-import datetime
 import os
 import shutil
 import sys
@@ -17,14 +16,6 @@ def elevate():
     # 以管理员身份运行
     windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
     sys.exit()
-
-
-def git_push(*repositories,
-             msg=f"update on {datetime.datetime.today()}"):
-    for repo in repositories:
-        os.chdir(repo), print(repo.center(50, "-"))
-        for cmd in ("git status", "git add .",
-                    f"git commit -m \"{msg}\"", "git push origin master"): execute(cmd, check=False)
 
 
 class PythonExtLibs:
@@ -129,6 +120,4 @@ if __name__ == "__main__":
     os.chdir(os.getenv("dl"))
     # elevate()
 
-    # PythonEnv.jupyter()
-    # PythonExtLibs.dump([r"D:\Workbench\pymod", r"D:\Workbench\ros_humble\py"])
-    git_push("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib")
+    PythonEnv.jupyter()

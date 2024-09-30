@@ -10,6 +10,7 @@ os.system("chcp 65001")
 def execute(cmd, check=True):
     ret = print(cmd) or os.system(cmd)
     if check and ret: raise OSError(f"Fail to execute: {cmd}")
+    return ret
 
 
 def find_exe(name):
