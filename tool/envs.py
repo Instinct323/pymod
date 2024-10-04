@@ -120,4 +120,5 @@ if __name__ == "__main__":
     os.chdir(os.getenv("dl"))
     # elevate()
 
-    PythonEnv.jupyter()
+    # PythonEnv.jupyter()
+    PythonEnv.install("torch-geometric")
