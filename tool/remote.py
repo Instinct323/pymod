@@ -64,6 +64,10 @@ if __name__ == '__main__':
     # myjammy = RemoteHost("root", "127.0.0.1", 30021)
     # print(myjammy.upload(r"D:\Information\Notes", "/home/workbench/tmp"))
 
-    for p in ("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib"):
+    repos = ("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes", "D:/Information/Lib"
+             ) if os.name == "nt" else (
+        "/media/tongzj/Data/cppmod", "/media/tongzj/Data/pymod")
+
+    for p in repos:
         repo = GitRepo(p).activate()
         repo.add().commit(f"update on {datetime.datetime.today()}").push()
