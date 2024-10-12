@@ -234,6 +234,25 @@ class Bottleneck(nn.Module):
         return self.act(self.downs(x) + self.btn3(self.btn2(self.btn1(x))))
 
 
+class ConvGRU(nn.Module):
+    """ Convolutional GRU"""
+
+    def __init__(self, c1, ch, k=3):
+        super().__init__()
+        self.convr = Conv(c1 + ch, ch, k, act=nn.Sigmoid)
+        self.convz = Conv(c1 + ch, ch, k, act=nn.Sigmoid)
+        self.convh = Conv(c1 + ch, ch, k, act=nn.Tanh)
+
+    def forward(self, x, h):
+        """ :param x: input
+            :param h: hidden state"""
+        xh = torch.cat((x, h), dim=1)
+        z = self.convz(xh)      # update gate
+        r = self.convr(xh)      # reset gate
+        h_new = self.convh(torch.cat((x, r * h), dim=1))    # new hidden state
+        return (1 - z) * h + z * h_new
+
+
 @register_module("c1")
 class ConvFFN(nn.Module):
 

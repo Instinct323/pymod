@@ -2,32 +2,13 @@ import logging
 import random
 import string
 from itertools import product
-from typing import Callable
+from pathlib import Path
 
-from tqdm import tqdm
-
-from ..zjdl.utils.imgtf import *
+import cv2
+import numpy as np
 
 logging.basicConfig(format="[%(levelname)s] %(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
-
-
-def star_trails(src: Iterable[np.ndarray],
-                decay: float = 0.99,
-                agg_fun: Callable = np.maximum):
-    """ 制作星轨
-        :param src: 图像数组 [B, H, W, C]
-        :param decay: 亮度衰减系数"""
-    assert 0 < decay <= 1
-    src = iter(tqdm(src))
-    # 处理第一张图像
-    cur = next(src)
-    yield cur
-    cur = cur.astype(np.float32)
-    # 处理后续图像
-    for img in src:
-        cur = agg_fun(cur * decay, img.astype(np.float32))
-        yield np.round(cur).astype(np.uint8)
 
 
 class AsciiArt:
@@ -179,23 +160,5 @@ class Puzzle:
 if __name__ == "__main__":
     import os
 
-    # exp 1: n 宫格长图
     os.chdir(Path("D:/Workbench/data/Camera"))
     Puzzle(Path("exp.jpg"), material=Path(), shape=(3, 3), dpi=2000, pad_value=255)
-
-    # exp 2: 星轨制作
-    # 生成序列
-    src = Path("D:/Information/Data/dataset/dali-star-trails")
-    raw = src.parent / "raw.mp4"
-    if src.is_dir() and not raw.is_file():
-        img2video(src.iterdir(), raw)
-    # 星轨效果
-    target = src.parent / "target.mp4"
-    dst = src.parent / "final.mp4"
-    if target.is_file() and not dst.is_file():
-        result = []
-        for img in star_trails(VideoCap(target)):
-            result.append(img)
-            cv2.imshow("s", img)
-            cv2.waitKey(1)
-        img2video(result, dst)
