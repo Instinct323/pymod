@@ -45,13 +45,13 @@ def figure3d():
     return figure
 
 
-def pie_kwd(labels, decimal=2):
+def pie_kwd(labels, decimal=2, colors=None):
     """ 饼图的关键字参数
         :param labels: 标签
         :param decimal: 百分数精度"""
     return dict(labels=labels,
-                colors=rand_colors(len(labels)),
-                autopct=lambda x: f"{round(x, decimal):.2f}%",
+                colors=colors if colors else rand_colors(len(labels)),
+                autopct=lambda x: f"{x:.{decimal}f}%",
                 shadow=False,
                 explode=(0.05,) * len(labels))
 
