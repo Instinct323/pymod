@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 
 from .data import SimpleDataset, to_tensor, ImagePool
-from .utils import LOGGER, Path
+from pymod.utils.utils import LOGGER, Path
 
 
 class SoftLabel:

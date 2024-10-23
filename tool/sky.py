@@ -2,7 +2,7 @@ from typing import Callable
 
 from tqdm import tqdm
 
-from ..zjdl.utils.imgtf import *
+from pymod.utils.zjcv import *
 
 
 def star_trails_video(

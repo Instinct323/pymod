@@ -8,8 +8,6 @@ from tqdm import tqdm
 logging.basicConfig(format="[%(levelname)s] %(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
-STOP_WORDS = r"\/:*?'<>|"
-
 
 class timer:
 
@@ -65,6 +63,24 @@ class singleton:
             return ctx._instance[cls]
 
         return handler
+
+
+class call_counter:
+    """ Function call counter"""
+
+    def __init__(self, func):
+        self.__func = func
+        self.__cnt = 0
+
+    def __call__(self, *args, **kwargs):
+        self.__cnt += 1
+        return self.__func(*args, **kwargs)
+
+    def __int__(self):
+        return self.__cnt
+
+    def __repr__(self):
+        return f"<function {self.__func.__name__} : call_cnt = {self.__cnt}>"
 
 
 def try_except(func):

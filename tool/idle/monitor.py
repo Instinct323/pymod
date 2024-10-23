@@ -7,7 +7,7 @@ import numpy as np
 import pyautogui
 import wmi
 
-from pymod.zjdl.utils.utils import VideoCap
+from pymod.utils.zjcv import VideoCap
 
 
 def set_brightness(value):

@@ -24,6 +24,6 @@ def shrink_img(src, dst, width=720, tag="img", encoding="utf-8"):
 
 
 if __name__ == '__main__':
-    root = Path(r"D:\Workbench\Information\Advanced Nonlinear Optimization\hw4\report")
+    root = Path(r"D:\Workbench\Information\Advanced Nonlinear Optimization\hw5\report")
 
-    shrink_img(root / "hw4.html", root / "test.html")
+    shrink_img(root / "hw5.html", root / "hw5.html")

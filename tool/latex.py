@@ -4,7 +4,13 @@ from typing import Tuple, Union
 def matrix(vector: Union[tuple, list],
            shape: Tuple[int, int],
            bracket: str = "[",
-           sep="\n") -> str:
+           newline: str = "\n") -> str:
+    """ 将给定的向量转换为 LaTeX 格式的矩阵字符串
+        :param vector: 向量
+        :param shape: 矩阵的形状
+        :param bracket: 矩阵的括号类型
+        :param newline: 换行符
+        :return LaTeX 格式的矩阵字符串"""
     h, w = shape
     assert len(vector) == h * w, f"shape {shape} mismatched with vector {len(vector)}"
     array = [vector[i * w: (i + 1) * w] for i in range(h)]
@@ -14,16 +20,17 @@ def matrix(vector: Union[tuple, list],
     for row in array:
         ret.append(" & ".join(map(str, row)) + r" \\")
     ret.append(f"\\end{{{env}}}")
-    return sep.join(ret)
+    return newline.join(ret)
 
 
-def cases(rows: Union[tuple, list], sep="\n") -> str:
+def cases(rows: Union[tuple, list],
+          newline: str = "\n") -> str:
     ret = [r"\begin{cases}"]
     for r in rows:
         ret.append(str(r) + r" \\")
     ret.append(r"\end{cases}")
-    return sep.join(ret)
+    return newline.join(ret)
 
 
 if __name__ == '__main__':
-    print(matrix(["vt", "0", "0"], (3, 1), bracket="["))
+    print(matrix(["a_1", "a_2", "a_2", "a_1"], (2, 2)))

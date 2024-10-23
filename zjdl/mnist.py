@@ -11,7 +11,7 @@ from engine.result import Result
 from engine.trainer import Trainer
 from model.ema import EmaModel
 from model.model import YamlModel, Conv
-from utils.utils import *
+from pymod.utils.utils import *
 
 
 def random_dropout(x, p=0.4):

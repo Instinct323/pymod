@@ -4,7 +4,7 @@ import sys
 from ctypes import windll
 from pathlib import Path
 
-from zjcmd import execute
+from pymod.utils.zjcmd import execute
 
 USERPATH = Path(os.path.expanduser("~"))
 SCRIPTS = Path(sys.executable).parent  # Default for Linux
@@ -120,5 +120,5 @@ if __name__ == "__main__":
     os.chdir(os.getenv("dl"))
     # elevate()
 
-    # PythonEnv.jupyter()
-    PythonEnv.install("lietorch", uninstall=True)
+    PythonEnv.jupyter()
+    # PythonEnv.install("lietorch", uninstall=True)

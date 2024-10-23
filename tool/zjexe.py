@@ -4,7 +4,7 @@ import sys
 import time
 from pathlib import Path
 
-from zjcmd import execute
+from pymod.utils.zjcmd import execute
 
 os.system("chcp 65001")
 

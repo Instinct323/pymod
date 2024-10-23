@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from .bbox import *
 from .imgtf import *
-from .utils import LOGGER, Path
+from pymod.utils.utils import LOGGER, Path
 
 
 def ObjectArray(iterable):

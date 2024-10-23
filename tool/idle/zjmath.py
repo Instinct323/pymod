@@ -36,20 +36,6 @@ def seq_comp(seq1, seq2):
     return dp[-1][-1] / max(n1, n2)
 
 
-def salary(pre_tax, Si=485.12, Hf=230):
-    """ :param pre_tax: 税前薪资 (k)
-        :param Si: 社会保险
-        :param Hf: 住房公积金"""
-    result = pre_tax - (Si + Hf) / 1000
-    # 应纳税所得额
-    taxable_income = np.maximum(0, result - 5)
-    # 个人所得税税率表
-    iit_dict = ((0, 36, 0.03), (36, 144, 0.1), (144, 300, 0.2), (300, 420, 0.25),
-                (420, 660, 0.3), (660, 960, 0.35), (960, float("inf"), 0.45))
-    result -= sum(np.maximum(0, np.minimum(taxable_income, t) - b) * rate for b, t, rate in iit_dict)
-    return result
-
-
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 

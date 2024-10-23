@@ -1,7 +1,7 @@
 import datetime
 from pathlib import Path
 
-from zjcmd import *
+from pymod.utils.zjcmd import *
 
 
 class RemoteHost:

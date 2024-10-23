@@ -1,6 +1,6 @@
 import pandas as pd
 
-from pymod.zjdl.utils.utils import *
+from pymod.utils.utils import *
 
 
 def make_index(image_dir):
