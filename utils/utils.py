@@ -1,7 +1,7 @@
 import logging
 import os
+import pathlib
 from functools import wraps
-from pathlib import WindowsPath, PosixPath, Path as _path
 
 from tqdm import tqdm
 
@@ -95,7 +95,7 @@ def try_except(func):
     return handler
 
 
-class Path(WindowsPath if os.name == "nt" else PosixPath, _path):
+class Path(pathlib.WindowsPath if os.name == "nt" else pathlib.PosixPath, pathlib.Path):
 
     def fsize(self, unit: str = "B"):
         size = self.stat().st_size if self.is_file() else (
@@ -104,11 +104,9 @@ class Path(WindowsPath if os.name == "nt" else PosixPath, _path):
 
     def lazy_obj(self, fget, **fld_kwd):
         f_load_dump = {
-            "json": self.json, "yaml": self.yaml,
-            "csv": self.csv, "xlsx": self.excel,
-            "pt": self.torch
+            "json": self.json, "yaml": self.yaml, "csv": self.csv, "xlsx": self.excel, "pt": self.torch
         }.get(self.suffix[1:], self.binary)
-        # 根据 load/dump 方法载入数据
+        # load the data using the load/dump method
         if self.is_file():
             data = f_load_dump(None, **fld_kwd)
             LOGGER.info(f"Load <{type(data).__name__}> from {self}")
@@ -120,12 +118,12 @@ class Path(WindowsPath if os.name == "nt" else PosixPath, _path):
     def collect_file(self, formats):
         formats = [formats] if isinstance(formats, str) else formats
         pools = [], []
-        # 收集该目录下的所有文件
+        # Collect all files in this directory
         qbar = tqdm(self.glob("**/*.*"))
         for f in qbar:
             qbar.set_description(f"Collecting files")
             pools[f.suffix[1:] in formats].append(f)
-        # 如果有文件不符合格式, 则警告
+        # Warning if any file does not conform to the format
         if pools[False]:
             LOGGER.warning(f"Unsupported files: {', '.join(map(str, pools[False]))}")
         return pools[True]
@@ -149,13 +147,11 @@ class Path(WindowsPath if os.name == "nt" else PosixPath, _path):
         return yaml.load(self.read_text(), Loader=yaml.Loader, **kwargs) \
             if data is None else self.write_text(yaml.dump(data, **kwargs))
 
-    @try_except
     def csv(self, data=None, **kwargs):
         import pandas as pd
         return pd.read_csv(self, **kwargs) \
             if data is None else data.to_csv(self, **kwargs)
 
-    @try_except
     def excel(self, data=None, **kwargs):
         import pandas as pd
         # Only excel in "xls" format is supported

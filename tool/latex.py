@@ -33,4 +33,4 @@ def cases(rows: Union[tuple, list],
 
 
 if __name__ == '__main__':
-    print(matrix(["a_1", "a_2", "a_2", "a_1"], (2, 2)))
+    print(cases(["x = 1", "y = 2"]))

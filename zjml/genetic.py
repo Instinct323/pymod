@@ -8,11 +8,6 @@ from tqdm import trange
 class ChromosomeBase:
     """ 染色体基类"""
 
-    def __init__(self, *args, **kwargs):
-        """ 无参构造: 用于生成随机个体
-            有参构造: 用于遗传交叉、基因突变"""
-        raise NotImplementedError
-
     def __eq__(self, other):
         """ 重载 == 运算符, 用于去重"""
         raise NotImplementedError
@@ -21,11 +16,11 @@ class ChromosomeBase:
         """ 适应度函数 (max -> best)"""
         raise NotImplementedError
 
-    def variation(self):
+    def mutation(self):
         """ 基因突变"""
         raise NotImplementedError
 
-    def cross_with(self, other):
+    def crossover(self, other):
         """ 交叉遗传"""
         raise NotImplementedError
 
@@ -33,7 +28,7 @@ class ChromosomeBase:
 class GeneticOpt:
     """ 遗传算法
         :param cross_proba: 交叉概率
-        :param var_proba: 变异概率
+        :param mut_proba: 变异概率
         :param well_radio: 最优个体比例
         :ivar group: 染色体群体"""
 
@@ -41,7 +36,7 @@ class GeneticOpt:
                  chromosome: Type[ChromosomeBase],
                  n_unit: int,
                  cross_proba: float = 0.4,
-                 var_proba: float = 0.3,
+                 mut_proba: float = 0.3,
                  well_radio: float = 0.2,
                  best_unit: ChromosomeBase = None):
         self.chromosome = chromosome
@@ -49,9 +44,9 @@ class GeneticOpt:
         self.group = self.new_unit(self.n_unit)
         self.log = []
 
-        assert 0 < cross_proba + var_proba < 1, "cross_proba + var_proba must be in (0, 1)"
+        assert 0 < cross_proba + mut_proba < 1, "cross_proba + mut_proba must be in (0, 1)"
         self._cross_proba = cross_proba
-        self._var_proba = var_proba
+        self._mut_proba = mut_proba
 
         assert 0 < well_radio < 1, "well_radio must be in (0, 1)"
         self._well_radio = well_radio
@@ -108,10 +103,10 @@ class GeneticOpt:
             for x in np.random.random(n_choose):
                 unit = f_sample(p)
                 # 基因突变 / 交叉遗传
-                if x <= self._var_proba:
-                    unit = unit.variation()
+                if x <= self._mut_proba:
+                    unit = unit.mutation()
                 elif 1 - x <= self._cross_proba:
-                    unit = unit.cross_with(f_sample(p))
+                    unit = unit.crossover(f_sample(p))
                 tmp_group.append(unit)
             self.group = tmp_group
         pbar.close()
@@ -159,7 +154,7 @@ class TspPath(ChromosomeBase):
     def fitness(self) -> float:
         return - self._dist.sum()
 
-    def variation(self):
+    def mutation(self):
         """ 基因突变"""
         l = np.random.randint(0, self.n - 1)
         r = np.random.randint(l + 1, self.n)
@@ -175,7 +170,7 @@ class TspPath(ChromosomeBase):
             np.random.shuffle(data[l: r + 1])
         return __class__(data)
 
-    def cross_with(self, other):
+    def crossover(self, other):
         """ 交叉遗传"""
         other = other.data.tolist()
 
@@ -192,7 +187,7 @@ class TspPath(ChromosomeBase):
                 [x for x in self.data[:l] if x not in other] +
                 other + [x for x in self.data[l + 2:] if x not in other]
             ))
-        return self.variation()
+        return self.mutation()
 
 
 if __name__ == "__main__":
@@ -211,7 +206,7 @@ if __name__ == "__main__":
     for i in range(2):
         if i: TspPath.kmeans_init()
 
-        ga = GeneticOpt(TspPath, 50, cross_proba=0.4 * i, var_proba=0.3 * (2 - i))
+        ga = GeneticOpt(TspPath, 50, cross_proba=0.4 * i, mut_proba=0.3 * (2 - i))
         unit, log = ga.fit(2500)
         unit = np.concatenate([unit.data, unit.data[:1]])
 

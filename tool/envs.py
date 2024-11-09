@@ -120,5 +120,5 @@ if __name__ == "__main__":
     os.chdir(os.getenv("dl"))
     # elevate()
 
-    PythonEnv.jupyter()
-    # PythonEnv.install("lietorch", uninstall=True)
+    # PythonEnv.jupyter()
+    PythonEnv.install("openai")
