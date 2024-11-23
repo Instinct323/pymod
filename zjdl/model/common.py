@@ -437,6 +437,17 @@ class NetVLAD(nn.Module):
         return x.sum(dim=1)
 
 
+class GeM(nn.Module):
+    """ Generalized-Mean Pooling"""
+
+    def __init__(self):
+        super().__init__()
+        self.p = nn.Parameter(torch.tensor(3.0))
+
+    def forward(self, x):
+        return F.adaptive_avg_pool2d(x.clamp_min(1e-6).pow(self.p), 1).pow(1. / self.p)
+
+
 class AvgPool(nn.Module):
 
     def __init__(self, dims):

@@ -4,6 +4,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def rosenbrock_func(x, a=1, b=100):
+    """ :param x: [-2, 2]"""
+    assert x.shape[-1] > 1
+
+    return (np.square(a - x[..., :-1]).sum(axis=-1) +
+            b * np.square(x[..., 1:] - np.square(x[..., :-1])).sum(axis=-1))
+
+
+def auckley_func(x, a1=20, a2=0.2, a3=np.pi * 2):
+    """ :param x: [-10, 10]"""
+    it1 = np.sqrt(np.square(x).mean(axis=-1))
+    it2 = np.cos(a3 * x).mean(axis=-1)
+    return -a1 * np.exp(-a2 * it1) - np.exp(it2) + a1 + np.e
+
+
 def runge_kutta(pdfunc, init, dt, n):
     """ :param pdfunc: 偏微分函数
         :param init: 初值条件"""
@@ -157,15 +172,5 @@ class HexagonalMesh:
 
 
 if __name__ == "__main__":
-    np.set_printoptions(3, suppress=True)
-
-    for i in range(10):
-        T = np.random.rand(5, 5)
-        T /= T.sum(axis=0)
-
-        m = MarkovChain(T)
-        s = m.steady_state()
-
-        print(s)
-        print(m.update_state(s, 10))
-        print()
+    x = np.random.random([10, 2])
+    print(auckley_func(x))

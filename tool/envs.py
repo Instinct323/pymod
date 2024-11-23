@@ -1,7 +1,6 @@
 import os
 import shutil
 import sys
-from ctypes import windll
 from pathlib import Path
 
 from pymod.utils.zjcmd import execute
@@ -12,6 +11,7 @@ if os.name == "nt": SCRIPTS = SCRIPTS / "Scripts"  # Special for Windows
 
 
 def elevate():
+    from ctypes import windll
     if windll.shell32.IsUserAnAdmin(): return
     # 以管理员身份运行
     windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
@@ -121,4 +121,4 @@ if __name__ == "__main__":
     # elevate()
 
     # PythonEnv.jupyter()
-    PythonEnv.install("openai")
+    PythonEnv.install("diffusers")

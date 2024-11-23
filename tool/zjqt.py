@@ -2,7 +2,6 @@ import os
 import sys
 import threading
 import time
-from ctypes import windll
 from functools import partial
 from pathlib import Path
 
@@ -21,18 +20,19 @@ head = lambda text: f"<html><head/><body><p><span style=\" font-size:12pt; " \
 
 
 class MsgBox:
+    from ctypes import windll
 
-    @staticmethod
-    def info(msg):
-        windll.user32.MessageBoxW(0, str(msg), "info", 0x40)
+    @classmethod
+    def info(cls, msg):
+        cls.windll.user32.MessageBoxW(0, str(msg), "info", 0x40)
 
-    @staticmethod
-    def warning(msg):
-        windll.user32.MessageBoxW(0, str(msg), "warning", 0x30)
+    @classmethod
+    def warning(cls, msg):
+        cls.windll.user32.MessageBoxW(0, str(msg), "warning", 0x30)
 
-    @staticmethod
-    def error(msg):
-        windll.user32.MessageBoxW(0, str(msg), "error", 0x10)
+    @classmethod
+    def error(cls, msg):
+        cls.windll.user32.MessageBoxW(0, str(msg), "error", 0x10)
         sys.exit()
 
 
