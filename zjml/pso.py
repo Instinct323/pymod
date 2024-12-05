@@ -41,20 +41,20 @@ class Scheduler:
 class ParticleSwarmOpt:
     """ 粒子群优化器
         :param n: 粒子群规模
-        :param well_radio: 优粒子百分比
+        :param elite_radio: 精英粒子百分比
         :param best_unit: 已知最优个体"""
 
     def __init__(self,
                  n: int,
-                 well_radio: float = 0.15,
+                 elite_radio: float = 0.1,
                  best_unit: Optional[Sequence] = None):
         # 记录系统参数
         self._n = n
-        self._well_size = max(2, round(n * well_radio))
+        self._elite_size = min(n - 1, max(2, round(n * elite_radio)))
         # 记录最优个体
         if best_unit:
             self.bestX = np.array(best_unit, dtype=DTYPE)
-            self.bestY = self.fitness(self.bestX[None])
+            self.bestY = self.fitness(self.bestX[None])[0]
         else:
             self.bestX = None
             self.bestY = - np.inf
@@ -109,7 +109,7 @@ class ParticleSwarmOpt:
             # 根据轮次生成随机移动量
             if sche.w_exploration:
                 self._angry = 0
-                bound = np.abs(move_pace).mean(axis=0) * sche.w_exploration
+                bound = np.abs(move_pace).mean(axis=0) * sche.w_exploration + EPS
                 move_pace += np.random.uniform(-bound, bound, self.particle.shape)
             # 移动粒子: 吸引力 + 惯量 * 系数
             self.particle += (move_pace + sche.w_inertia * self.inertia) * sche.lr
@@ -119,13 +119,13 @@ class ParticleSwarmOpt:
         pbar.close()
         return self.bestX, self.log
 
-    def visualize(self):
+    def visualize(self, m=0.02):
         """ 可视化粒子群"""
         n = self.particle.shape[-1]
         # 根据适应度函数决定颜色, 大小
         particle = np.append(self.particle, self.bestX[None], axis=0)
         fmin = self.fit_vec.min()
-        c = (np.append(self.fit_vec, self.bestY) - fmin) / (self.bestY - fmin + EPS)
+        c = (np.append(self.fit_vec, self.bestY) - fmin) / (self.bestY - fmin + EPS) * 0.9 + 0.1
         kwargs = dict(s=c * 80, c=c, cmap=plt.get_cmap("rainbow"), alpha=1)
         # 按照标准差决定上下限
         mean = self.bestX
@@ -133,7 +133,6 @@ class ParticleSwarmOpt:
         if self.std_ema is None:
             self.std_ema = std
         else:
-            m = 0.1
             std = np.minimum(std, self.std_ema * 1.1)
             self.std_ema = m * std + (1 - m) * self.std_ema
         lb = mean - std
@@ -160,18 +159,17 @@ class ParticleSwarmOpt:
             fig.scatter(*particle[:, :n].T, **kwargs)
         # 可视化适应度曲线
         plt.subplot(2, 3, 3)
-        plt.title("fitness")
-        plt.xlabel("iteration")
         plt.ylabel("fitness")
         plt.grid(True)
         plt.plot(self.log["fit-best"], color="deepskyblue")
         # 可视化有效粒子数目
         plt.subplot(2, 3, 6)
-        plt.title("n-unique")
         plt.xlabel("iteration")
         plt.ylabel("n-unique")
+        plt.ylim(0, self._n * 1.2)
         plt.grid(True)
         plt.plot(self.log["n-unique"], color="deepskyblue")
+        plt.fill_between(np.arange(len(self.log)), self.log["n-unique"], color="deepskyblue", alpha=0.3)
         # 结束绘制
         plt.tight_layout()
         plt.pause(1e-3)
@@ -192,18 +190,19 @@ class ParticleSwarmOpt:
         self._particle_slice(np.argsort(self.fit_vec)[::-1])
         order = np.arange(len(self.fit_vec))
         for i in np.where(np.diff(self.fit_vec) > - EPS)[0]:
-            if np.square(self.particle[i] - self.particle[i + 1]).sum() < EPS:
+            if np.linalg.norm(self.particle[i] - self.particle[i + 1]) < EPS:
                 order[i + 1] = -1
-        self._particle_slice(order[order != -1])
+        order = order[order != -1]
+        self._particle_slice(order)
         # 更新全局最优的个体
         if self.fit_vec[0] > self.bestY:
             self._angry = 0
-            self.bestX = self.particle[0]
+            self.bestX = self.particle[0].copy()
             self.bestY = self.fit_vec[0]
         else:
             self._angry += 1
         self.log.loc[len(self.log)] = [
-            self.bestY, np.sqrt(np.square(self.fit_vec - self.bestY).mean()), len(self.fit_vec)]
+            self.bestY, np.sqrt(np.square(self.fit_vec - self.bestY).mean()), len(order)]
         # 群体补全
         need = self._n - len(self.particle)
         if need:
@@ -218,7 +217,7 @@ class ParticleSwarmOpt:
     def _motion_from_self(self) -> np.ndarray:
         better = np.sign(self.fit_vec - self.loc_best[1])
         direct = self.loc_best[0] - self.particle
-        direct /= np.linalg.norm(direct, axis=-1, keepdims=True) + EPS
+        # direct /= np.linalg.norm(direct, axis=-1, keepdims=True) + EPS
         # 更新个体最优
         idx = np.where(better > 0)[0]
         self.loc_best[0][idx] = self.particle[idx]
@@ -227,22 +226,21 @@ class ParticleSwarmOpt:
 
     def _motion_from_other(self) -> np.ndarray:
         # 适应度
-        leader = np.arange(self._well_size)
+        leader = np.arange(self._elite_size)
         fitness = np.append(self.fit_vec[leader], self.bestY)
-        fitness -= fitness[-2]
-        fitness /= fitness[0] + EPS
+        fitness = fitness - self.fit_vec[:, None]
         # 粒子间的距离
         leader = np.append(self.particle[leader], self.bestX[None], axis=0)
         direct = leader - self.particle[:, None]
         dist = np.sqrt(np.square(direct).sum(axis=-1))
         dist_max = dist.max(axis=1, keepdims=True)
-        # 正向距离, 过近的忽略
+        # 正向距离
         dist = (dist_max - dist) / dist_max
-        dist[dist > 0.999] = 0
+        # dist[dist > 0.999] = 0
         # 粒子间的影响力
         influence = fitness * dist
-        motion = (direct * influence[..., None]).sum(axis=1)
-        return motion / np.linalg.norm(motion, axis=-1, keepdims=True)
+        return direct[np.arange(len(direct)), influence.argmax(axis=-1)]
+        # return motion / (np.linalg.norm(motion, axis=-1, keepdims=True) + EPS)
 
 
 class RangeOpt(ParticleSwarmOpt):
@@ -261,19 +259,21 @@ class RangeOpt(ParticleSwarmOpt):
 
 
 if __name__ == "__main__":
-    from utils import rosenbrock_func
+    from utils import auckley_func
+
+    plt.rcParams["figure.figsize"] = [9, 4.8]
 
 
     class My_PSO(RangeOpt):
-        coord_range = np.array([[-0, 1]] * 2, dtype=DTYPE) * 2
+        coord_range = np.array([[-1, 1]] * 2, dtype=DTYPE) * 10
 
         def fitness(self, particle):
-            return - rosenbrock_func(particle)
+            return - auckley_func(particle)
 
 
     # 重写粒子群优化器, 并初始化
-    pso = My_PSO(100)
-    best, log = pso.fit(500, vis_itv=5)
+    pso = My_PSO(50)
+    best, log = pso.fit(200, vis_itv=1)
     print(best)
     print(log)
     plt.show()

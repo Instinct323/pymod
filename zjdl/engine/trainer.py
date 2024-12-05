@@ -136,8 +136,8 @@ class Trainer:
         for f in files: torch.save(ckpt_kwd, self.project / f)
 
     def bp_gradient(self, loss) -> bool:
+        self._optim.zero_grad()
         self._scaler.scale(loss).backward()
         self._scaler.step(self._optim)
         self._scaler.update()
-        self._optim.zero_grad()
         return torch.isfinite(loss).item()

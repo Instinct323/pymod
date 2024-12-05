@@ -5,8 +5,9 @@ import cv2
 from lxml import etree
 
 
-def shrink_img(src, dst, width=720, tag="img", encoding="utf-8"):
-    """Resize image to width."""
+def shrink_img(src, dst=None, width=720, tag="img", encoding="utf-8"):
+    """ Resize image to width."""
+    if dst is None: dst = src
     src = Path(src)
     root = src.parent
     text = src.read_text(encoding="utf-8")
@@ -24,6 +25,6 @@ def shrink_img(src, dst, width=720, tag="img", encoding="utf-8"):
 
 
 if __name__ == '__main__':
-    root = Path(r"D:\Workbench\Information\Advanced Nonlinear Optimization\hw9\report")
+    root = Path(r"D:\Workbench\Information\Advanced Nonlinear Optimization\hw10\report")
 
-    shrink_img(root / "hw9.html", root / "hw9.html", 700)
+    shrink_img(root / "hw10.html", width=700)

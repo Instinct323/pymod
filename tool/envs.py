@@ -117,8 +117,4 @@ class CondaEnv(PythonEnv):
 
 
 if __name__ == "__main__":
-    os.chdir(os.getenv("dl"))
-    # elevate()
-
-    # PythonEnv.jupyter()
-    PythonEnv.install("diffusers")
+    PythonExtLibs.dump([r"D:\Workbench\ros_humble\py", r"D:\Workbench\ros_noetic\py"])
