@@ -4,8 +4,8 @@ import numpy as np
 class Crosstab:
     _div = lambda self, a, b, decimal=4, eps=1e-8: np.round(a / (b + eps), decimal)
 
-    def __init__(self, pred, target, num_classes=None):
-        num_classes = max(target) + 1 if num_classes is None else num_classes
+    def __init__(self, pred, target, num_classes: int = -1):
+        num_classes = max(target) + 1 if num_classes == -1 else num_classes
         empty = sum(len(y) for y in (pred, target)) == 0
         assert empty or all("int" in str(y.dtype) for y in (pred, target)), \
             "Only integer can be used to represent categories"

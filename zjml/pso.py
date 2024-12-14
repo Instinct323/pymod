@@ -11,38 +11,44 @@ EPS = 1e-8
 
 class Scheduler:
     """ 优化参数调度器
-        :param lr: 学习率
+        :param dt: 单位时间
         :param w_self: 自身经验权重
         :param w_other: 群体经验权重
-        :param w_inertia: 惯性权重
-        :param t_exploration: 随机搜索的时间比例"""
-    lr = property(lambda self: self.cur[0])
+        :param w_inertia: 惯性权重"""
+    dt = property(lambda self: self.cur[0])
     w_self = property(lambda self: self.cur[1])
     w_other = property(lambda self: self.cur[2])
     w_inertia = property(lambda self: self.cur[3])
-    w_exploration = property(lambda self: self.cur[4])
 
     def __init__(self,
-                 lr: float = .2,
+                 dt: float = .2,
                  w_self: float = 2.,
-                 w_other: float = 1.,
-                 w_inertia: float = 0.5,
-                 t_exploration: float = 0.5):
-        self.org = np.array([lr, w_self, w_other, w_inertia, t_exploration], dtype=DTYPE)
+                 w_other: float = 2.,
+                 w_inertia: float = 1.):
+        self.org = np.array([dt, w_self, w_other, w_inertia], dtype=DTYPE)
         self.cur = self.org.copy()
 
     def step(self, progress: float):
-        to_decay = [0, 1, 3]
+        # modify `self.cur` here
+        return self
+
+
+class DecayScheduler(Scheduler):
+    """ 优化参数调度器 (线性衰减)"""
+
+    def step(self, progress: float):
+        to_decay = [0]
         self.cur[to_decay] = self.org[to_decay] * ((1 - progress) * .9 + .1)
-        self.cur[-1] = max(0, self.org[-1] - progress)
         return self
 
 
 class ParticleSwarmOpt:
-    """ 粒子群优化器
+    """ 粒子群优化器 (reference: https://zhuanlan.zhihu.com/p/346355572)
         :param n: 粒子群规模
         :param elite_radio: 精英粒子百分比
         :param best_unit: 已知最优个体"""
+    b_rm_dup = True
+    fig_id = 323
 
     def __init__(self,
                  n: int,
@@ -67,7 +73,7 @@ class ParticleSwarmOpt:
         self.fit_vec = self.fitness(self.particle).astype(DTYPE)
         self.loc_best = [np.zeros_like(self.particle), self.fit_vec.copy()]
         # 用于可视化
-        self.log = pd.DataFrame(columns=["fit-best", "fit-std", "n-unique"])
+        self.log = pd.DataFrame(columns=["fit-best", "fit-mean", "r-unique"])
         self.std_ema = None
 
     def generate(self, n: int) -> np.ndarray:
@@ -79,7 +85,7 @@ class ParticleSwarmOpt:
         raise NotImplementedError
 
     def revisal(self):
-        """ 粒子修正 (e.g., 越界处理)"""
+        """ 粒子修正 (e.g., 越界处理; 默认为空)"""
         return
 
     def fit(self,
@@ -87,11 +93,12 @@ class ParticleSwarmOpt:
             sche: Optional[Scheduler] = None,
             patience: int = np.inf,
             vis_itv: Union[float, int] = 0,
-            prefix: str = "PSO-fit") -> float:
+            plt_video: Optional["PltVideo"] = None):
         """ :param epochs: 训练轮次
             :param sche: 优化参数调度器
             :param patience: 允许搜索无进展的次数
             :param vis_itv: 可视化的时间间隔 (比例 / 轮次)"""
+        prefix = "PSO-fit"
         sche = sche or Scheduler()
         # 可视化间隔
         assert vis_itv >= 0
@@ -99,29 +106,29 @@ class ParticleSwarmOpt:
         pbar = trange(epochs)
         for i in pbar:
             sche.step(i / epochs)
-            # 收敛检测
             self._update()
-            if vis_itv and i % vis_itv == 0: self.visualize()
+            self.visualize(i, vis_itv, plt_video)
+            # 收敛检测
             if self._angry == patience: break
-            # 粒子互相影响下产生的移动量
-            move_pace = (np.random.uniform(0, sche.w_self, [self._n, 1]) * self._motion_from_self()
-                         + np.random.uniform(0, sche.w_other, [self._n, 1]) * self._motion_from_other())
-            # 根据轮次生成随机移动量
-            if sche.w_exploration:
-                self._angry = 0
-                bound = np.abs(move_pace).mean(axis=0) * sche.w_exploration + EPS
-                move_pace += np.random.uniform(-bound, bound, self.particle.shape)
+            # 粒子互相影响下产生的速度
+            v = (np.random.uniform(0, sche.w_self, [self._n, 1]) * self._vel_from_self()
+                 + np.random.uniform(0, sche.w_other, [self._n, 1]) * self._vel_from_other())
             # 移动粒子: 吸引力 + 惯量 * 系数
-            self.particle += (move_pace + sche.w_inertia * self.inertia) * sche.lr
-            self.inertia = move_pace
+            self.particle += (v + sche.w_inertia * self.inertia) * sche.dt
+            self.inertia = v
             # 展示进度
             pbar.set_description((f"%-10s" + "%-10.4g") % (prefix, self.bestY))
         pbar.close()
         return self.bestX, self.log
 
-    def visualize(self, m=0.02):
-        """ 可视化粒子群"""
-        n = self.particle.shape[-1]
+    def visualize(self,
+                  i: int,
+                  vis_itv: int,
+                  plt_video: ["PltVideo"] = None,
+                  m: float = 0.02):
+        """ 辅助函数: 可视化粒子群"""
+        if not vis_itv or i % vis_itv: return
+        n = min(3, self.particle.shape[-1])
         # 根据适应度函数决定颜色, 大小
         particle = np.append(self.particle, self.bestX[None], axis=0)
         fmin = self.fit_vec.min()
@@ -138,14 +145,11 @@ class ParticleSwarmOpt:
         lb = mean - std
         ub = mean + std
         # 初始化画布
-        plt.figure(323)
+        plt.figure(self.fig_id)
         plt.clf()
-        fig = plt.subplot2grid((1, 3), (0, 0), colspan=2, **(dict(projection='3d') if n > 2 else {}))
-        plt.title("particle")
-        # fixme: 可视化粒子惯性, normal_i 归零时崩溃
-        # normal_i = std.mean() * self.inertia / (np.linalg.norm(self.inertia, axis=-1).max() + EPS) / 20
-        # fig.quiver(*self.particle[:, :n].T, *normal_i[:, :n].T, color="gray", alpha=0.5)
         # 可视化粒子位置
+        grids = plt.subplot2grid((1, 3), (0, 0), colspan=2, **(dict(projection='3d') if n > 2 else {}))
+        plt.title(f"best-fit: {self.bestY:f}")
         plt.grid(True)
         if n == 1:
             plt.xlabel("x")
@@ -154,46 +158,55 @@ class ParticleSwarmOpt:
             plt.xlim(lb[0], ub[0])
         else:
             for i, a in enumerate("xyz"[:n]):
-                getattr(fig, f"set_{a}label")(f"x{i + 1}")
-                getattr(fig, f"set_{a}lim")(lb[i], ub[i])
-            fig.scatter(*particle[:, :n].T, **kwargs)
+                getattr(grids, f"set_{a}label")(f"x{i + 1}")
+                getattr(grids, f"set_{a}lim")(lb[i], ub[i])
+            grids.scatter(*particle[:, :n].T, **kwargs)
         # 可视化适应度曲线
         plt.subplot(2, 3, 3)
         plt.ylabel("fitness")
         plt.grid(True)
-        plt.plot(self.log["fit-best"], color="deepskyblue")
+        plt.plot(self.log["fit-best"], color="deepskyblue", label="best")
+        # plt.plot(self.log["fit-mean"], color="orange", label="mean")
+        # plt.legend()
         # 可视化有效粒子数目
         plt.subplot(2, 3, 6)
         plt.xlabel("iteration")
-        plt.ylabel("n-unique")
-        plt.ylim(0, self._n * 1.2)
+        plt.ylabel("r-unique")
+        plt.ylim(0, 1.15)
         plt.grid(True)
-        plt.plot(self.log["n-unique"], color="deepskyblue")
-        plt.fill_between(np.arange(len(self.log)), self.log["n-unique"], color="deepskyblue", alpha=0.3)
+        plt.plot(self.log["r-unique"], color="deepskyblue")
+        plt.hlines(1, 0, len(self.log) - 1, color="gray", linestyle="--")
+        plt.fill_between(np.arange(len(self.log)), self.log["r-unique"], color="deepskyblue", alpha=0.3)
         # 结束绘制
         plt.tight_layout()
+        if plt_video: plt_video.write()
         plt.pause(1e-3)
 
     def _particle_slice(self, cond: np.ndarray) -> None:
-        """ 粒子切片"""
+        """ 辅助函数: 粒子切片"""
         self.particle = self.particle[cond]
         self.inertia = self.inertia[cond]
         self.fit_vec = self.fit_vec[cond]
         self.loc_best = [x[cond] for x in self.loc_best]
 
-    def _update(self):
-        self.revisal()
-        # 去除无限值
-        self.fit_vec = self.fitness(self.particle).astype(DTYPE)
-        self._particle_slice(np.isfinite(self.fit_vec))
-        # 重叠检测
-        self._particle_slice(np.argsort(self.fit_vec)[::-1])
+    def _unique_mask(self):
         order = np.arange(len(self.fit_vec))
         for i in np.where(np.diff(self.fit_vec) > - EPS)[0]:
             if np.linalg.norm(self.particle[i] - self.particle[i + 1]) < EPS:
                 order[i + 1] = -1
-        order = order[order != -1]
-        self._particle_slice(order)
+        return order[order != -1]
+
+    def _update(self):
+        """ 主流程: 更新粒子群"""
+        self.revisal()
+        # 去除无限值
+        self.fit_vec = self.fitness(self.particle).astype(DTYPE)
+        self._particle_slice(np.isfinite(self.fit_vec))
+        # 按照适应度降序排序
+        self._particle_slice(np.argsort(self.fit_vec)[::-1])
+        # 重叠检测
+        order = self._unique_mask()
+        if self.b_rm_dup: self._particle_slice(order)
         # 更新全局最优的个体
         if self.fit_vec[0] > self.bestY:
             self._angry = 0
@@ -201,8 +214,7 @@ class ParticleSwarmOpt:
             self.bestY = self.fit_vec[0]
         else:
             self._angry += 1
-        self.log.loc[len(self.log)] = [
-            self.bestY, np.sqrt(np.square(self.fit_vec - self.bestY).mean()), len(order)]
+        self.log.loc[len(self.log)] = [self.bestY, self.fit_vec.mean(), len(order) / self._n]
         # 群体补全
         need = self._n - len(self.particle)
         if need:
@@ -214,7 +226,8 @@ class ParticleSwarmOpt:
             self.loc_best[0] = np.concatenate([self.loc_best[0], new], axis=0)
             self.loc_best[1] = np.concatenate([self.loc_best[1], fit])
 
-    def _motion_from_self(self) -> np.ndarray:
+    def _vel_from_self(self) -> np.ndarray:
+        """ 主流程: 自身经验的影响"""
         better = np.sign(self.fit_vec - self.loc_best[1])
         direct = self.loc_best[0] - self.particle
         # direct /= np.linalg.norm(direct, axis=-1, keepdims=True) + EPS
@@ -224,7 +237,8 @@ class ParticleSwarmOpt:
         self.loc_best[1][idx] = self.fit_vec[idx]
         return direct * better[:, None]
 
-    def _motion_from_other(self) -> np.ndarray:
+    def _vel_from_other(self) -> np.ndarray:
+        """ 主流程: 群体经验的影响"""
         # 适应度
         leader = np.arange(self._elite_size)
         fitness = np.append(self.fit_vec[leader], self.bestY)
@@ -240,7 +254,6 @@ class ParticleSwarmOpt:
         # 粒子间的影响力
         influence = fitness * dist
         return direct[np.arange(len(direct)), influence.argmax(axis=-1)]
-        # return motion / (np.linalg.norm(motion, axis=-1, keepdims=True) + EPS)
 
 
 class RangeOpt(ParticleSwarmOpt):
@@ -270,10 +283,22 @@ if __name__ == "__main__":
         def fitness(self, particle):
             return - auckley_func(particle)
 
+        @classmethod
+        def main(cls):
+            import cv2
+            from pathlib import Path
+            from pymod.zjplot.utils import PltVideo
+            from pymod.utils.zjcv import VideoWriter
 
-    # 重写粒子群优化器, 并初始化
-    pso = My_PSO(50)
-    best, log = pso.fit(200, vis_itv=1)
-    print(best)
-    print(log)
-    plt.show()
+            root = Path(r"D:\Downloads")
+            cls.b_rm_dup = False
+
+            file = root / ("auck-" + ("best.mp4" if cls.b_rm_dup else "w-dup.mp4"))
+            with PltVideo(323, VideoWriter(file, cvt_color=cv2.COLOR_RGB2BGR)) as pv:
+                # 初始化 PSO, 开始优化
+                best, log = My_PSO(100).fit(200, DecayScheduler(), vis_itv=1, plt_video=pv)
+            print(best, log, sep="\n")
+            plt.show()
+
+
+    My_PSO.main()

@@ -47,17 +47,18 @@ if __name__ == "__main__":
         src = Path("D:/Information/Data/dataset/dali-star-trails")
         raw = src.parent / "raw.mp4"
         if src.is_dir() and not raw.is_file():
-            img2video(src.iterdir(), raw)
+            with VideoWriter(raw) as vw:
+                for img in src.iterdir():
+                    vw.write(img)
         # 星轨效果
         target = src.parent / "target.mp4"
         dst = src.parent / "final.mp4"
         if target.is_file() and not dst.is_file():
-            result = []
-            for img in star_trails_video(VideoCap(target)):
-                result.append(img)
-                cv2.imshow("s", img)
-                cv2.waitKey(1)
-            img2video(result, dst)
+            with VideoWriter(dst) as vw:
+                for img in star_trails_video(VideoCap(target)):
+                    vw.write(img)
+                    cv2.imshow("s", img)
+                    cv2.waitKey(1)
 
     # exp 2: 星轨图像制作
     elif i == 1:

@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Union, Iterable
+from typing import Union
 
 import cv2
 import numpy as np
@@ -70,33 +70,49 @@ def img_mul(img, alpha):
     return np.uint8(np.clip((img * alpha).round(), a_min=0, a_max=255))
 
 
-def img2video(src: Iterable,
-              dst: Union[Path, str],
-              width: int = 1280,
-              aspect_radio: float = 4 / 3,
-              fps: int = 30,
-              pad: int = 255):
-    """ 图像序列转视频
-        :param src: 图像文件列表 / 图像数组
-        :param dst: 视频文件名称
+class VideoWriter(cv2.VideoWriter):
+    """ :param dst: 视频文件名称 (*.mp4)
         :param width: 视频宽度
         :param aspect_radio: 视频宽高比
         :param fps: 视频帧率
-        :param pad: 边界填充颜色"""
-    img_size = width, round(width / aspect_radio)
-    fourcc = cv2.VideoWriter_fourcc(*"H264")
-    assert Path(dst).suffix == ".mp4", "The video format must be mp4"
-    # 逐帧写入视频
-    video = cv2.VideoWriter(str(dst), fourcc, fps, img_size)
-    for img in src:
+        :param pad: 边界填充颜色
+        :param cvt_color: 颜色空间转换"""
+
+    def __init__(self,
+                 dst: Union[Path, str],
+                 width: int = 1920,
+                 aspect_radio: float = 4 / 3,
+                 fps: int = 30,
+                 pad: int = 255,
+                 cvt_color: int = None):
+        self.img_size = width, round(width / aspect_radio)
+        self.pad = pad
+        self.cvt_color = cvt_color
+        fourcc = cv2.VideoWriter_fourcc(*"H264")
+        assert Path(dst).suffix == ".mp4", "The video format must be mp4"
+        super().__init__(str(dst), fourcc, fps, self.img_size)
+
+    def write(self, img):
         if not isinstance(img, np.ndarray):
             # 从其他数据类型加载图像
             if isinstance(img, (str, Path)):
                 img = load_img(img)
             else:
                 raise TypeError("Unrecognized image type")
-        video.write(letter_box(img, img_size, pad=pad)[0])
-    video.release()
+        # 颜色空间变换
+        if self.cvt_color is not None: img = cv2.cvtColor(img, self.cvt_color)
+        super().write(letter_box(img, self.img_size, pad=self.pad)[0])
+
+    def save(self):
+        self.release()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.save()
+        if exc_type: return False
+        return self
 
 
 class VideoCap(cv2.VideoCapture):

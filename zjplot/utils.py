@@ -116,8 +116,8 @@ def bar2d(dataset, xticks=None, labels=None, colors=None, alpha=1):
     bias = np.linspace(-.5, .5, dataset.shape[0] + 2)[1:-1]
     w = .7 * (.5 - bias[-1])
     # 处理缺失值信息
-    labels = [None] * len(bias) if labels is None else labels
-    colors = [None] * len(bias) if colors is None else colors
+    labels = labels or (None,) * len(bias)
+    colors = colors or (None,) * len(bias)
     for i, y in enumerate(dataset):
         plt.bar(x + bias[i], y, width=w, label=labels[i], color=colors[i], alpha=alpha)
     # 绘制标签信息
@@ -129,7 +129,7 @@ def hotmap(array, fig=None, pos=0, fformat="%f", cmap="Blues", size=10, title=No
            xticks=None, yticks=None, xlabel=None, ylabel=None, xrotate=0, yrotate=90):
     pos = np.array([-.1, .05]) + pos
     # 去除坐标轴
-    fig = plt.subplot() if fig is None else fig
+    fig = fig or plt.subplot()
     plt.title(title)
     for key in "right", "top", "left", "bottom":
         fig.spines[key].set_color("None")
@@ -147,6 +147,52 @@ def hotmap(array, fig=None, pos=0, fformat="%f", cmap="Blues", size=10, title=No
     plt.xticks(range(len(array[0])), xticks, rotation=xrotate)
     plt.yticks(range(len(array)), yticks, rotation=yrotate)
     plt.xlabel(xlabel), plt.ylabel(ylabel)
+
+
+class PltVideo:
+    """ :param fig_id: plt.figure 的 id
+        :param video_writer: zjcv.VideoWriter 对象
+
+        :example:
+        >>> import cv2
+        >>> from pymod.utils import zjcv
+        >>>
+        >>> def draw(pv):
+        ...     plt.figure(100)
+        ...     plt.clf()
+        ...     plt.scatter(np.arange(100), np.random.random(100))
+        ...     pv.write()
+        ...     plt.pause(1e-3)
+        >>>
+        >>> with PltVideo(100, zjcv.VideoWriter(r"C:\Downloads\demo.mp4", cvt_color=cv2.COLOR_RGB2BGR)) as pv:
+        ...     for i in range(90): draw(pv)
+        """
+
+    def __init__(self,
+                 fig_id: int,
+                 video_writer: "VideoWriter"):
+        self.fig_id = fig_id
+        for k in "write", "save", "__enter__", "__exit__":
+            assert hasattr(video_writer, k), f"{type(video_writer).__name__} has no function {k}"
+        self.video_writer = video_writer
+
+    def write(self):
+        canvas = plt.figure(self.fig_id).canvas
+        canvas.draw()
+        img = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
+        img = img.reshape(canvas.get_width_height()[::-1] + (3,))
+        self.video_writer.write(img)
+
+    def save(self):
+        self.video_writer.save()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.save()
+        if exc_type: return False
+        return self
 
 
 if __name__ == "__main__":

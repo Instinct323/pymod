@@ -51,6 +51,7 @@ class ReceptiveField:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type: return False
         del self
 
     def compare(self, theoretical=True, original=True, state_dict=None, **imshow_kw):

@@ -7,7 +7,7 @@ from lxml import etree
 
 def shrink_img(src, dst=None, width=720, tag="img", encoding="utf-8"):
     """ Resize image to width."""
-    if dst is None: dst = src
+    dst = dst or src
     src = Path(src)
     root = src.parent
     text = src.read_text(encoding="utf-8")

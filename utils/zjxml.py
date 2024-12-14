@@ -17,7 +17,7 @@ def dump_tree(data, parent: Element = None):
         :param data: 需要存储的数据
         :param parent: 双亲结点"""
     # 默认 parent 为 None，创建 root
-    if parent is None: parent = Element("root")
+    parent = parent or Element("root")
     if isinstance(data, dict):
         data, fold_flag = data.copy(), True
         for k, v in data.items():

@@ -95,6 +95,7 @@ class TcpSocket(socket.socket):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self != self._conn and self._conn: self._conn.close()
+        if exc_type: return False
         self.close()
 
     @staticmethod

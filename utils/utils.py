@@ -174,7 +174,7 @@ class Path(pathlib.WindowsPath if os.name == "nt" else pathlib.PosixPath, pathli
     def unzip(self, path=None, pwd=None):
         import zipfile
         f = zipfile.ZipFile(self, mode="r")
-        f.extractall(self.parent if path is None else path, pwd=pwd)
+        f.extractall(path or self.parent, pwd=pwd)
 
 
 if __name__ == "__main__":
