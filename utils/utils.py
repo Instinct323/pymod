@@ -111,6 +111,7 @@ class Path(pathlib.WindowsPath if os.name == "nt" else pathlib.PosixPath, pathli
             data = f_load_dump(None, **fld_kwd)
             LOGGER.info(f"Load <{type(data).__name__}> from {self}")
         else:
+            self.parent.mkdir(parents=True, exist_ok=True)
             data = fget()
             f_load_dump(data, **fld_kwd)
         return data

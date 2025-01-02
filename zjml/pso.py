@@ -12,20 +12,20 @@ EPS = 1e-8
 class Scheduler:
     """ 优化参数调度器
         :param dt: 单位时间
+        :param w_inertia: 惯性权重
         :param w_self: 自身经验权重
-        :param w_other: 群体经验权重
-        :param w_inertia: 惯性权重"""
+        :param w_other: 群体经验权重"""
     dt = property(lambda self: self.cur[0])
-    w_self = property(lambda self: self.cur[1])
-    w_other = property(lambda self: self.cur[2])
-    w_inertia = property(lambda self: self.cur[3])
+    w_inertia = property(lambda self: self.cur[1])
+    w_self = property(lambda self: self.cur[2])
+    w_other = property(lambda self: self.cur[3])
 
     def __init__(self,
                  dt: float = .2,
+                 w_inertia: float = 1.2,
                  w_self: float = 2.,
-                 w_other: float = 2.,
-                 w_inertia: float = 1.):
-        self.org = np.array([dt, w_self, w_other, w_inertia], dtype=DTYPE)
+                 w_other: float = 2.):
+        self.org = np.array([dt, w_inertia, w_self, w_other], dtype=DTYPE)
         self.cur = self.org.copy()
 
     def step(self, progress: float):
@@ -37,7 +37,7 @@ class DecayScheduler(Scheduler):
     """ 优化参数调度器 (线性衰减)"""
 
     def step(self, progress: float):
-        to_decay = [0]
+        to_decay = [0, 1]
         self.cur[to_decay] = self.org[to_decay] * ((1 - progress) * .9 + .1)
         return self
 
@@ -69,7 +69,7 @@ class ParticleSwarmOpt:
         # 生成粒子群
         self.particle = self.generate(self._n)
         if isinstance(self.bestX, np.ndarray): self.particle[0] = self.bestX
-        self.inertia = np.zeros_like(self.particle)
+        self.velocity = np.zeros_like(self.particle)
         self.fit_vec = self.fitness(self.particle).astype(DTYPE)
         self.loc_best = [np.zeros_like(self.particle), self.fit_vec.copy()]
         # 用于可视化
@@ -114,8 +114,8 @@ class ParticleSwarmOpt:
             v = (np.random.uniform(0, sche.w_self, [self._n, 1]) * self._vel_from_self()
                  + np.random.uniform(0, sche.w_other, [self._n, 1]) * self._vel_from_other())
             # 移动粒子: 吸引力 + 惯量 * 系数
-            self.particle += (v + sche.w_inertia * self.inertia) * sche.dt
-            self.inertia = v
+            self.particle += (v + sche.w_inertia * self.velocity) * sche.dt
+            self.velocity = v
             # 展示进度
             pbar.set_description((f"%-10s" + "%-10.4g") % (prefix, self.bestY))
         pbar.close()
@@ -185,7 +185,7 @@ class ParticleSwarmOpt:
     def _particle_slice(self, cond: np.ndarray) -> None:
         """ 辅助函数: 粒子切片"""
         self.particle = self.particle[cond]
-        self.inertia = self.inertia[cond]
+        self.velocity = self.velocity[cond]
         self.fit_vec = self.fit_vec[cond]
         self.loc_best = [x[cond] for x in self.loc_best]
 
@@ -221,7 +221,7 @@ class ParticleSwarmOpt:
             new = self.generate(need)
             fit = self.fitness(new)
             self.particle = np.concatenate([self.particle, new], axis=0)
-            self.inertia = np.concatenate([self.inertia, np.zeros([need, self.particle.shape[-1]])], axis=0)
+            self.velocity = np.concatenate([self.velocity, np.zeros([need, self.particle.shape[-1]])], axis=0)
             self.fit_vec = np.concatenate([self.fit_vec, fit])
             self.loc_best[0] = np.concatenate([self.loc_best[0], new], axis=0)
             self.loc_best[1] = np.concatenate([self.loc_best[1], fit])

@@ -27,10 +27,10 @@ def cases(rows: Union[tuple, list],
           newline: str = "\n") -> str:
     ret = [r"\begin{cases}"]
     for r in rows:
-        ret.append(str(r) + r" \\")
+        ret.append((" & ".join(map(str, r)) if isinstance(r, (tuple, list)) else str(r)) + r" \\")
     ret.append(r"\end{cases}")
     return newline.join(ret)
 
 
 if __name__ == '__main__':
-    print(cases(["x = 1", "y = 2"]))
+    print(matrix(["K_p", "K_i", "K_d"], (1, 3)))

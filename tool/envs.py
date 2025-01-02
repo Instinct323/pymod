@@ -1,9 +1,8 @@
-import os
 import shutil
 import sys
 from pathlib import Path
 
-from pymod.utils.zjcmd import execute
+from pymod.utils.zjcmd import *
 
 USERPATH = Path(os.path.expanduser("~"))
 SCRIPTS = Path(sys.executable).parent  # Default for Linux
@@ -48,6 +47,15 @@ class PythonEnv:
     _pip = SCRIPTS / "pip"
     _jupyter = SCRIPTS / "jupyter"
 
+    def __init__(self):
+        if os.name == "nt":
+            root = SCRIPTS.parent
+            lib = root / "Library"
+            for p in (root, SCRIPTS, lib / "bin", lib / "mingw-w64" / "bin", lib / "usr" / "bin"):
+                add_path(p)
+        else:
+            raise NotImplementedError
+
     @classmethod
     def install(cls, pkg, uninstall=False, upgrade=False):
         # 安装路径: python -m site
@@ -67,7 +75,7 @@ class PythonEnv:
             raise NotImplementedError
 
     @classmethod
-    def jupyter(cls, root="D:/Workbench", cfg=False, reinstall=False):
+    def jupyter(cls, root=".", cfg=False, reinstall=False):
         if reinstall:
             tar = ("jupyter", "jupyter-client", "jupyter-console", "jupyter-core",
                    "jupyterlab-pygments", "jupyterlab-widgets", "notebook",
@@ -117,4 +125,4 @@ class CondaEnv(PythonEnv):
 
 
 if __name__ == "__main__":
-    PythonEnv.install("lxml")
+    PythonEnv().install("geopandas")

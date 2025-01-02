@@ -7,6 +7,13 @@ def execute(cmd, check=True):
     return ret
 
 
+def add_path(p, left=True):
+    pair = str(p), os.environ["Path"]
+    pair = pair if left else pair[::-1]
+    os.environ["Path"] = os.pathsep.join(pair)
+    return os.environ["Path"]
+
+
 def colorstr(msg, *setting):
     setting = ("blue", "bold") if not setting else ((setting,) if isinstance(setting, str) else setting)
     # Colors a string https://en.wikipedia.org/wiki/ANSI_escape_code

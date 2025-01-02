@@ -2,6 +2,28 @@ import bisect
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+
+
+def pearson(x, eps=1e-8):
+    """ 皮尔逊相关系数
+        :param x: [n, 2]"""
+    assert x.shape[1] == 2 and x.ndim == 2
+    mean = x.mean(axis=0)
+    unbiased = x - mean
+    cov = np.mean(unbiased[:, 0] * unbiased[:, 1])
+    sigma = np.sqrt(np.square(x).mean(axis=0) - np.square(mean))
+    return cov / (np.prod(sigma) + eps)
+
+
+def grading_mask(x: pd.Series, bounds: list, float_fmt="%.2f"):
+    """ 分级掩码"""
+    labels = ([f"<{float_fmt}" % bounds[0]] +
+              [(f"{float_fmt}~{float_fmt}" % (bounds[i], bounds[i + 1])) for i in range(len(bounds) - 1)] +
+              [f">{float_fmt}" % bounds[-1]])
+    bounds = [-np.inf] + list(bounds) + [np.inf]
+    mask = np.stack([(bounds[i] <= x) & (x < bounds[i + 1]) for i in range(len(bounds) - 1)], axis=1)
+    return pd.DataFrame(mask, columns=labels, index=x.index)
 
 
 def rosenbrock_func(x, a=1, b=100):

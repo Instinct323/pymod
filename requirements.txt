@@ -19,7 +19,7 @@ timm
 # --- deploy ---
 netron
 onnxruntime-gpu
-openvino-dev[onnx]
+# openvino-dev[onnx]
 
 # --- Qt ---
 pyqt5

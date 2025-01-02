@@ -1,7 +1,10 @@
 import logging
 
+import matplotlib.patches as pch
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
 
 logging.basicConfig(format="%(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
@@ -16,6 +19,10 @@ blue = "deepskyblue"
 purple = "mediumpurple"
 pink = "violet"
 rainbow = [red, orange, yellow, green, cyan, blue, purple, pink]
+
+fav1 = ["#0ddbf5", "#1d9bf7", "#8386fc", "#303cf9", "#fe5357", "#fd7c1a", "#ffbd15", "#fcff07"]
+fav2 = ["#444577", "#c65861", "#f3dee0", "#ffa725", "#ff6b62", "#be588d", "#58538b"]
+fav3 = ["#cb78a6", "#d35f00", "#f7ec44", "#009d73", "#fcb93e", "#0072b2", "#979797"]
 
 # fontdict: 小五号宋体
 SIMSUN = {"fontsize": 9, "family": "SimSun"}
@@ -149,6 +156,48 @@ def hotmap(array, fig=None, pos=0, fformat="%f", cmap="Blues", size=10, title=No
     plt.xlabel(xlabel), plt.ylabel(ylabel)
 
 
+def corrplot(df: pd.DataFrame,
+             conf: np.ndarray = None,
+             vmin: float = -1,
+             vmax: float = 1,
+             cmap: str = "coolwarm"):
+    """ 绘制相关系数矩阵图
+        :param df: 相关系数矩阵
+        :param conf: 相关系数矩阵的置信度 (0-1)"""
+    ax = sns.heatmap(df * 0, vmax=1, annot=df, fmt=".2f", cbar=False, cmap="binary", square=True,
+                     mask=np.tril(np.ones_like(df, dtype=bool)))
+    r = (np.array(conf) if np.any(conf) else np.ones_like(df)) / 2
+    cmap = plt.get_cmap(cmap)
+    # Colorbar
+    norm = plt.Normalize(vmin=vmin, vmax=vmax)
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    plt.colorbar(sm, ax=ax)
+    # Scatter
+    df = df.to_numpy()
+    for i in range(df.shape[0]):
+        for j in range(i, df.shape[1]):
+            ax.add_patch(pch.Circle((i + .5, j + .5), r[i, j], facecolor=cmap(norm(df[i, j]))))
+    return ax
+
+
+def residplot(x: np.ndarray,
+              y: np.ndarray,
+              pred: np.ndarray,
+              pred_color="deepskyblue",
+              line_color="gray",
+              gt_cmap="spring",
+              size=(5, 40)):
+    # Pred
+    plt.plot(x, pred, color=pred_color, zorder=0)
+    # Residual
+    cmap = plt.get_cmap(gt_cmap)
+    res = np.abs(y - pred)
+    s = res / res.max()
+    plt.vlines(x, y, pred, colors=line_color, linestyles='--', linewidth=1, zorder=-1)
+    plt.scatter(x, y, color=cmap(s), s=size[0] + (size[1] - size[0]) * s, zorder=1)
+
+
 class PltVideo:
     """ :param fig_id: plt.figure 的 id
         :param video_writer: zjcv.VideoWriter 对象
@@ -196,7 +245,9 @@ class PltVideo:
 
 
 if __name__ == "__main__":
-    y = np.random.random([100, 100])
-    regionplot(y[:, 0], y.mean(0), y.std(0), label="test")
-    plt.legend()
+    x = np.linspace(0, 4, 100)
+    pred = np.sin(x)
+    y = pred * np.random.normal(0, 1, 100)
+
+    residplot(x, y, pred)
     plt.show()
