@@ -157,26 +157,32 @@ def hotmap(array, fig=None, pos=0, fformat="%f", cmap="Blues", size=10, title=No
 
 
 def corrplot(df: pd.DataFrame,
-             conf: np.ndarray = None,
+             size: np.ndarray = None,
              vmin: float = -1,
              vmax: float = 1,
              cmap: str = "coolwarm"):
     """ 绘制相关系数矩阵图
         :param df: 相关系数矩阵
-        :param conf: 相关系数矩阵的置信度 (0-1)"""
+        :param size: 每个单元格的直径 (上三角)"""
+    assert df.index.equals(df.columns), "Index and columns must be the same"
+    # 显示上三角部分的相关系数标注
     ax = sns.heatmap(df * 0, vmax=1, annot=df, fmt=".2f", cbar=False, cmap="binary", square=True,
                      mask=np.tril(np.ones_like(df, dtype=bool)))
-    r = (np.array(conf) if np.any(conf) else np.ones_like(df)) / 2
+    r = (size if isinstance(size, np.ndarray) else np.ones_like(df)) / 2
+    # 获取颜色映射对象
     cmap = plt.get_cmap(cmap)
-    # Colorbar
+    # 创建一个归一化对象，用于将相关系数映射到颜色
     norm = plt.Normalize(vmin=vmin, vmax=vmax)
+    # 创建一个标量映射对象，用于创建颜色条
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
+    # 添加颜色条
     plt.colorbar(sm, ax=ax)
-    # Scatter
+    # 绘制相关系数矩阵的下三角部分
     df = df.to_numpy()
     for i in range(df.shape[0]):
         for j in range(i, df.shape[1]):
+            # 在每个单元格中绘制一个圆形，颜色根据相关系数值确定
             ax.add_patch(pch.Circle((i + .5, j + .5), r[i, j], facecolor=cmap(norm(df[i, j]))))
     return ax
 
@@ -196,6 +202,16 @@ def residplot(x: np.ndarray,
     s = res / res.max()
     plt.vlines(x, y, pred, colors=line_color, linestyles='--', linewidth=1, zorder=-1)
     plt.scatter(x, y, color=cmap(s), s=size[0] + (size[1] - size[0]) * s, zorder=1)
+
+
+def crop_white(files):
+    """ 原地裁剪图像白边"""
+    import cv2
+    for f in map(str, files):
+        img = cv2.imread(f)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        x, y, w, h = cv2.boundingRect(255 - gray)
+        cv2.imwrite(f, img[y:y + h, x:x + w])
 
 
 class PltVideo:
@@ -245,9 +261,6 @@ class PltVideo:
 
 
 if __name__ == "__main__":
-    x = np.linspace(0, 4, 100)
-    pred = np.sin(x)
-    y = pred * np.random.normal(0, 1, 100)
+    from pathlib import Path
 
-    residplot(x, y, pred)
-    plt.show()
+    crop_white(Path(r"C:\Downloads\tmp").glob("*.jpg"))

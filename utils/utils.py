@@ -95,6 +95,13 @@ def try_except(func):
     return handler
 
 
+def parse_txt_cfg(file, encoding="utf-8", comments="#"):
+    """ Supported syntax:
+        content     # comment """
+    with open(file, encoding=encoding) as f:
+        return list(filter(None, (s.split(comments)[0].strip() for s in f.read().splitlines())))
+
+
 class Path(pathlib.WindowsPath if os.name == "nt" else pathlib.PosixPath, pathlib.Path):
 
     def fsize(self, unit: str = "B"):
