@@ -1,9 +1,11 @@
 import numpy as np
 
-from scipy.spatial.transform import Rotation
+from scipy.spatial import transform
+
+SO3 = transform.Rotation
 
 
-class _PoseNd:
+class _SEn:
     dtype = np.float32
     dim = None
     # 位置, 各个轴的方向向量
@@ -17,6 +19,9 @@ class _PoseNd:
         if isinstance(csys, np.ndarray):
             assert csys.shape == self.s.shape
             self.s = csys
+
+    def __matmul__(self, other):
+        return self.rela_tf(other if isinstance(other, np.ndarray) else other.s)
 
     def abs_tf(self, tf):
         """ 绝对变换"""
@@ -38,16 +43,16 @@ class _PoseNd:
         axis = self.direction.T * length
         for i in range(self.dim):
             plt.plot(*zip(pos, pos + axis[i]), c=colors[i], label=labels[i], linewidth=linewidth)
+        plt.axis("equal")
 
     def __repr__(self):
         return str(self.s) + "\n"
 
 
-class Pose2d(_PoseNd):
+class SE2(_SEn):
     dim = 2
 
     def apply(self, x: np.ndarray, y: np.ndarray) -> tuple:
-        """ 局部坐标值 -> 全局坐标值"""
         return super().apply(x, y)
 
     def transform(self, dx: float = 0., dy: float = 0.,
@@ -64,52 +69,56 @@ class Pose2d(_PoseNd):
         return (self.rela_tf if relative else self.abs_tf)(mat)
 
 
-class Pose3d(_PoseNd):
+class SE3(_SEn):
     dim = 3
 
+    def as_vec7(self):
+        return np.concatenate((self.position, SO3.from_matrix(self.direction).as_quat()))
+
     def apply(self, x: np.ndarray, y: np.ndarray, z: np.ndarray) -> tuple:
-        """ 局部坐标值 -> 全局坐标值"""
         return super().apply(x, y, z)
+
+    def get_3DGS(self, size, scale=(1, 1, 1e-4)) -> np.ndarray:
+        eig = np.square(np.diag(scale))
+        cov = self.direction @ eig @ self.direction.T
+        return np.random.multivariate_normal(self.position, cov, size)
 
     @classmethod
     def trans(cls, dx: float = 0., dy: float = 0., dz: float = 0.) -> np.ndarray:
-        """ 齐次变换矩阵 - 平移"""
         return np.concatenate((np.eye(4, 3, dtype=cls.dtype),
                                np.array((dx, dy, dz, 1))[:, None]), axis=-1)
 
     @classmethod
     def rot(cls, yaw=0, pitch=0, roll=0) -> np.ndarray:
-        """ 齐次变换矩阵 - 旋转
-            :param yaw: 偏航角, 绕 z 轴旋转
+        """ :param yaw: 偏航角, 绕 z 轴旋转
             :param pitch: 俯仰角, 绕 y 轴旋转
             :param roll: 滚转角, 绕 x 轴旋转
 
             :example:
             >>> rpy = [30, 20, 10]
-            >>> rot = Pose3d.rot
+            >>> rot = SE3.rot
 
             >>> a = rot(*rpy[::-1])
             >>> b = rot(yaw=rpy[2]) @ rot(pitch=rpy[1]) @ rot(roll=rpy[0])
             >>> np.square(a - b).sum()
             8.049117e-15"""
         mat = np.eye(4, dtype=cls.dtype)
-        mat[:3, :3] = Rotation.from_euler("ZYX", [yaw, pitch, roll], degrees=True).as_matrix()
+        mat[:3, :3] = SO3.from_euler("ZYX", [yaw, pitch, roll], degrees=True).as_matrix()
         return mat
 
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    rot = Pose3d.rot
-    trans = Pose3d.trans
+    rot = SE3.rot
+    trans = SE3.trans
 
-    se = Pose3d().abs_tf(rot(30, 20)).abs_tf(trans(1, 2, 3))
+    se = SE3().rela_tf(rot(30, 20)).abs_tf(trans(1, 2, 3))
 
     fig = plt.subplot(projection="3d")
 
-    p = np.array([1, 2, 3])
-    for i in range(10):
-        se.s[:3, :3] *= 1.1
-        fig.scatter(*se.apply(*p), c="r")
+    fig.scatter(*se.get_3DGS(3000, eigval=(1, 2, 0)).T,
+                color="gray", s=10)
+    se.plot_coord_sys(3)
 
     plt.show()

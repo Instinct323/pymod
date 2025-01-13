@@ -3,7 +3,7 @@ import time
 import matplotlib.patches as pch
 
 # coord.py 详见: https://blog.csdn.net/qq_55745968/article/details/129912954
-from .pose import Pose3d, Pose2d
+from .pose import SE3, SE2
 from .utils import *
 
 ROUND_EDGE = 30  # 圆等效多边形边数
@@ -57,9 +57,9 @@ class Spot:
                 loc=self.r, scale=self.r / 2, size=lack), self.r / 4)))
             self.color = np.concatenate((self.color, np.random.choice(self.colors, size=lack)))
 
-    def __call__(self, fig, csys: Pose2d = None):
+    def __call__(self, fig, csys: SE2 = None):
         """ 刷新斑点的透明度
-            :param csys: Pose2d 对象"""
+            :param csys: SE2 对象"""
         x = time.time() - self.start
         # y = 4/d^2 x (d - x)
         alpha = self.alpha * np.maximum(4 / self.deltas ** 2 * x * (self.deltas - x), 0)
@@ -70,12 +70,12 @@ class Spot:
         self.produce(alpha > 0)
 
 
-def cylinder(figure, csys: Pose3d,
+def cylinder(figure, csys: SE3,
              R: float, h: float, r: float = 0,
              smooth: int = 2, **plot_kwd):
     """ 以 csys 的 z 轴为主轴绘制圆柱
         :param figure: 3D 工作站对象
-        :param csys: Pose3d 齐次坐标系
+        :param csys: SE3 齐次坐标系
         :param R: 圆柱底面外径
         :param r: 圆柱底面内径
         :param h: 圆柱高度
@@ -95,14 +95,14 @@ def cylinder(figure, csys: Pose3d,
     x, y = np.cos(phi) * radius, np.sin(phi) * radius
     z = np.zeros_like(x)
     for dz in (-h / 2, h / 2):
-        s = csys.rela_tf(Pose3d.trans(dz=dz))
+        s = csys.rela_tf(SE3.trans(dz=dz))
         figure.plot_surface(*s.apply(x, y, z), **plot_kwd)
 
 
-def ball(figure, csys: Pose3d, r: float, **plot_kwd):
+def ball(figure, csys: SE3, r: float, **plot_kwd):
     """ 绘制球体
         :param figure: 3D 工作站对象
-        :param csys: Pose3d 齐次坐标系
+        :param csys: SE3 齐次坐标系
         :param r: 球体半径"""
     theta = np.linspace(0, 2 * np.pi, ROUND_EDGE, dtype=DTYPE)
     phi = np.linspace(0, np.pi, ROUND_EDGE // 2, dtype=DTYPE)
@@ -113,12 +113,12 @@ def ball(figure, csys: Pose3d, r: float, **plot_kwd):
                                     np.cos(phi) * r), **plot_kwd)
 
 
-def rubik_cube(figure, csys: Pose3d,
+def rubik_cube(figure, csys: SE3,
                length: float, hollow: float = 0.7, smooth: int = 10,
                colors: list = [red, orange, yellow, green, cyan, blue, purple, pink], **plot_kwd):
     """ 绘制魔方
         :param figure: 3D 工作站对象
-        :param csys: Pose3d 齐次坐标系
+        :param csys: SE3 齐次坐标系
         :param length: 边长
         :param smooth: 魔方的细粒度"""
     x = np.linspace(-length / 2, length / 2, smooth + 1)
@@ -149,7 +149,7 @@ if __name__ == "__main__":
                                         facecolor="red", alpha=0.5, edgecolor="w"))
 
 
-        csys = Pose2d().transform(dx=2)
+        csys = SE2().transform(dx=2)
         print(csys)
         # pathpatch(fig), plt.show()
 
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     elif index == 2:
         fig = plt.subplot()
         # 初始化齐次坐标系
-        csys = Pose2d()
+        csys = SE2()
         # 初始化闪烁斑点
         spot = Spot(xylim=np.array([[-2, 2], [-.5, .5]]).T, n=50, r=.2, delta=1)
 
@@ -192,11 +192,11 @@ if __name__ == "__main__":
         fig.set_ylim((-3, 7))
         fig.set_zlim((-5, 5))
 
-        rot = Pose3d.rot
-        trans = Pose3d.trans
+        rot = SE3.rot
+        trans = SE3.trans
 
         # 绕 y 轴相对旋转 20°, 再绝对平移
-        csys = Pose3d().rela_tf(rot(pitch=20)).abs_tf(trans(dx=-1, dy=2, dz=-2))
+        csys = SE3().rela_tf(rot(pitch=20)).abs_tf(trans(dx=-1, dy=2, dz=-2))
         print(csys)
         # 以 z 轴为主轴, 绘制空心圆柱
         cylinder(fig, csys=csys, R=5, r=4, h=3, cmap="Set3", alpha=0.5)
@@ -216,10 +216,10 @@ if __name__ == "__main__":
         fig.set_yticks([])
         fig.set_zticks([])
 
-        rot = Pose3d.rot
-        trans = Pose3d.trans
+        rot = SE3.rot
+        trans = SE3.trans
 
-        csys = Pose3d()
+        csys = SE3()
         csys.plot_coord_sys(linewidth=5, length=1)
 
         csys = csys.abs_tf(trans(dx=1, dy=1, dz=1)).rela_tf(rot(pitch=45))

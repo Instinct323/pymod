@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Union
+from typing import Union, Tuple
 
 import cv2
 import numpy as np
@@ -14,16 +14,22 @@ to_2tuple = lambda x: x if x is None or isinstance(x, (list, tuple)) else (x,) *
 clip_abs = lambda x, a: np.clip(x, a_min=-a, a_max=a)
 
 
-def to_tensor(img, pdim=(-1, -3, -2)):
+def to_tensor(img: np.ndarray,
+              pdim: Tuple[int] = (-1, -3, -2)):
     import torch
     img = torch.from_numpy(np.ascontiguousarray(img[..., ::-1]))
     return img.permute(0, *pdim) if img.dim() == 4 else img.permute(*pdim)
 
 
-def resize(bgr, img_size):
+def scale(bgr: np.ndarray,
+          img_size: Union[int, Tuple[int, int]] = None,
+          r: float = None):
     h, w = bgr.shape[:2]
-    img_size = to_2tuple(img_size)
-    r = min(img_size[1] / h, img_size[0] / w)
+    # 未指定缩放比例, 使用 img_size 获取
+    if not r:
+        img_size = to_2tuple(img_size)
+        r = min(img_size[1] / h, img_size[0] / w)
+    # 使用 r 缩放图像
     new_shape = tuple(map(round, (h * r, w * r)))
     if new_shape != (h, w):
         bgr = cv2.resize(bgr, new_shape[::-1])
@@ -35,7 +41,7 @@ def load_img(file: Union[str, Path],
     bgr = cv2.imread(str(file))
     assert isinstance(bgr, np.ndarray), f"Error loading data from {file}"
     if img_size:
-        bgr = resize(bgr, img_size)[0]
+        bgr = scale(bgr, img_size)[0]
     return bgr
 
 
@@ -47,11 +53,14 @@ def check_imgfile(file: Path):
     return file
 
 
-def letter_box(bgr, img_size=(640, 640), pad=BG_COLOR, stride=None):
+def letter_box(bgr: np.ndarray,
+               img_size: Union[int, Tuple[int, int]],
+               pad: Union[int, Tuple[int, int, int]] = BG_COLOR,
+               stride: int = None):
     """ 边界填充至指定尺寸"""
     img_size = to_2tuple(img_size)
     pad = (pad,) * 3 if isinstance(pad, int) else pad
-    bgr, r = resize(bgr, img_size)
+    bgr, r = scale(bgr, img_size)
     # 放缩后的原始尺寸
     h, w = bgr.shape[:2]
     dh, dw = img_size[1] - h, img_size[0] - w
@@ -65,7 +74,8 @@ def letter_box(bgr, img_size=(640, 640), pad=BG_COLOR, stride=None):
     return bgr, r, (dh, dw)
 
 
-def img_mul(img, alpha):
+def img_mul(img: np.ndarray,
+            alpha: float):
     img = img.astype(np.float16)
     return np.uint8(np.clip((img * alpha).round(), a_min=0, a_max=255))
 
@@ -92,7 +102,7 @@ class VideoWriter(cv2.VideoWriter):
         assert Path(dst).suffix == ".mp4", "The video format must be mp4"
         super().__init__(str(dst), fourcc, fps, self.img_size)
 
-    def write(self, img):
+    def write(self, img: Union[np.ndarray, str, Path]):
         if not isinstance(img, np.ndarray):
             # 从其他数据类型加载图像
             if isinstance(img, (str, Path)):
@@ -175,4 +185,7 @@ class VideoCap(cv2.VideoCapture):
 
 
 if __name__ == "__main__":
-    pass
+    root = Path(r"D:\Information\Source\image\Permit\20250113")
+
+    new, r = scale(load_img(root / "scaled.jpg"), r=1 / np.sqrt(1.22))
+    cv2.imwrite(root / "scaled-1M.jpg", new)
