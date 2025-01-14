@@ -30,9 +30,10 @@ def scale(bgr: np.ndarray,
         img_size = to_2tuple(img_size)
         r = min(img_size[1] / h, img_size[0] / w)
     # 使用 r 缩放图像
-    new_shape = tuple(map(round, (h * r, w * r)))
-    if new_shape != (h, w):
-        bgr = cv2.resize(bgr, new_shape[::-1])
+    img_size = tuple(map(round, (w * r, h * r)))
+    if img_size != (w, h):
+        bgr = cv2.resize(bgr, img_size)
+        r = min(img_size[1] / h, img_size[0] / w)
     return bgr, r
 
 
@@ -43,6 +44,38 @@ def load_img(file: Union[str, Path],
     if img_size:
         bgr = scale(bgr, img_size)[0]
     return bgr
+
+
+def fsize_lim_save(file: Path,
+                   img: np.ndarray,
+                   fsize: int = 2 ** 20,
+                   eps: float = 1e-3,
+                   max_iter: int = 100):
+    """ 限制图像文件大小"""
+    cv2.imwrite(str(file), img)
+    org = file.stat().st_size
+    assert fsize < org, f"File size is already less than the target size: {org}"
+    capa_tar = 1 - eps / 2
+    # 反馈调节
+    r_img = fsize * capa_tar / org
+    capacity = [1]
+    best = (0, None)
+    for i in range(max_iter):
+        # 图像缩放, 最大缩放比例为 2
+        tmp, r_img = scale(img, r=min(2, r_img * capa_tar / capacity[-1]))
+        cv2.imwrite(str(file), tmp)
+        capacity.append(file.stat().st_size / fsize)
+        # 保存最好的结果
+        print(f"[INFO] Iteration {i}: \tcapacity = {capacity[-1]:.6f}, r_img = {r_img:.6f}")
+        if capacity[-1] < 1:
+            if capacity[-1] > best[0]: best = (capacity[-1], r_img)
+            if capacity[-1] > 1 - eps: break
+        # 循环检测
+        if capacity[-1] in capacity[-3:-1]:
+            capa_tar = 1 - eps * np.random.random()
+    # 重新缩放图像
+    cv2.imwrite(str(file), scale(img, r=best[1])[0])
+    return best[1]
 
 
 def check_imgfile(file: Path):
@@ -185,7 +218,6 @@ class VideoCap(cv2.VideoCapture):
 
 
 if __name__ == "__main__":
-    root = Path(r"D:\Information\Source\image\Permit\20250113")
+    root = Path(r"C:\Downloads")
 
-    new, r = scale(load_img(root / "scaled.jpg"), r=1 / np.sqrt(1.22))
-    cv2.imwrite(root / "scaled-1M.jpg", new)
+    print(fsize_lim_save(root / "scaled.png", load_img(root / "test.png"), 1.5 * 2 ** 20))
