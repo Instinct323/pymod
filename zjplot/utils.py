@@ -1,4 +1,6 @@
 import logging
+from pathlib import Path
+from typing import Union, Tuple
 
 import matplotlib.patches as pch
 import matplotlib.pyplot as plt
@@ -50,6 +52,32 @@ def figure3d():
     figure = plt.subplot(projection="3d")
     tuple(getattr(figure, f"set_{i}label")(i) for i in "xyz")
     return figure
+
+
+def fig2img(fig: plt.Figure = None):
+    """ 将 plt.Figure 对象转换为图像矩阵"""
+    if fig is None: fig = plt.gcf()
+    fig.canvas.draw()
+    img = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    return img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+
+def savefig(file: Path,
+            crop_white: bool = True):
+    """ 保存图像"""
+    file = Path(file)
+    file.parent.mkdir(parents=True, exist_ok=True)
+    # 裁剪白边
+    if crop_white:
+        import cv2
+        img = fig2img()
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        x, y, w, h = cv2.boundingRect(255 - gray)
+        # 保存图像
+        buffer = cv2.imencode(file.suffix, img[y:y + h, x:x + w, ::-1])[1]
+        file.write_bytes(buffer)
+    else:
+        plt.savefig(file)
 
 
 def pie_kwd(labels, decimal=2, colors=None):
@@ -176,7 +204,6 @@ def corrplot(df: pd.DataFrame,
     # 创建一个标量映射对象，用于创建颜色条
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    # 添加颜色条
     plt.colorbar(sm, ax=ax)
     # 绘制相关系数矩阵的下三角部分
     df = df.to_numpy()
@@ -185,6 +212,71 @@ def corrplot(df: pd.DataFrame,
             # 在每个单元格中绘制一个圆形，颜色根据相关系数值确定
             ax.add_patch(pch.Circle((i + .5, j + .5), r[i, j], facecolor=cmap(norm(df[i, j]))))
     return ax
+
+
+def threshold_scatter(x: np.ndarray,
+                      y: np.ndarray,
+                      z: np.ndarray,
+                      threshold: Union[float, Tuple[float, float]],
+                      cmap: str = "coolwarm",
+                      size: Tuple[float, float] = (5, 40),
+                      eps: float = 1e-8):
+    """ 绘制阈值散点图"""
+    if hasattr(threshold, "__len__"):
+        threshold = np.array(sorted(threshold))
+        if len(threshold) == 2:
+            threshold = np.array([[1, 0], [.5, .5], [0, 1]]) @ threshold
+        # 把阈值分为 3 个区间
+        assert len(threshold) == 3, f"Invalid threshold: {threshold}"
+        radio = np.abs(z - threshold[0]) / (threshold[-1] - threshold[0])
+    else:
+        radio = z / threshold
+    norm = plt.Normalize(vmin=0, vmax=2)
+    radio = norm(np.clip(radio, eps, 2 - eps))
+    s = size[0] + (size[1] - size[0]) * radio
+    ax = sns.scatterplot(x=x, y=y, s=s, c=plt.get_cmap(cmap)(radio))
+    # 添加颜色条
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    plt.colorbar(sm)
+    return ax
+
+
+def grading_scatter(samples: pd.DataFrame,
+                    bounds: list,
+                    cmap: str = "autumn_r",
+                    size: Tuple[float, float] = (5, 40),
+                    float_fmt="%s"):
+    """ 分级散点图
+        :param samples: 样本数据 (x, y, z)
+        :param cmap: 颜色映射
+        :param bounds: 分级边界
+        :param size: 散点大小范围
+        :param float_fmt: 浮点数格式"""
+    col = samples.columns[-1]
+    # 获取颜色映射和大小
+    n = len(bounds) + 1
+    colors = plt.get_cmap(cmap)(np.linspace(0, 1, n))
+    size = np.logspace(*np.log2(size), n, base=2)
+    # 根据 bounds 的有效值部分选择颜色、大小
+    mask = np.bool_(bounds)
+    bounds = np.array(bounds)[mask]
+    mask = np.concatenate([[True], mask])
+    colors = colors[mask]
+    size = size[mask]
+    # 获取分级掩码矩阵
+    x = samples[col]
+    labels = ([f"<{float_fmt}" % bounds[0]] +
+              [(f"{float_fmt}~{float_fmt}" % (bounds[i], bounds[i + 1])) for i in range(len(bounds) - 1)] +
+              [f">{float_fmt}" % bounds[-1]])
+    bounds = [-np.inf] + list(bounds) + [np.inf]
+    mask = np.stack([(bounds[i] <= x) & (x < bounds[i + 1]) for i in range(len(bounds) - 1)], axis=1)
+    mask = pd.DataFrame(mask, columns=labels, index=x.index)
+    # 绘制分级散点图
+    for j, label in enumerate(mask.columns):
+        tar = samples[mask[label]]
+        sns.scatterplot(tar, x="x", y="y", label=label, color=colors[j], s=size[j])
+    plt.legend(title=col)
 
 
 def residplot(x: np.ndarray,
@@ -201,17 +293,7 @@ def residplot(x: np.ndarray,
     res = np.abs(y - pred)
     s = res / res.max()
     plt.vlines(x, y, pred, colors=line_color, linestyles='--', linewidth=1, zorder=-1)
-    plt.scatter(x, y, color=cmap(s), s=size[0] + (size[1] - size[0]) * s, zorder=1)
-
-
-def crop_white(files):
-    """ 原地裁剪图像白边"""
-    import cv2
-    for f in map(str, files):
-        img = cv2.imread(f)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        x, y, w, h = cv2.boundingRect(255 - gray)
-        cv2.imwrite(f, img[y:y + h, x:x + w])
+    return sns.scatterplot(x=x, y=y, color=cmap(s), s=size[0] + (size[1] - size[0]) * s, zorder=1)
 
 
 class PltVideo:
@@ -242,11 +324,7 @@ class PltVideo:
         self.video_writer = video_writer
 
     def write(self):
-        canvas = plt.figure(self.fig_id).canvas
-        canvas.draw()
-        img = np.frombuffer(canvas.tostring_rgb(), dtype=np.uint8)
-        img = img.reshape(canvas.get_width_height()[::-1] + (3,))
-        self.video_writer.write(img)
+        self.video_writer.write(fig2img(plt.figure(self.fig_id)))
 
     def save(self):
         self.video_writer.save()
@@ -261,6 +339,5 @@ class PltVideo:
 
 
 if __name__ == "__main__":
-    from pathlib import Path
-
-    crop_white(Path(r"C:\Downloads\tmp").glob("*.jpg"))
+    threshold_scatter(np.random.random(100), np.random.random(100), np.random.random(100) * 2, (0.3, 1, 1.7))
+    plt.show()
