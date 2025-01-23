@@ -2,11 +2,14 @@ import shutil
 import sys
 from pathlib import Path
 
-from pymod.utils.zjcmd import *
+import pip
+
+from zjcmd import *
 
 USERPATH = Path(os.path.expanduser("~"))
 SCRIPTS = Path(sys.executable).parent  # Default for Linux
 if os.name == "nt": SCRIPTS = SCRIPTS / "Scripts"  # Special for Windows
+SITE_PACKAGES = Path(pip.__file__).parent.parent
 
 
 def elevate():
@@ -18,7 +21,15 @@ def elevate():
 
 
 class PythonExtLibs:
-    f = Path(sys.executable).parent / "extlib.pth"
+    f = SITE_PACKAGES / "extlib.pth"
+
+    @classmethod
+    def temp_disable(cls):
+        """ Temporarily disable the extension libraries. """
+        tmp = cls.f.with_suffix(".bak")
+        cls.f.rename(tmp)
+        input("Press any key to re-enable...")
+        tmp.rename(cls.f)
 
     @classmethod
     def load(cls):
@@ -97,7 +108,7 @@ class PythonEnv:
 
 
 class CondaEnv(PythonEnv):
-    _conda = Path("D:/Software/Anaconda3/condabin" if os.name == "nt" else "/opt/miniconda/bin") / "conda"
+    _conda = Path("D:/Software/Anaconda3/condabin" if os.name == "nt" else "/opt/miniconda3/bin") / "conda"
 
     @classmethod
     def create(cls, name, version=(3, 8, 15)):
@@ -125,4 +136,12 @@ class CondaEnv(PythonEnv):
 
 
 if __name__ == "__main__":
-    PythonEnv().install("geopandas")
+    PRINT_ONLY = True
+    if PRINT_ONLY:
+        PythonEnv._pip = "pip"
+        PythonEnv._jupyter = "jupyter"
+        CondaEnv._conda = "conda"
+        execute = print
+
+    PythonExtLibs.dump(["/usr/lib/python3/dist-packages"])
+    # PythonExtLibs.temp_disable()
