@@ -86,16 +86,8 @@ class PythonEnv:
             raise NotImplementedError
 
     @classmethod
-    def jupyter(cls, root=".", cfg=False, reinstall=False):
-        if reinstall:
-            tar = ("jupyter", "jupyter-client", "jupyter-console", "jupyter-core",
-                   "jupyterlab-pygments", "jupyterlab-widgets", "notebook",
-                   "jupyter_contrib_nbextensions")
-            for pkg in tar: cls.install(pkg, uninstall=True)
-            cls.install("notebook==6.1.0")
-            cls.install("jupyter")
-            execute(f"{cls._jupyter} contrib nbextension install --use")
-
+    def jupyter(cls, root=".", cfg=False):
+        # 代码补全: https://blog.csdn.net/qq_55745968/article/details/145530166
         os.chdir(root)
         execute(f"{cls._jupyter} notebook" + cfg * " --generate-config")
 
@@ -143,5 +135,6 @@ if __name__ == "__main__":
         CondaEnv._conda = "conda"
         execute = print
 
-    PythonExtLibs.dump(["/usr/lib/python3/dist-packages"])
+    # PythonExtLibs.dump(["/usr/lib/python3/dist-packages"])
     # PythonExtLibs.temp_disable()
+    PythonEnv.config()
