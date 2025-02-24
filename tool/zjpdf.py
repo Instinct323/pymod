@@ -1,10 +1,13 @@
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Callable
 
 from tqdm import tqdm
 
 
-def load_pdf(file: Path):
+def load_pdf(src: Path,
+             pages_filter: Callable[[int], bool] = None):
+    """ :param src: pdf 文件
+        :param pages_filter: 过滤函数"""
     from pdfminer.converter import PDFPageAggregator
     from pdfminer.layout import LAParams
     from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
@@ -16,9 +19,30 @@ def load_pdf(file: Path):
     device = PDFPageAggregator(rsrcmgr, laparams=laparams)
     interp = PDFPageInterpreter(rsrcmgr, device)
     # 产出页面的 LTPage 对象
-    with file.open("rb") as f:
-        for _ in map(interp.process_page, PDFPage.get_pages(f)):
+    with src.open("rb") as f:
+        for i, page in enumerate(PDFPage.get_pages(f)):
+            # 跳过不需要的页面
+            if pages_filter and not pages_filter(i): continue
+            interp.process_page(page)
             yield device.get_result()
+
+
+def pdf2text(src: Path,
+             dst: Path,
+             pages_filter: Callable[[int], bool] = None):
+    """ 提取 pdf 文本内容"""
+    with dst.open("w", encoding="utf-8") as f:
+        for i, page in enumerate(load_pdf(src, pages_filter)):
+            f.write(f"\n[pdf2text: Page {i + 1}]\n\n")
+            for element in page:
+                etype: str = type(element).__name__
+                # LTTextBox[LTTextLine[LTChar]]
+                if etype.startswith("LTTextBox"):
+                    for line in element:
+                        f.write(line.get_text())
+                else:
+                    if etype.startswith("LTTextLine") or etype.startswith("LTChar"):
+                        raise NotImplementedError(f"Unsupported element: {etype}")
 
 
 def merge_pdf(src: Iterator[Path], dst: Path):
