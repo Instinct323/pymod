@@ -2,9 +2,9 @@ import os
 
 
 def execute(cmd, check=True):
-    ret = print("\033[32m\033[1m" + cmd + "\033[0m") or os.system(cmd)
-    if check and ret: raise OSError(f"Fail to execute: {cmd}")
-    return ret
+    exit_code = print("\033[32m\033[1m" + cmd + "\033[0m") or os.system(cmd)
+    if check and exit_code: raise OSError(f"Fail to execute: {cmd}")
+    return exit_code
 
 
 def add_path(p, left=True):
