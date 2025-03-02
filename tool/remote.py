@@ -65,7 +65,7 @@ if __name__ == '__main__':
     # print(myjammy.upload(r"D:\Information\Notes", "/home/workbench/tmp"))
 
     to_pull = tuple()
-    to_push = ("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/Notes")
+    to_push = ("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/notes")
 
     for p in to_pull:
         repo = GitRepo(p).activate().pull()
