@@ -93,6 +93,7 @@ class PythonEnv:
 
     @classmethod
     def config(cls):
+        PythonEnv.install("pip", upgrade=True)
         for k, v in (("timeout", 6000),
                      ("index-url", "https://pypi.tuna.tsinghua.edu.cn/simple"),
                      ("trusted-host", "pypi.tuna.tsinghua.edu.cn")):
@@ -103,7 +104,7 @@ class CondaEnv(PythonEnv):
     _conda = Path("D:/Software/Anaconda3/condabin" if os.name == "nt" else "/opt/miniconda3/bin") / "conda"
 
     @classmethod
-    def create(cls, name, version=(3, 8, 15)):
+    def create(cls, name, version=(3, 10, 16)):
         version = ".".join(map(str, version))
         execute(f"{cls._conda} create -n {name} python=={version}")
 
@@ -127,14 +128,17 @@ class CondaEnv(PythonEnv):
             execute(f"{cls._conda} config {p}")
 
 
+def set_print_only():
+    PythonEnv._pip = "pip"
+    PythonEnv._jupyter = "jupyter"
+    CondaEnv._conda = "conda"
+    global execute
+    execute = print
+
+
 if __name__ == "__main__":
-    PRINT_ONLY = True
-    if PRINT_ONLY:
-        PythonEnv._pip = "pip"
-        PythonEnv._jupyter = "jupyter"
-        CondaEnv._conda = "conda"
-        execute = print
+    set_print_only()
 
     # PythonExtLibs.dump(["/usr/lib/python3/dist-packages"])
     # PythonExtLibs.temp_disable()
-    PythonEnv.config()
+    CondaEnv.config()
