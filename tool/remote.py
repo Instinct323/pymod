@@ -71,4 +71,4 @@ if __name__ == '__main__':
         repo = GitRepo(p).activate().pull()
 
     for p in to_push:
-        repo = GitRepo(p).activate().add().commit(f"update on {datetime.datetime.today()}")
+        repo = GitRepo(p).activate().add().commit(f"update on {datetime.datetime.today()}").push()
