@@ -137,4 +137,4 @@ if __name__ == "__main__":
 
     # PythonExtLibs.dump(["/usr/lib/python3/dist-packages"])
     # PythonExtLibs.temp_disable()
-    PythonEnv.config()
+    CondaEnv.config()
