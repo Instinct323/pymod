@@ -6,6 +6,7 @@ def matrix(vector: Union[tuple, list],
            bracket: str = "[",
            newline: str = "\n") -> str:
     """ 将给定的向量转换为 LaTeX 格式的矩阵字符串
+            tips: 类似的用法还有 align, cases
         :param vector: 向量
         :param shape: 矩阵的形状
         :param bracket: 矩阵的括号类型
@@ -23,14 +24,8 @@ def matrix(vector: Union[tuple, list],
     return newline.join(ret)
 
 
-def cases(rows: Union[tuple, list],
-          newline: str = "\n") -> str:
-    ret = [r"\begin{cases}"]
-    for r in rows:
-        ret.append((" & ".join(map(str, r)) if isinstance(r, (tuple, list)) else str(r)) + r" \\")
-    ret.append(r"\end{cases}")
-    return newline.join(ret)
-
-
 if __name__ == '__main__':
-    print(matrix(["K_p", "K_i", "K_d"], (1, 3)))
+    print(matrix(["q_0", "q_1", "q_2", "q_3",
+                  "-q_1", "q_0", "-q_3", "q_2",
+                  "-q_2", "q_3", "q_0", "-q_1",
+                  "-q_3", "-q_2", "q_1", "q_0"], (4, 4)))
