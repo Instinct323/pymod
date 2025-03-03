@@ -93,11 +93,11 @@ class PythonEnv:
 
     @classmethod
     def config(cls):
-        PythonEnv.install("pip", upgrade=True)
         for k, v in (("timeout", 6000),
                      ("index-url", "https://pypi.tuna.tsinghua.edu.cn/simple"),
                      ("trusted-host", "pypi.tuna.tsinghua.edu.cn")):
             execute(f"{cls._pip} config set global.{k} {v}")
+        PythonEnv.install("pip", upgrade=True)
 
 
 class CondaEnv(PythonEnv):
