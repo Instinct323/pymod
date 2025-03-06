@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     fig = plt.subplot(projection="3d")
 
-    fig.scatter(*se.get_3DGS(3000, eigval=(1, 2, 0)).T,
+    fig.scatter(*se.get_3DGS(3000, scale=(1, 2, 0)).T,
                 color="gray", s=10)
     se.plot_coord_sys(3)
 

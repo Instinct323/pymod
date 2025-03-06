@@ -7,7 +7,6 @@ from typing import Union
 import torch
 import yaml
 from torch import nn
-from torch.cuda import amp
 
 logging.basicConfig(format="%(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
@@ -93,7 +92,7 @@ class Trainer:
         self._optim = getattr(torch.optim, hyp["optimizer"])(self.model.parameters(), lr=hyp["lr0"],
                                                              weight_decay=hyp["weight_decay"])
         self._lr_scheduler = CosineLR(self._optim, lrf=hyp["lrf"], epochs=self._epochs)
-        self._scaler = amp.GradScaler(enabled=self.device.type != "cpu")
+        self._scaler = torch.amp.GradScaler(enabled=self.device.type != "cpu")
         # 加载最新的模型参数
         ckpt = self.load_ckpt("last.pt")
         self._cur_epoch = ckpt.get("epoch", -1) + 1

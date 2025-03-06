@@ -26,14 +26,17 @@ PROJECT = Path("runs/mnist")
 DATA = Path("data")
 
 BATCH_SIZE = 1000
+ENABLE_COMPILE = False
 
 if __name__ == "__main__":
+    LOGGER.info("Start training mnist model.")
+
     model_orig = YamlModel(CFG)
     model_call = model_orig.DP()
     ema_mse = EmaModel(model_orig, bp_times=50).DP().mse
 
     # torch 2.0.0 新特性
-    if int(torch.__version__[0]) >= 2:
+    if ENABLE_COMPILE and hasattr(torch, "compile"):
         model_call, ema_mse = map(torch.compile, (model_call, ema_mse))
 
     # 读取数据集
@@ -46,7 +49,7 @@ if __name__ == "__main__":
     trainer = Trainer(model_orig, PROJECT, HYP)
     best = PROJECT / "best.pt"
     fitness = torch.load(best)["fitness"] if best.exists() else 0
-    print("fitness:", fitness)
+    LOGGER.info("Best fitness: %.4f", fitness)
 
     # 记录器
     result = Result(PROJECT, ("lr", "acc", "loss"))
@@ -86,4 +89,4 @@ if __name__ == "__main__":
 
     # 保存模型
     Conv.reparam(model_orig)
-    model_orig.onnx(PROJECT / "mnist.onnx", branch="ema")
+    # model_orig.onnx(PROJECT / "mnist.onnx", branch="ema")

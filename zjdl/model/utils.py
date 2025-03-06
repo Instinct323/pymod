@@ -18,7 +18,7 @@ BilinearResize = partial(F.interpolate, mode="bilinear", align_corners=False)
 module_required = {k: [] for k in ("c1,c2", "c1", "n")}
 # 等比数列
 logspace = lambda start, stop, n: np.logspace(np.log10(start), np.log10(stop), n)
-make_divisible = lambda x, divisor=4: np.maximum(np.round_(x / divisor).astype(np.int64), 1) * divisor
+make_divisible = lambda x, divisor=4: np.maximum(np.round(x / divisor).astype(np.int64), 1) * divisor
 
 
 def register_module(*args):
