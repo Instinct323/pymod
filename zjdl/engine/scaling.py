@@ -38,15 +38,15 @@ class ModelScaling:
             img_size = cfg[self.attr[2]]
             # 获取搜索空间
             r_stride = stride / img_size
-            r = np.arange(np.round_(.5 / r_stride) * r_stride, r_max + 0.01, r_stride)
+            r = np.arange(np.round(.5 / r_stride) * r_stride, r_max + 0.01, r_stride)
             d = np.array([cfg["depth_multiple"]]) if d_keep else np.arange(1, flops + 1.01)
             d, r = map(np.ndarray.flatten, np.meshgrid(d, r))
             w = np.sqrt(flops / (d / depth * r ** 2))
-            w = np.round_(w * width / w_stride) * w_stride
+            w = np.round(w * width / w_stride) * w_stride
             # 计算相似度
             ret = np.stack((d, w, r * img_size), axis=-1)
             scale = ret / np.array((depth, width, img_size))
-            flops = np.round_(scale[:, 0] * np.square(scale[:, 1]) * np.square(scale[:, 2]), 3)
+            flops = np.round(scale[:, 0] * np.square(scale[:, 1]) * np.square(scale[:, 2]), 3)
             similarity = np.square(scale - 1).sum(axis=-1)
             self.plans = pd.DataFrame(np.concatenate((ret, flops[:, None]), axis=1)[np.argsort(similarity)],
                                       columns=self.attr + ("flops",))

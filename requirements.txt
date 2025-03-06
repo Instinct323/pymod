@@ -1,4 +1,4 @@
-# torch torchvision torchaudio torch-geometric --index-url https://download.pytorch.org/whl/cu121
+# https://pytorch.org/get-started/locally/
 
 # --- other ---
 brotli
@@ -13,17 +13,17 @@ tqdm
 xlrd
 
 # --- torch ---
-grad-cam
+# grad-cam
 timm
 
 # --- deploy ---
-netron
-onnxruntime-gpu
+# netron
+# onnxruntime-gpu
 # openvino-dev[onnx]
 
 # --- Qt ---
-pyqt5
-pyside2
+# pyqt5
+# pyside2
 # pyinstaller
 
 # --- useless ---

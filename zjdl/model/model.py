@@ -5,7 +5,6 @@ from typing import Union
 
 import torch.onnx
 import yaml
-from torch.cuda import amp
 
 from .common import *
 
@@ -100,7 +99,7 @@ class YamlModel(nn.Module):
             output.append(x)
         if not profile: yield output
 
-    @amp.autocast()
+    # @torch.amp.autocast()
     def forward(self, x, tarlayer=-1):
         # imgae: uint8 -> float
         if x.dtype == torch.uint8: x = x.float() / 255

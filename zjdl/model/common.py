@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 
-from timm.models.layers import to_2tuple, DropPath
+from timm.layers import to_2tuple, DropPath
 
 from .fourier import FourierFeatures
 from .utils import *
