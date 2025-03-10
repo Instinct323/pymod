@@ -193,6 +193,20 @@ class HexagonalMesh:
         return "\n".join(stream)
 
 
+def poly_interp(x: float,
+                xs: np.ndarray,
+                ys: np.ndarray):
+    """ 拉格朗日插值
+        :param x: 插值点
+        :param xs: 插值节点
+        :param ys: 插值值
+        :return: 基函数, 插值结果"""
+    basic_fun = ((x - xs) / (xs[:, None] - xs))
+    basic_fun[np.arange(len(xs)), np.arange(len(xs))] = 1
+    basic_fun = basic_fun.prod(axis=1)
+    return basic_fun, (basic_fun * ys).sum().item()
+
+
 if __name__ == "__main__":
-    x = np.random.random([10, 2])
-    print(auckley_func(x))
+    res = poly_interp(0.54, np.array([0.5, 0.6, 0.7]), np.array([-0.693147, -0.510826, -0.356675]))
+    print(res)
