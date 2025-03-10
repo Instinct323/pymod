@@ -65,7 +65,7 @@ if __name__ == '__main__':
     # myjammy = RemoteHost("root", "127.0.0.1", 30021)
     # print(myjammy.upload(r"D:\Information\Notes", "/home/workbench/tmp"))
 
-    ROOT = Path("D:" if os.name == "nt" else "/media/tongzj/Data")
+    ROOT = Path("D:/" if os.name == "nt" else "/media/tongzj/Data")
 
     to_push = ROOT / "Workbench/cppmod", ROOT / "Workbench/pymod", ROOT / "Information/notes"
 
