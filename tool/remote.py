@@ -1,4 +1,5 @@
 import datetime
+import os
 from pathlib import Path
 
 from zjcmd import *
@@ -64,11 +65,10 @@ if __name__ == '__main__':
     # myjammy = RemoteHost("root", "127.0.0.1", 30021)
     # print(myjammy.upload(r"D:\Information\Notes", "/home/workbench/tmp"))
 
-    to_pull = tuple()
-    to_push = ("D:/Workbench/cppmod", "D:/Workbench/pymod", "D:/Information/notes")
+    ROOT = Path("D:" if os.name == "nt" else "/media/tongzj/Data")
 
-    for p in to_pull:
-        repo = GitRepo(p).activate().pull()
+    to_push = ROOT / "Workbench/cppmod", ROOT / "Workbench/pymod", ROOT / "Information/notes"
 
     for p in to_push:
-        repo = GitRepo(p).activate().add().commit(f"update on {datetime.datetime.today()}").push()
+        repo = GitRepo(p).activate().add().commit(f"update on {datetime.datetime.today()}"
+                                                  ).pull().push()

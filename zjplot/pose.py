@@ -79,9 +79,8 @@ class SE3(_SEn):
         return super().apply(x, y, z)
 
     def get_3DGS(self, size, scale=(1, 1, 1e-4)) -> np.ndarray:
-        eig = np.square(np.diag(scale))
-        cov = self.direction @ eig @ self.direction.T
-        return np.random.multivariate_normal(self.position, cov, size)
+        L = self.direction @ np.diag(scale)
+        return np.random.multivariate_normal(self.position, L @ L.T, size)
 
     @classmethod
     def trans(cls, dx: float = 0., dy: float = 0., dz: float = 0.) -> np.ndarray:
@@ -117,8 +116,7 @@ if __name__ == "__main__":
 
     fig = plt.subplot(projection="3d")
 
-    fig.scatter(*se.get_3DGS(3000, scale=(1, 2, 0)).T,
-                color="gray", s=10)
+    fig.scatter(*se.get_3DGS(3000, scale=(1, 2, 0)).T, color="gray", s=10)
     se.plot_coord_sys(3)
 
     plt.show()

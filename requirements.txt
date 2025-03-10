@@ -3,6 +3,7 @@
 # --- other ---
 brotli
 jupyter
+nvitop
 opencv-python
 openpyxl
 optuna
