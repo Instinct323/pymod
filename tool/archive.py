@@ -2,15 +2,21 @@ import math
 import shutil
 import time
 from pathlib import Path
-from typing import List
-from pymod.utils.utils import LOGGER, parse_txt_cfg
+from typing import List, Union
+
 from tqdm import tqdm
+
+from pymod.utils.utils import LOGGER, parse_txt_cfg
 
 
 class FileArchiver:
     """ 文件有序归档管理器 """
 
-    def __init__(self, txt_cfg, dst):
+    def __init__(self,
+                 txt_cfg: Union[str, Path],
+                 dst: Union[str, Path],
+                 reverse: bool = False):
+
         txt_cfg = Path(txt_cfg)
         assert txt_cfg.is_file(), "Invalid configuration file."
         # 初始化归档目录
@@ -19,6 +25,7 @@ class FileArchiver:
         # 读取配置文件
         self.files: List[Path] = []
         self.include(txt_cfg)
+        if reverse: self.files.reverse()
         # 执行归档
         ndigit = math.ceil(math.log10(len(self.files)))
         with (dst / ".archive.txt").open("w") as fi:
