@@ -10,11 +10,13 @@ from pymod.utils.utils import LOGGER, parse_txt_cfg
 
 
 class FileArchiver:
-    """ 文件有序归档管理器 """
+    """ 文件有序归档管理器
+        :param file_fmt: 文件名格式, %i 序号, %n 文件名 """
 
     def __init__(self,
                  txt_cfg: Union[str, Path],
                  dst: Union[str, Path],
+                 file_fmt: str = "%i-%n",
                  reverse: bool = False):
 
         txt_cfg = Path(txt_cfg)
@@ -31,7 +33,8 @@ class FileArchiver:
         with (dst / ".archive.txt").open("w") as fi:
             for i, f in enumerate(tqdm(self.files, desc="Archiving")):
                 fi.write(str(f) + "\n")
-                shutil.copy(f, dst / (str(i).rjust(ndigit, "0") + "-" + f.name))
+                name = file_fmt.replace("%n", f.name).replace("%i", str(i).rjust(ndigit, "0"))
+                shutil.copy(f, dst / name)
 
     def include(self, txt_cfg):
         root = Path(txt_cfg.parent).resolve()
