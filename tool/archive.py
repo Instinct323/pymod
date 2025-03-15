@@ -41,7 +41,8 @@ class FileArchiver:
             # 读取文件名称
             else:
                 f = root / line
-                self.files.append(f) if f.is_file() else LOGGER.warning(f"Invalid file: {f}")
+                self.files.append(f) if f.is_file() else (
+                    LOGGER.warning(f"File \"{txt_cfg}\", line {i + 1}: \"{f}\" does not exist."))
 
 
 if __name__ == '__main__':
