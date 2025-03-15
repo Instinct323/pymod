@@ -21,20 +21,20 @@ def to_tensor(img: np.ndarray,
     return img.permute(0, *pdim) if img.dim() == 4 else img.permute(*pdim)
 
 
-def scale(bgr: np.ndarray,
+def scale(src: np.ndarray,
           img_size: Union[int, Tuple[int, int]] = None,
           r: float = None):
-    h, w = bgr.shape[:2]
+    src_size = np.array(src.shape[1::-1])
     # 未指定缩放比例, 使用 img_size 获取
     if not r:
-        img_size = to_2tuple(img_size)
-        r = min(img_size[1] / h, img_size[0] / w)
+        img_size = np.array(to_2tuple(img_size))
+        r = min(img_size / src_size)
     # 使用 r 缩放图像
-    img_size = tuple(map(round, (w * r, h * r)))
-    if img_size != (w, h):
-        bgr = cv2.resize(bgr, img_size)
-        r = min(img_size[1] / h, img_size[0] / w)
-    return bgr, r
+    img_size = np.round(r * src_size).astype(np.int64)
+    if np.any(img_size != src_size):
+        src = cv2.resize(src, img_size)
+        r = min(img_size / src_size)
+    return src, r
 
 
 def load_img(file: Union[str, Path],
