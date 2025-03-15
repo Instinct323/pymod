@@ -30,19 +30,18 @@ class AsciiArt:
             return "\n".join(stream)
 
 
-class DictOrder:
+class NumString:
 
     def __init__(self,
-                 length: int = 6,
-                 skip: int = random.randint(4, 14),
-                 char: str = string.ascii_lowercase):
-        self.skip = skip
-        self.iter = product(char, repeat=length)
+                 length: int = 8,
+                 step: int = 5):
+        self.length = length
+        self.step = step
 
     def __iter__(self):
         def generator():
-            for i, char in enumerate(self.iter):
-                if i % self.skip == 0: yield "".join(char)
+            for i in range(0, 10 ** self.length, self.step):
+                yield str(i).rjust(self.length, "0")
 
         return generator()
 
@@ -105,7 +104,7 @@ class Puzzle:
             w = self.stride - 2 * self.pad_size[0]
             for i in np.arange(len(material)):
                 # 取出素材包路径
-                orders = iter(DictOrder())
+                orders = iter(NumString())
                 folder, material[i] = material[i], []
                 for file in folder.iterdir():
                     j = Path()

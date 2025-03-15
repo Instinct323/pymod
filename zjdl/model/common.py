@@ -1,6 +1,7 @@
 import math
 from typing import Optional
 
+import torch
 from timm.layers import to_2tuple, DropPath
 
 from .fourier import FourierFeatures
@@ -112,6 +113,20 @@ class RepConv(nn.Module):
                     w, b = branch.weight.data, branch.bias.data
                     conv.weight.data += F.pad(w, (p,) * 4)
                 conv.bias.data += b
+
+
+@register_module("c1")
+class DyT(nn.Module):
+
+    def __init__(self, c1, alpha_init=0.5):
+        super().__init__()
+        self.alpha = nn.Parameter(torch.tensor(alpha_init))
+        self.w = nn.Parameter(torch.ones(c1))
+        self.b = nn.Parameter(torch.zeros(c1))
+
+    def forward(self, x):
+        x = torch.tanh(self.alpha * x)
+        return self.w * x + self.b
 
 
 @register_module("c1,c2")
