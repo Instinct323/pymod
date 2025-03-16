@@ -39,7 +39,7 @@ def star_trails_image(
 
 
 if __name__ == "__main__":
-    i = 0
+    i = 1
 
     # exp 1: 星轨视频制作
     if i == 0:
@@ -62,8 +62,8 @@ if __name__ == "__main__":
 
     # exp 2: 星轨图像制作
     elif i == 1:
-        src = Path("D:/Information/Data/dataset/moliugong-star-trails-2")
+        src = Path(r"D:\Information\Source\dataset\dali-star-trails")
         files = list(src.iterdir())
         files.reverse()
-        img = star_trails_image(map(cv2.imread, map(str, files)), np.linspace(0.5, 1, len(files)))
+        img = star_trails_image(map(cv2.imread, map(str, files)), np.linspace(0, 1, len(files)))
         cv2.imwrite(str(src.parent / "final.jpg"), img)
