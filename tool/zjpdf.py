@@ -46,10 +46,14 @@ def pdf2text(src: Path,
 
 
 def merge_pdf(src: Iterator[Path], dst: Path):
-    from PyPDF2 import PdfMerger
+    import PyPDF2
 
-    merger = PdfMerger()
-    for f in src: merger.append(f)
+    merger = PyPDF2.PdfMerger()
+    for f in src:
+        try:
+            merger.append(f)
+        except:
+            print(f"Failed to merge \"{f}\"")
     merger.write(str(dst))
 
 
@@ -73,5 +77,5 @@ def pdf2img(file: Path, suffix=".png", root="Project", blowup=15):
 
 if __name__ == "__main__":
     # pdf2img(r"D:\Information\Lib\童赞嘉.pdf")
-    ROOT = Path(r"D:\Information\Document\毕业设计")
+    ROOT = Path(r"D:\Downloads\gradebook_CS112-30023448-2025SP_lab204_2025-03-17-12-56-02")
     merge_pdf(ROOT.iterdir(), ROOT.parent / "merge.pdf")

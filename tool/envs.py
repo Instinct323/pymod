@@ -70,7 +70,7 @@ class PythonEnv:
     @classmethod
     def install(cls, pkg, uninstall=False, upgrade=False):
         # 安装路径: python -m site
-        main = "uninstall -y" if uninstall else ("install" + upgrade * " --upgrade")
+        main = "uninstall -y" if uninstall else ("install" + upgrade * " -U")
         execute(f"{cls._pip} {main} --no-cache-dir {pkg}")
 
     @classmethod
