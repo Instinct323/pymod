@@ -10,6 +10,7 @@ optuna
 pandas
 pyyaml
 scikit-learn
+seaborn
 tqdm
 xlrd
 
