@@ -39,6 +39,9 @@ def from_latexmat(context: str,
 
 
 if __name__ == '__main__':
-    print(vec2latexmat(["q_0", "q_1",
-                        "-q_1", "q_0"], (2, 2)))
+    # print(vec2latexmat([""] * 9, (3, 3)))
+    A = from_latexmat(r"""11 & 0.603975 \\
+0.603975 & 0.062321""", float)
+    b = from_latexmat(r"""13.639649 \\ 0.530331""", float)
+    print(np.linalg.solve(A, b))
 
