@@ -63,3 +63,6 @@ if __name__ == '__main__':
 
     t = np.mean(P - R @ P_, axis=-1, keepdims=True)
     print(from_numpy(np.round(t, 4)))
+
+    error = P - R @ P_ - t
+    print(error)
