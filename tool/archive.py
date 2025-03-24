@@ -113,6 +113,7 @@ class FileArchiver:
 
 if __name__ == '__main__':
     fa = FileArchiver(r"D:\Information\Source\image-HQ\archive.txt", dst=r"D:\Downloads", file_fmt="%i")
+    quit()
     for f in tqdm(fa.dst.iterdir(), total=len(fa.files), desc="Making blurred border"):
         if f.is_file() and f.suffix != ".txt":
             img = make_blurred_border(cv2.imread(str(f)), aspect_ratio=3 / 4)
