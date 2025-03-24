@@ -27,6 +27,10 @@ def vec2latexmat(vector: Union[tuple, list],
     return newline.join(ret)
 
 
+def from_numpy(matrix: np.ndarray, **kwargs) -> str:
+    return vec2latexmat(matrix.flatten(), shape=matrix.shape, **kwargs)
+
+
 def from_latexmat(context: str,
                   transform: Callable = None) -> np.ndarray:
     """ latex 矩阵字符串转换为 numpy 数组
@@ -40,8 +44,22 @@ def from_latexmat(context: str,
 
 if __name__ == '__main__':
     # print(vec2latexmat([""] * 9, (3, 3)))
-    A = from_latexmat(r"""11 & 0.603975 \\
-0.603975 & 0.062321""", float)
-    b = from_latexmat(r"""13.639649 \\ 0.530331""", float)
-    print(np.linalg.solve(A, b))
+    P = from_latexmat(r"""0 & 1 & 10 & -3 \\ 
+0 & 2 & 9 & -4 \\
+0 & 3 & 8 & -5 \\""", float)
+    P_ = from_latexmat(r"""10 & -3 & 1 & 0 \\
+9 & -4 & 2 & 0 \\
+8 & -5 & 3 & 0 \\""", float)
 
+    Q = P - P.mean(axis=-1, keepdims=True)
+    Q_ = P_ - P_.mean(axis=-1, keepdims=True)
+
+    W = Q @ Q_.T
+    print(from_numpy(W))
+
+    u, s, vh = np.linalg.svd(W)
+    R = u @ vh
+    print(from_numpy(np.round(R, 4)))
+
+    t = np.mean(P - R @ P_, axis=-1, keepdims=True)
+    print(from_numpy(np.round(t, 4)))
