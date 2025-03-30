@@ -1,7 +1,6 @@
 import math
 from typing import Optional
 
-import torch
 from timm.layers import to_2tuple, DropPath
 
 from .fourier import FourierFeatures

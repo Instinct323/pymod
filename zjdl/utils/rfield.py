@@ -16,15 +16,16 @@ class ReceptiveField:
         :param img_size: 测试时使用的图像尺寸"""
 
     def make_input(self, n_sample):
-        return torch.rand([n_sample, 3, *self.img_size], requires_grad=True)
+        return torch.rand([n_sample, *self.img_size], requires_grad=True)
 
     def __init__(self,
                  model: nn.Module,
                  tar_layer: Union[int, nn.Module],
                  img_size: Union[int, Tuple[int, int]],
                  use_cuda: bool = False,
-                 use_copy: bool = False):
-        self.img_size = to_2tuple(img_size)
+                 use_copy: bool = False,
+                 n_channels: int = 3):
+        self.img_size = n_channels, *to_2tuple(img_size)
         # 注册前向传播的挂钩
         self._fmap = None
         tar_layer = model[tar_layer] if isinstance(tar_layer, int) else tar_layer
