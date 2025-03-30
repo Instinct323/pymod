@@ -83,14 +83,14 @@ def nearest_timestamp(query: Iterable[int], value: Iterable[int], max_ts_diff: f
     print(f"Matching success rate: {cnt / len(query):.2%}")
 
 
-def align_trajectory(pts1: np.ndarray, pts2: np.ndarray):
+def align_trajectory(pts1: np.ndarray, pts2: np.ndarray, sim: bool = True):
     """ Closed-form solution of absolute orientation using unit quaternions """
     assert pts1.ndim == 2 and pts1.shape[1] == 3 and pts1.shape == pts2.shape
     pts1, pts2 = map(np.float64, (pts1, pts2))
     # 尺度因子
     centroid1, centroid2 = pts1.mean(axis=0), pts2.mean(axis=0)
     pts1, pts2 = pts1 - centroid1, pts2 - centroid2
-    s = np.sqrt(np.square(pts2).sum() / np.square(pts1).sum())
+    s = np.sqrt(np.square(pts2).sum() / np.square(pts1).sum()) if sim else 1
     # 单位四元数
     Sxx, Sxy, Sxz, Syx, Syy, Syz, Szx, Szy, Szz = (pts1.T @ pts2).flatten()
     sumn = np.array([[(Sxx + Syy + Szz) / 2, Syz - Szy, Szx - Sxz, Sxy - Syx],
