@@ -16,7 +16,7 @@ class RANSAC(dict):
 
         for i in RANSAC.index_sampler(len(DATA)):
             MODEL.fit(DATA[i])
-            error = MODEL.error(DATA)
+            error = MODEL.error(DATA[i])
             RANSAC.save_if_better(error, MODEL.export)"""
 
     def __init__(self,
