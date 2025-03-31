@@ -49,9 +49,9 @@ class VinoModel(ov.CompiledModel):
         return cfg
 
     @classmethod
-    def from_onnx(cls, src, dst=Path("."), half=False):
-        """ :param src: model .onnx file
-            :param dst: Directory that stores the generated IR"""
+    def from_onnx(cls, src, dst=Path(), half=False):
+        """ :param src: model *.onnx file
+            :param dst: Directory that stores the generated IR """
         assert src.suffix == ".onnx"
         args = ["mo", f"-w {src}", f"-o {dst}"]
         if half: args.append("--compress_to_fp16")

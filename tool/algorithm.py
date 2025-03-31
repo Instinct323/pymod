@@ -4,13 +4,13 @@ import math
 import operator
 import random
 from collections import Counter
-from typing import Dict, List
+from typing import Dict, List, Callable, Tuple
 
 
 class DisjointSet:
     """ 并查集"""
 
-    def __init__(self, length):
+    def __init__(self, length: int):
         # 记录前驱结点, 结点级别
         self._pre = list(range(length))
         self._rank = [1] * length
@@ -48,7 +48,10 @@ class SegmentTree:
         :ivar index: 数组元素在二叉树的结点索引
         :ivar tree: 以二叉树形式存储的聚合值"""
 
-    def __init__(self, arr, oper=operator.add, v0=0):
+    def __init__(self,
+                 arr: List,
+                 oper: Callable = operator.add,
+                 v0: int = 0):
         self.arr = arr
         self.oper = oper
         self.v0 = v0
@@ -123,7 +126,9 @@ class PdrChecker:
         >>> checker[1:6]
         True"""
 
-    def __init__(self, hashv, base):
+    def __init__(self,
+                 hashv: Tuple[int],
+                 base: int):
         self.base = base
         # 正/逆序 hash 序列
         self.hseq = self.get_seq(hashv)
