@@ -1,6 +1,3 @@
-# https://pytorch.org/get-started/locally/
-
-# --- other ---
 brotli
 jupyter
 nvitop
@@ -15,8 +12,11 @@ tqdm
 xlrd
 
 # --- torch ---
+# https://pytorch.org/get-started/locally/
 # grad-cam
-timm
+# diffusers[torch]
+# timm
+# transformers
 
 # --- deploy ---
 # netron
@@ -28,12 +28,6 @@ timm
 # pyside2
 # pyinstaller
 
-# --- useless ---
-# mediapipe
-# seaborn
-# tensorboard
-# thop
-
 # --- nlp ---
 # nltk
 # jieba
@@ -42,8 +36,8 @@ timm
 # pdfminer
 # pdfminer3k
 # pdfminer.six
-# pymupdf
-# pypdf2
+pymupdf
+pypdf2
 
 # --- OpenMMLab ---
 # openmim
