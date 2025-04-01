@@ -2,6 +2,7 @@ brotli
 jupyter
 nvitop
 opencv-python
+open3d
 openpyxl
 optuna
 pandas
