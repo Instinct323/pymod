@@ -1,5 +1,8 @@
+# python==3.10.16
 brotli
 jupyter
+matplotlib
+numpy<2
 nvitop
 opencv-python
 open3d
@@ -13,11 +16,11 @@ tqdm
 xlrd
 
 # --- torch ---
-# https://pytorch.org/get-started/locally/
+# torch==2.4.1+cu121: https://pytorch.org/get-started/locally/
+# pytorch3d (linux-64): git+https://github.com/facebookresearch/pytorch3d.git@stable
 # grad-cam
-# diffusers[torch]
+# diffusers[torch] transformers
 # timm
-# transformers
 
 # --- deploy ---
 # netron
@@ -25,9 +28,9 @@ xlrd
 # openvino-dev[onnx]
 
 # --- Qt ---
-# pyqt5
-# pyside2
 # pyinstaller
+# pyqt5
+pyside2
 
 # --- nlp ---
 # nltk
@@ -39,15 +42,3 @@ xlrd
 # pdfminer.six
 pymupdf
 pypdf2
-
-# --- OpenMMLab ---
-# openmim
-# mmcls
-# mmcv==2.0.0
-# mmengine
-# mmeval
-# mmdet
-# mmpretrain
-# mmsegmentation
-# mmyolo
-# mmgen

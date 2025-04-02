@@ -47,22 +47,24 @@ if __name__ == '__main__':
     P = from_latexmat(r"""0 & 1 & 10 & -3 \\ 
 0 & 2 & 9 & -4 \\
 0 & 3 & 8 & -5 \\""", float)
-    P_ = from_latexmat(r"""10 & -3 & 1 & 0 \\
-9 & -4 & 2 & 0 \\
-8 & -5 & 3 & 0 \\""", float)
+    P_ = from_latexmat(r"""-3 & 10 & 1 & 0 \\
+-4 & 9 & 2 & 0 \\
+-5 & 8 & 3 & 0 \\""", float)
 
     Q = P - P.mean(axis=-1, keepdims=True)
     Q_ = P_ - P_.mean(axis=-1, keepdims=True)
+    print("Q_ =", from_numpy(Q_))
 
     W = Q @ Q_.T
-    print(from_numpy(W))
+    print("W =", from_numpy(W))
 
     u, s, vh = np.linalg.svd(W)
     R = u @ vh
-    print(from_numpy(np.round(R, 4)))
+    print("R =", from_numpy(np.round(R, 4)))
 
     t = np.mean(P - R @ P_, axis=-1, keepdims=True)
-    print(from_numpy(np.round(t, 4)))
+    print("t =", from_numpy(np.round(t, 4)))
 
-    error = P - (R @ P_ + t)
+    RP_t = R @ P_ + t
+    error = P - RP_t
     print(np.square(error).sum())
