@@ -35,8 +35,7 @@ class QwenVL:
         #   `attention_mask`: bool mask, 用于指示哪些 token 是非填充的
         #   `pixel_values`: 输入图像的像素值
         #   `image_grid_thw`: 时间维度, 高度、宽度上的 patch 数量
-        return self.processor(text=texts, images=images, videos=videos, padding=True, return_tensors="pt"
-                              ).to(self.device)
+        return self.processor(text=texts, images=images, videos=videos, padding=True, return_tensors="pt").to(self.device)
 
     def generate(self, inputs, max_new_tokens: int, return_ids: bool = False):
         generated_ids = self.model.generate(**inputs, max_new_tokens=max_new_tokens)
