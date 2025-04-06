@@ -1,27 +1,10 @@
-from pathlib import Path
 from typing import Callable, Union, Tuple, List
 
-import PIL.Image
 import torch
 from qwen_vl_utils import process_vision_info
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 
-
-def make_content(role, *contents) -> dict:
-    if isinstance(contents[0], str):
-        ret = contents[0]
-    else:
-        ret = []
-        for t, v in contents:
-            if t == "image":
-                if isinstance(v, Path): v = f"file://{v}"
-                assert isinstance(v, PIL.Image.Image) or any(v.startswith(prefix) for prefix in ("http", "file://"))
-            elif t == "text":
-                assert isinstance(v, str)
-            else:
-                raise TypeError(f"Unsupported content type: {t}")
-            ret.append({"type": t, t: v})
-    return {"role": role, "content": ret}
+from utils import *
 
 
 class QwenVL:
@@ -29,7 +12,7 @@ class QwenVL:
 
     def __init__(self,
                  pretrained_model_name_or_path: str,
-                 pixels_range: Tuple[int, int] = [256 * 28 * 28, 512 * 28 * 28],
+                 pixels_range: Tuple[int, int] = [256 * 28 * 28, 384 * 28 * 28],
                  torch_dtype: torch.dtype = "auto",
                  device_map: Union[str, torch.device] = "auto"):
         pixels_range = pixels_range or (None,) * 2
