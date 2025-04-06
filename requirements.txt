@@ -42,3 +42,6 @@ pyside2
 # pdfminer.six
 pymupdf
 pypdf2
+
+# --- cpp ---
+cmake==3.16.3
