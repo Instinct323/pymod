@@ -25,7 +25,7 @@ class DecisionWeight:
         elif self.xtype in ("img_rgb",):
             # 图像的像素灰度变化
             ret *= np.array([0.299, 0.587, 0.114])[..., None, None]
-            ret = np.abs(ret.sum(axis=-3))
+            ret = np.abs(ret).sum(axis=-3)
         else:
             assert ret is None, f"Unsupported xtype: {self.xtype}"
         return ret

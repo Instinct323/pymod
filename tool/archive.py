@@ -89,7 +89,7 @@ class FileArchiver:
         with (self.dst / ".archive.txt").open("w") as fi:
             for i, f in enumerate(tqdm(self.files, desc="Archiving")):
                 fi.write(str(f) + "\n")
-                name = file_fmt.replace("%n", f.stem).replace("%i", str(i).rjust(ndigit, "0"))
+                name = file_fmt.replace("%n", f.stem).replace("%i", str(i).zfill(ndigit))
                 shutil.copy(f, self.dst / (name + f.suffix))
 
     def include(self, txt_cfg):
