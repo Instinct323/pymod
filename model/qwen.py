@@ -1,11 +1,12 @@
 from functools import partial
 from typing import Callable, Union, Tuple, List
 
+import PIL.Image
 import torch
 from qwen_vl_utils import process_vision_info
-from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
+from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor, Qwen2_5_VLProcessor
 
-from utils import *
+from .utils import *
 
 
 class QwenVL:
@@ -17,7 +18,7 @@ class QwenVL:
                  torch_dtype: torch.dtype = "auto",
                  device_map: Union[str, torch.device] = "auto"):
         pixels_range = pixels_range or (None,) * 2
-        self.processor = AutoProcessor.from_pretrained(
+        self.processor: Qwen2_5_VLProcessor = AutoProcessor.from_pretrained(
             pretrained_model_name_or_path, use_fast=True, min_pixels=pixels_range[0], max_pixels=pixels_range[1]
         )
 
@@ -64,8 +65,8 @@ class QwenVL:
 
         t, h, w = image_grid_thw[0]
         pixel_values = pixel_values.view(t, h // merge_size, w // merge_size,
-                                                merge_size, merge_size, channel,
-                                                -1, patch_size, patch_size)
+                                         merge_size, merge_size, channel,
+                                         -1, patch_size, patch_size)
         pixel_values = pixel_values.permute(0, 6, 5, 1, 3, 7, 2, 4, 8)
         return pixel_values.flatten(6, 8).flatten(3, 5).flatten(0, 1)
 
@@ -73,23 +74,47 @@ class QwenVL:
 if __name__ == '__main__':
     model = QwenVL("Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype=torch.bfloat16)
 
-    fetch_grad = False
+    fetch_grad = True
+
+    image = PIL.Image.open("/media/tongzj/Data/Information/Source/image/Travel/东北/东北-长白山12.jpg").resize([336, 224])
     messages = [
         make_content("user",
-                     ("image", Path("/media/tongzj/Data/Information/Source/image/Travel/东北/东北-长白山12.jpg")),
+                     ("image", image),
                      ("text", "描述这张图片"))
     ]
     inputs = model.get_input_tensor(messages)
 
-    if fetch_grad:
+    if not fetch_grad:
+        ret = model.generate(inputs, 128)
+
+    else:
+        from pymod.zjdl.utils.deci_weight import DecisionWeight
+        import numpy as np
+
+        def save_grad(inputs, file):
+            # grad: [B, C, H, W] -> [H, W]
+            grad = model.reshape_pixels(inputs.pixel_values.grad, inputs.image_grid_thw).cpu().numpy()
+            grad *= np.array([0.299, 0.587, 0.114])[..., None, None]
+            grad = np.abs(grad).sum(axis=-3).mean(axis=0)
+            print(f"{file}: {grad.mean()}, {grad.max()}")
+
+            cmap = DecisionWeight.to_rgb(grad)
+            cmap = PIL.Image.blend(image.resize(grad.shape[::-1]), PIL.Image.fromarray(cmap), .5)
+            # cmap.save(file)
+            import matplotlib.pyplot as plt
+            plt.imshow(cmap)
+
         inputs.pixel_values.requires_grad_(True)
         # out: [1, token_size, vocab_size]
         ret, out = model.fetch_output(lambda: model.generate(inputs, 128, requires_grad=True))
         out = out[0].max(dim=-1)[0]
+
+        file_len = int(np.ceil(np.log10(len(out) + 1)).item())
         out.sum().backward()
-        # pixel_values: [B, C, H, W]
-        pixel_values = model.reshape_pixels(inputs.pixel_values.grad.cpu(), inputs.image_grid_thw).numpy()
-        print(pixel_values.shape)
-    else:
-        ret = model.generate(inputs, 128)
+        save_grad(inputs, f"tmp/{'0'.zfill(file_len)}.png")
+
+        # for i, x in enumerate(out):
+        # inputs.pixel_values.grad.zero_()
+        # x.backward(retain_graph=True)
+        # save_grad(inputs, f"tmp/{str(i + 1).zfill(file_len)}.png")
     print(ret)

@@ -38,7 +38,7 @@ class NumString:
     def __iter__(self):
         def generator():
             for i in range(0, 10 ** self.length, self.step):
-                yield str(i).rjust(self.length, "0")
+                yield str(i).zfill(self.length)
 
         return generator()
 
