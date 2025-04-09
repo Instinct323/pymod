@@ -72,12 +72,22 @@ class QwenVL:
 
 
 if __name__ == '__main__':
+    import re
+
     model = QwenVL("Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype=torch.bfloat16)
 
     fetch_grad = True
 
     image = PIL.Image.open("/media/tongzj/Data/Information/Source/image/Travel/东北/东北-长白山12.jpg").resize([336, 224])
+
+    # 提示词的变量部分
+    manipulator = "hand"
+    ret_fmt = "path=*,target=*"
+    ans_pos = [match.start(1) for match in re.finditer(r"=(.)", ret_fmt)]
+
     messages = [
+        make_content("system",
+                     f"现在我将使用{manipulator}进行一次操作任务，你需要返回符合如下格式的文本：\n{ret_fmt}\n其中*应该是Y/N，表示操作路径是否可见，或是操作目标是否可见"),
         make_content("user",
                      ("image", image),
                      ("text", "描述这张图片"))
@@ -100,21 +110,17 @@ if __name__ == '__main__':
 
             cmap = DecisionWeight.to_rgb(grad)
             cmap = PIL.Image.blend(image.resize(grad.shape[::-1]), PIL.Image.fromarray(cmap), .5)
-            # cmap.save(file)
-            import matplotlib.pyplot as plt
-            plt.imshow(cmap)
+            cmap.save(file)
 
         inputs.pixel_values.requires_grad_(True)
         # out: [1, token_size, vocab_size]
-        ret, out = model.fetch_output(lambda: model.generate(inputs, 128, requires_grad=True))
+        ret, out = model.fetch_output(lambda: model.generate(inputs, len(ret_fmt), requires_grad=True))
+        print(len(ret), out[0].shape)
         out = out[0].max(dim=-1)[0]
 
-        file_len = int(np.ceil(np.log10(len(out) + 1)).item())
-        out.sum().backward()
-        save_grad(inputs, f"tmp/{'0'.zfill(file_len)}.png")
+        for i in ans_pos:
+            out[i].backward(retain_graph=True)
+            save_grad(inputs, f"tmp/{i}-{ret[i]}.png")
+            inputs.pixel_values.grad.zero_()
 
-        # for i, x in enumerate(out):
-        # inputs.pixel_values.grad.zero_()
-        # x.backward(retain_graph=True)
-        # save_grad(inputs, f"tmp/{str(i + 1).zfill(file_len)}.png")
     print(ret)
