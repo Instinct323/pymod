@@ -31,7 +31,9 @@ class QwenVL:
         # 冻结模型参数
         for k, v in self.model.named_parameters(): v.requires_grad = False
 
-    def get_input_tensor(self, messages, batch_inference: bool = False):
+    def get_input_tensor(self,
+                         messages,
+                         batch_inference: bool = False):
         # fixme: batch_inference 不能正常使用
         texts: List[str] = [self.processor.apply_chat_template(msg, tokenize=False, add_generation_prompt=True)
                             for msg in (messages if batch_inference else [messages])]
@@ -44,15 +46,20 @@ class QwenVL:
         #   `image_grid_thw`: 时间维度, 高度、宽度上的 patch 数量
         return self.processor(text=texts, images=images, videos=videos, padding=True, return_tensors="pt").to(self.device)
 
-    def generate(self, inputs, max_new_tokens: int, requires_grad: bool = False):
+    def generate(self,
+                 inputs,
+                 max_new_tokens: int,
+                 requires_grad: bool = False,
+                 simplify: bool = True):
         generate = self.model.generate
         if requires_grad: generate = partial(generate.__wrapped__, self.model)
 
         generated_ids = generate(**inputs, max_new_tokens=max_new_tokens)
         ids = [outi[len(ini):] for ini, outi in zip(inputs.input_ids, generated_ids)]
-        return self.processor.batch_decode(ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+        return self.processor.batch_decode(ids, skip_special_tokens=simplify, clean_up_tokenization_spaces=False)
 
-    def fetch_output(self, forward: Callable):
+    def fetch_output(self,
+                     forward: Callable):
         outq = []
         hook = self.model.get_output_embeddings().register_forward_hook(lambda *args: outq.append(args[2]))
         ret = forward()  # self.model(**inputs)
@@ -61,7 +68,9 @@ class QwenVL:
         outq[0] = outq[0][:, -1:]
         return ret, torch.cat(outq, dim=1)
 
-    def reshape_pixels(self, pixel_values, image_grid_thw, channel: int = 3):
+    def reshape_pixels(self,
+                       pixel_values,
+                       image_grid_thw, channel: int = 3):
         # Qwen2VLImageProcessorFast._preprocess
         merge_size = self.processor.image_processor.merge_size
 
