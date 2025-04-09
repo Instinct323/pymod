@@ -4,22 +4,25 @@ from typing import Callable, Union, Tuple, List
 import PIL.Image
 import torch
 from qwen_vl_utils import process_vision_info
-from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor, Qwen2_5_VLProcessor
+from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor, Qwen2_5_VLProcessor, Qwen2VLImageProcessorFast
 
 from .utils import *
 
 
 class QwenVL:
+    patch_size = Qwen2VLImageProcessorFast.patch_size
     device = property(lambda self: self.model.device)
 
     def __init__(self,
                  pretrained_model_name_or_path: str,
-                 pixels_range: Tuple[int, int] = [4 * 28 * 28, 384 * 28 * 28],
+                 patches_range: Tuple[int, int] = (16, 512),
                  torch_dtype: torch.dtype = "auto",
                  device_map: Union[str, torch.device] = "auto"):
-        pixels_range = pixels_range or (None,) * 2
+        patches_range = patches_range or (None,) * 2
         self.processor: Qwen2_5_VLProcessor = AutoProcessor.from_pretrained(
-            pretrained_model_name_or_path, use_fast=True, min_pixels=pixels_range[0], max_pixels=pixels_range[1]
+            pretrained_model_name_or_path, use_fast=True,
+            min_pixels=patches_range[0] * self.patch_size ** 2,
+            max_pixels=patches_range[1] * self.patch_size ** 2
         )
 
         self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
@@ -60,23 +63,22 @@ class QwenVL:
 
     def reshape_pixels(self, pixel_values, image_grid_thw, channel: int = 3):
         # Qwen2VLImageProcessorFast._preprocess
-        patch_size = self.processor.image_processor.patch_size
         merge_size = self.processor.image_processor.merge_size
 
         t, h, w = image_grid_thw[0]
         pixel_values = pixel_values.view(t, h // merge_size, w // merge_size,
                                          merge_size, merge_size, channel,
-                                         -1, patch_size, patch_size)
+                                         -1, self.patch_size, self.patch_size)
         pixel_values = pixel_values.permute(0, 6, 5, 1, 3, 7, 2, 4, 8)
         return pixel_values.flatten(6, 8).flatten(3, 5).flatten(0, 1)
 
 
 if __name__ == '__main__':
-    model = QwenVL("Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype=torch.bfloat16)
+    model = QwenVL("Qwen/Qwen2.5-VL-3B-Instruct", (16, 256), torch_dtype=torch.bfloat16)
 
     fetch_grad = True
 
-    image = PIL.Image.open("/media/tongzj/Data/Information/Source/image/Travel/东北/东北-长白山12.jpg").resize([336, 224])
+    image = PIL.Image.open("/media/tongzj/Data/Information/Source/image/Travel/东北/东北-长白山12.jpg")
     messages = [
         make_content("user",
                      ("image", image),
