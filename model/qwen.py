@@ -83,32 +83,39 @@ class QwenVL:
 
 
 if __name__ == '__main__':
-    import re
-
     model = QwenVL("Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype=torch.bfloat16)
 
-    fetch_grad = True
-
-    image = PIL.Image.open("/media/tongzj/Data/Information/Source/image/Travel/东北/东北-长白山12.jpg")
-
-    # 提示词的变量部分
-    manipulator = "hand"
-    ret_fmt = "path=*,target=*"
-    ans_pos = [match.start(1) for match in re.finditer(r"=(.)", ret_fmt)]
-
-    messages = [
-        make_content("system",
-                     f"现在我将使用{manipulator}进行一次操作任务，你需要返回符合如下格式的文本：\n{ret_fmt}\n其中*应该是Y/N，表示操作路径是否可见，或是操作目标是否可见"),
-        make_content("user",
-                     ("image", image),
-                     ("text", "描述这张图片"))
-    ]
-    inputs = model.get_input_tensor(messages)
+    fetch_grad = False
 
     if not fetch_grad:
+        image = PIL.Image.open("/media/tongzj/Data/Information/Source/image/Travel/东北/东北-长白山12.jpg")
+
+        messages = [
+            make_content("user",
+                         ("image", image),
+                         ("text", "描述这张图片"))
+        ]
+        inputs = model.get_input_tensor(messages)
         ret = model.generate(inputs, 128)
 
     else:
+        image = PIL.Image.open("/media/tongzj/Data/Workbench/data/mani/3.jpeg")
+
+        # 提示词的变量部分
+        manipulator = "hand"
+        keyword = ["path", "target"]
+        ret_fmt = ",".join(f"{k}=*" for k in keyword)
+
+        messages = [
+            make_content("system",
+                         f"现在我将使用{manipulator}进行一次操作任务，你需要返回符合如下格式的文本：\n{ret_fmt}\n其中*应该是1/0，"
+                         f"{keyword[0]}表示最简的操作路径是否可见，{keyword[1]}表示操作目标是否可见"),
+            make_content("user",
+                         ("image", image),
+                         ("text", "把盖子拧到保温杯上"))
+        ]
+        inputs = model.get_input_tensor(messages)
+
         from pymod.zjdl.utils.deci_weight import DecisionWeight
         import numpy as np
 
@@ -126,12 +133,11 @@ if __name__ == '__main__':
         inputs.pixel_values.requires_grad_(True)
         # out: [1, token_size, vocab_size]
         ret, out = model.fetch_output(lambda: model.generate(inputs, len(ret_fmt), requires_grad=True))
-        print(len(ret), out[0].shape)
         out = out[0].max(dim=-1)[0]
 
-        for i in ans_pos:
-            out[i].backward(retain_graph=True)
-            save_grad(inputs, f"tmp/{i}-{ret[i]}.png")
+        for i, ans in enumerate(ret[0].split(",")):
+            out[2 * i - 1].backward(retain_graph=True)
+            save_grad(inputs, f"tmp/{ans}.png")
             inputs.pixel_values.grad.zero_()
 
     print(ret)
