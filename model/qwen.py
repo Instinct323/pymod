@@ -94,8 +94,7 @@ class QwenVL:
 class DevExpansion(QwenVL):
     manipulator = "hand"
     keyword = {"path": "whether the shortest operation path is visible (0/1)",
-               "target": "whether the operation target is visible (0/1)",
-               "reason": "the rationale for the decision (string)"}
+               "target": "whether the operation target is visible (0/1)"}
 
     def save_grad(self,
                   inputs,
@@ -111,9 +110,11 @@ class DevExpansion(QwenVL):
         grad = np.abs(grad).sum(axis=-3).mean(axis=0)
         print(f"{file}: {grad.mean()=}, {grad.max()=}")
 
+        # 融合梯度图和原图像
         cmap = DecisionWeight.to_rgb(grad)
         cmap = PIL.Image.blend(image.resize(grad.shape[::-1]), PIL.Image.fromarray(cmap), .5)
         cmap.save(file) if file else plt.imshow(cmap)
+        return grad
 
     def query(self,
               content: dict,
@@ -135,10 +136,20 @@ class DevExpansion(QwenVL):
         ret, out = ret[0], out[0].max(dim=-1)[0]
         print(f"{id_}: {ret}")
 
-        for i, ans in enumerate(ret.split("&")):
+        # 依次反向传播, 获得对每个 keyword 的梯度
+        grad_dict = {}
+        answers = ret.split("&")
+        for i, ans in enumerate(answers):
+            # 应该把所有答案为 0/1 的放在前面, 否则导致索引不正确
+            if len(ans.split("=")[1]) != 1: break
             out[2 * i - 1].backward(retain_graph=True)
-            self.save_grad(inputs, image, f"/tmp/qwen-dev/{id_}-{ans.strip()}.png")
+            # 保存梯度值
+            k, v = ans.split("=")
+            grad_dict[k] = v, self.save_grad(inputs, image, f"/tmp/qwen-dev/{id_}-{ans}.png")
             inputs.pixel_values.grad.zero_()
+        # fixme: 清除计算图, 未测试效果
+        del out
+        return grad_dict
 
 
 if __name__ == '__main__':
