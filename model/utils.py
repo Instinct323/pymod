@@ -4,6 +4,7 @@ import PIL.Image
 
 
 def make_content(role, *contents) -> dict:
+    """ :param role: user, assistant, system"""
     # text only
     if isinstance(contents[0], str):
         ret = contents[0]
