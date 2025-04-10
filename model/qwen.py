@@ -58,6 +58,15 @@ class QwenVL:
         ids = [outi[len(ini):] for ini, outi in zip(inputs.input_ids, generated_ids)]
         return self.processor.batch_decode(ids, skip_special_tokens=simplify, clean_up_tokenization_spaces=False)
 
+    def chat(self,
+             messages: list,
+             max_new_tokens: int):
+        messages = messages.copy()
+        messages.append(
+            make_content("assistant", self.generate(self.get_input_tensor(messages), max_new_tokens))[0]
+        )
+        return messages
+
     def fetch_output(self,
                      forward: Callable):
         outq = []
@@ -82,54 +91,40 @@ class QwenVL:
         return pixel_values.flatten(6, 8).flatten(3, 5).flatten(0, 1)
 
 
-if __name__ == '__main__':
-    model = QwenVL("Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype=torch.bfloat16)
+class DevExpansion(QwenVL):
+    manipulator = "hand"
+    keyword = {"path": "最简的操作路径是否可见", "target": "操作目标是否可见"}
 
-    fetch_grad = False
-
-    if not fetch_grad:
-        image = PIL.Image.open("/media/tongzj/Data/Information/Source/image/Travel/东北/东北-长白山12.jpg")
-
-        messages = [
-            make_content("user",
-                         ("image", image),
-                         ("text", "描述这张图片"))
-        ]
-        inputs = model.get_input_tensor(messages)
-        ret = model.generate(inputs, 128)
-
-    else:
-        image = PIL.Image.open("/media/tongzj/Data/Workbench/data/mani/3.jpeg")
-
-        # 提示词的变量部分
-        manipulator = "hand"
-        keyword = ["path", "target"]
-        ret_fmt = ",".join(f"{k}=*" for k in keyword)
-
-        messages = [
-            make_content("system",
-                         f"现在我将使用{manipulator}进行一次操作任务，你需要返回符合如下格式的文本：\n{ret_fmt}\n其中*应该是1/0，"
-                         f"{keyword[0]}表示最简的操作路径是否可见，{keyword[1]}表示操作目标是否可见"),
-            make_content("user",
-                         ("image", image),
-                         ("text", "把盖子拧到保温杯上"))
-        ]
-        inputs = model.get_input_tensor(messages)
-
+    def save_grad(self,
+                  inputs,
+                  image: PIL.Image.Image,
+                  file: Union[str, Path]):
         from pymod.zjdl.utils.deci_weight import DecisionWeight
+        import matplotlib.pyplot as plt
         import numpy as np
 
-        def save_grad(inputs, file):
-            # grad: [B, C, H, W] -> [H, W]
-            grad = model.reshape_pixels(inputs.pixel_values.grad, inputs.image_grid_thw).cpu().numpy()
-            grad *= np.array([0.299, 0.587, 0.114])[..., None, None]
-            grad = np.abs(grad).sum(axis=-3).mean(axis=0)
-            print(f"{file}: {grad.mean()}, {grad.max()}")
+        # grad: [B, C, H, W] -> [H, W]
+        grad = model.reshape_pixels(inputs.pixel_values.grad, inputs.image_grid_thw).cpu().numpy()
+        grad *= np.array([0.299, 0.587, 0.114])[..., None, None]
+        grad = np.abs(grad).sum(axis=-3).mean(axis=0)
+        print(f"{file}: {grad.mean()=}, {grad.max()=}")
 
-            cmap = DecisionWeight.to_rgb(grad)
-            cmap = PIL.Image.blend(image.resize(grad.shape[::-1]), PIL.Image.fromarray(cmap), .5)
-            cmap.save(file)
+        cmap = DecisionWeight.to_rgb(grad)
+        cmap = PIL.Image.blend(image.resize(grad.shape[::-1]), PIL.Image.fromarray(cmap), .5)
+        cmap.save(file) if file else plt.imshow(cmap)
 
+    def query(self,
+              content: dict,
+              id_: str = ""):
+        ret_fmt = ",".join(f"{k}=*" for k in self.keyword)
+
+        assert isinstance(content["image"], PIL.Image.Image)
+        messages = [make_content("system",
+                                 f"现在我将使用{self.manipulator}进行一次操作任务，你需要返回符合如下格式的文本：\n{ret_fmt}\n其中*应该是1/0，" +
+                                 ", ".join(f"{k}表示{v}" for k, v in self.keyword)), content]
+        print(messages)  # fixme: checkpoint
+
+        inputs = model.get_input_tensor(messages)
         inputs.pixel_values.requires_grad_(True)
         # out: [1, token_size, vocab_size]
         ret, out = model.fetch_output(lambda: model.generate(inputs, len(ret_fmt), requires_grad=True))
@@ -137,7 +132,27 @@ if __name__ == '__main__':
 
         for i, ans in enumerate(ret[0].split(",")):
             out[2 * i - 1].backward(retain_graph=True)
-            save_grad(inputs, f"tmp/{ans}.png")
+            self.save_grad(inputs, content["image"], f"tmp/{id_}-{ans}.png")
             inputs.pixel_values.grad.zero_()
 
-    print(ret)
+
+if __name__ == '__main__':
+    model = DevExpansion("Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype=torch.bfloat16)
+
+    fetch_grad = False
+
+    if not fetch_grad:
+        image = PIL.Image.open("/media/tongzj/Data/Information/Source/image/Travel/东北/东北-长白山12.jpg")
+        messages = [
+            make_content("user",
+                         ("image", image),
+                         ("text", "描述这张图片"))
+        ]
+        messages = model.chat(messages)
+        print(messages)
+
+    else:
+        image = PIL.Image.open("/media/tongzj/Data/Workbench/data/mani/3.jpeg")
+        model.query(make_content("user",
+                                 ("image", image),
+                                 ("text", "把盖子拧到保温杯上")))
