@@ -93,7 +93,9 @@ class QwenVL:
 
 class DevExpansion(QwenVL):
     manipulator = "hand"
-    keyword = {"path": "最简的操作路径是否可见", "target": "操作目标是否可见"}
+    keyword = {"path": "whether the shortest operation path is visible (0/1)",
+               "target": "whether the operation target is visible (0/1)",
+               "reason": "the rationale for the decision (string)"}
 
     def save_grad(self,
                   inputs,
@@ -104,7 +106,7 @@ class DevExpansion(QwenVL):
         import numpy as np
 
         # grad: [B, C, H, W] -> [H, W]
-        grad = model.reshape_pixels(inputs.pixel_values.grad, inputs.image_grid_thw).cpu().numpy()
+        grad = self.reshape_pixels(inputs.pixel_values.grad, inputs.image_grid_thw).cpu().numpy()
         grad *= np.array([0.299, 0.587, 0.114])[..., None, None]
         grad = np.abs(grad).sum(axis=-3).mean(axis=0)
         print(f"{file}: {grad.mean()=}, {grad.max()=}")
@@ -116,30 +118,33 @@ class DevExpansion(QwenVL):
     def query(self,
               content: dict,
               id_: str = ""):
-        ret_fmt = ",".join(f"{k}=*" for k in self.keyword)
+        ret_fmt = "&".join(f"{k}=*" for k in self.keyword)
+        image = [c["image"] for c in content["content"] if c["type"] == "image"].pop()
 
-        assert isinstance(content["image"], PIL.Image.Image)
+        assert isinstance(image, PIL.Image.Image)
         messages = [make_content("system",
-                                 f"现在我将使用{self.manipulator}进行一次操作任务，你需要返回符合如下格式的文本：\n{ret_fmt}\n其中*应该是1/0，" +
-                                 ", ".join(f"{k}表示{v}" for k, v in self.keyword)), content]
-        print(messages)  # fixme: checkpoint
+                                 f"Now I am going to perform an operational task using '{self.manipulator}'. "
+                                 f"You need to return a text in the following format: \n{ret_fmt}\n" +
+                                 ", ".join(f"'{k}' indicates {v}" for k, v in self.keyword.items())), content]
+        print(messages)
 
-        inputs = model.get_input_tensor(messages)
+        inputs = self.get_input_tensor(messages)
         inputs.pixel_values.requires_grad_(True)
         # out: [1, token_size, vocab_size]
-        ret, out = model.fetch_output(lambda: model.generate(inputs, len(ret_fmt), requires_grad=True))
-        out = out[0].max(dim=-1)[0]
+        ret, out = self.fetch_output(lambda: self.generate(inputs, 32, requires_grad=True))
+        ret, out = ret[0], out[0].max(dim=-1)[0]
+        print(f"{id_}: {ret}")
 
-        for i, ans in enumerate(ret[0].split(",")):
+        for i, ans in enumerate(ret.split("&")):
             out[2 * i - 1].backward(retain_graph=True)
-            self.save_grad(inputs, content["image"], f"tmp/{id_}-{ans}.png")
+            self.save_grad(inputs, image, f"/tmp/qwen-dev/{id_}-{ans.strip()}.png")
             inputs.pixel_values.grad.zero_()
 
 
 if __name__ == '__main__':
-    model = DevExpansion("Qwen/Qwen2.5-VL-3B-Instruct", torch_dtype=torch.bfloat16)
+    model = DevExpansion("Qwen/Qwen2.5-VL-7B-Instruct", torch_dtype=torch.bfloat16)
 
-    fetch_grad = False
+    fetch_grad = True
 
     if not fetch_grad:
         image = PIL.Image.open("/media/tongzj/Data/Information/Source/image/Travel/东北/东北-长白山12.jpg")
@@ -152,7 +157,8 @@ if __name__ == '__main__':
         print(messages)
 
     else:
-        image = PIL.Image.open("/media/tongzj/Data/Workbench/data/mani/3.jpeg")
-        model.query(make_content("user",
-                                 ("image", image),
-                                 ("text", "把盖子拧到保温杯上")))
+        ROOT = Path("/media/tongzj/Data/Workbench/data/mani")
+        for f in ROOT.glob("*.jpeg"):
+            model.query(make_content("user",
+                                     ("image", PIL.Image.open(f)),
+                                     ("text", "Pick up the lid first, and then screw the lid onto the thermos.")), f.stem)
