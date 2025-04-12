@@ -3,7 +3,6 @@ brotli
 jupyter
 matplotlib
 numpy<2
-nvitop
 opencv-python
 open3d
 openpyxl
@@ -46,5 +45,7 @@ pyside2
 pymupdf
 pypdf2
 
-# --- cpp ---
+# --- bin ---
 # cmake==3.16.3
+git-filter-repo
+nvitop

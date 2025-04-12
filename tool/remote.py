@@ -1,5 +1,4 @@
 import datetime
-import os
 from pathlib import Path
 
 from zjcmd import *
@@ -67,8 +66,8 @@ if __name__ == '__main__':
 
     ROOT = Path("D:/" if os.name == "nt" else "/media/tongzj/Data")
 
-    to_push = ROOT / "Workbench/cppmod", ROOT / "Workbench/pymod", ROOT / "Information/notes"
+    repos = ROOT / "Workbench/cppmod", ROOT / "Workbench/pymod", ROOT / "Information/notes"
+    repos = [GitRepo(p) for p in repos]
 
-    for p in to_push:
-        repo = GitRepo(p).activate().add().commit(f"update on {datetime.datetime.today()}"
-                                                  ).pull().push()
+    for r in repos:
+        r.activate().add().commit(f"update on {datetime.datetime.today()}").pull().push()
