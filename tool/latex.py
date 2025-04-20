@@ -44,27 +44,6 @@ def from_latexmat(context: str,
 
 if __name__ == '__main__':
     # print(vec2latexmat([""] * 9, (3, 3)))
-    P = from_latexmat(r"""0 & 1 & 10 & -3 \\ 
-0 & 2 & 9 & -4 \\
-0 & 3 & 8 & -5 \\""", float)
-    P_ = from_latexmat(r"""-3 & 10 & 1 & 0 \\
--4 & 9 & 2 & 0 \\
--5 & 8 & 3 & 0 \\""", float)
-
-    Q = P - P.mean(axis=-1, keepdims=True)
-    Q_ = P_ - P_.mean(axis=-1, keepdims=True)
-    print("Q_ =", from_numpy(Q_))
-
-    W = Q @ Q_.T
-    print("W =", from_numpy(W))
-
-    u, s, vh = np.linalg.svd(W)
-    R = u @ vh
-    print("R =", from_numpy(np.round(R, 4)))
-
-    t = np.mean(P - R @ P_, axis=-1, keepdims=True)
-    print("t =", from_numpy(np.round(t, 4)))
-
-    RP_t = R @ P_ + t
-    error = P - RP_t
-    print(np.square(error).sum())
+    A = from_latexmat(r"""100 & 99 \\
+99 & 98""", eval)
+    print(from_numpy(np.linalg.inv(A)))
