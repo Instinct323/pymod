@@ -3,6 +3,7 @@ __pycache__
 __openvino_cache__
 .ipynb_checkpoints
 ~$*.*
+.~*.*
 
 # Environments
 desktop.ini
@@ -21,6 +22,7 @@ install
 
 # Neural Network weights 
 *.pt
+*.pth
 *.onnx
 *.pkf
 
