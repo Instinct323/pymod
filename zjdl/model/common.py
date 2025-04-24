@@ -630,7 +630,6 @@ class MultiheadAttn(nn.Module):
         self.nhead = nhead
         self.chead = c1 // nhead
         assert nhead * self.chead == c1, "c1 must be divisible by n"
-        self.scale = 1 / math.sqrt(self.chead)
 
         self.q = nn.Linear(in_features=c1, out_features=c1, bias=bias)
         self.kv = nn.Linear(in_features=c1, out_features=2 * c1, bias=bias)
@@ -642,7 +641,7 @@ class MultiheadAttn(nn.Module):
             self.sr = SeqConv(c1, c1, s, s)
             self.norm = nn.LayerNorm(c1)
 
-        self.attn_drop = nn.Dropout(p=drop)
+        self.attn_drop = drop
         self.out_drop = nn.Dropout(p=drop)
         self.proj = nn.Linear(in_features=c1, out_features=c1)
 
@@ -652,38 +651,32 @@ class MultiheadAttn(nn.Module):
     def qkv_proj(self, query, key=None):
         key = query if key is None else key
         B, L, C = map(int, key.shape)
-        dims = (-1, L, self.nhead, self.chead) if self.nhead != 1 else None
+        dims = (-1, L, self.nhead, self.chead)
         # q: [B, L, C] -> [B, L, N, C_head] -> [B, N, L, C_head]
-        q = self.norm_q(self.q(query)) * self.scale
-        if dims:
-            q = q.view(*dims).transpose(1, 2)
+        q = self.norm_q(self.q(query))
+        q = q.view(*dims).transpose(1, 2)
         # Spatial-reduction
         if self.sr_radio > 1:
             key = self.norm(self.sr(key))
-        # k: [B, L, C] -> [B, L", N, C_head] -> [B, N, C_head, L"]
-        # v: [B, L, C] -> [B, L", N, C_head] -> [B, N, L", C_head]
+        # k, v: [B, L, C] -> [B, L", N, C_head] -> [B, N, L", C_head]
         k, v = self.kv(key).chunk(2, -1)
         k = self.norm_k(k)
-        if dims:
-            k = k.view(*dims).permute(0, 2, 3, 1)
-            v = v.view(*dims).transpose(1, 2)
-        else:
-            k = k.transpose(1, 2)
+        k = k.view(*dims).transpose(1, 2)
+        v = v.view(*dims).transpose(1, 2)
         return q, k, v
 
     def out_proj(self, out):
         # out[B, N, L, C_head] -> out[B, L, C]
-        if self.nhead != 1:
-            out = out.transpose(1, 2).flatten(start_dim=2)
+        out = out.transpose(1, 2).flatten(start_dim=2)
         return self.out_drop(self.proj(out))
 
     def forward(self, query, key=None):
         q, k, v = self.qkv_proj(query, key)
-        # q[B, N, L, C_head] × k[B, N, C_head, L] = attn[B, N, L, L]
+        # out[B, N, L, C_head]
         # N 对浮点运算量的影响主要在 softmax
-        attn = self.attn_drop(F.softmax(q @ k, dim=-1))
-        # attn[B, N, L, L"] × v[B, N, L", C_head] = out[B, N, L, C_head]
-        return self.out_proj(attn @ v)
+        out = F.scaled_dot_product_attention(q, k, v, dropout_p=self.attn_drop)
+        # attn = self.attn_drop(F.softmax(q @ k, dim=-1))
+        return self.out_proj(out)
 
 
 @register_module("c1")
@@ -819,9 +812,5 @@ class GroupingLayer(nn.Module):
 if __name__ == "__main__":
     a = torch.rand(2, 32, 64)
 
-    model = nn.Sequential(
-        GroupingLayer(64, 8),
-        GroupingLayer(64, 4)
-    )
-    model(a)
-    print(GroupingLayer.segment(model, fmap_size=(4, 8), img_size=(16, 32)).shape)
+    model = MultiheadAttn(64, nhead=4)
+    print(model(a).shape)

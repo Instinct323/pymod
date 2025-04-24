@@ -137,8 +137,9 @@ def set_print_only():
 
 
 if __name__ == "__main__":
-    set_print_only()
+    # set_print_only()
 
     # PythonExtLibs.dump(["/usr/lib/python3/dist-packages"])
     # PythonExtLibs.temp_disable()
-    CondaEnv.config()
+    # CondaEnv.config()
+    PythonEnv.install("ftfy")

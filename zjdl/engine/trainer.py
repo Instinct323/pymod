@@ -35,7 +35,7 @@ def select_device(device="", batch_size=None, verbose=True):
     else:
         s += "CPU\n"
     if verbose: LOGGER.info(s)
-    return torch.device("cuda:0" if cuda else "cpu")
+    return torch.device("cuda" if cuda else "cpu")
 
 
 class CosineLR(torch.optim.lr_scheduler.LambdaLR):

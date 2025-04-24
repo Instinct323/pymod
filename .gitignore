@@ -20,7 +20,8 @@ log
 runs
 install
 
-# Neural Network weights 
+# Neural Network weights
+checkpoints
 *.pt
 *.pth
 *.onnx
