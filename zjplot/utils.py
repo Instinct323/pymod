@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import Union, Tuple
 
+import matplotlib
 import matplotlib.patches as pch
 import matplotlib.pyplot as plt
 import numpy as np
@@ -46,6 +47,12 @@ def rand_colors(n=1, cmap=rainbow, seed=0):
             ret += rand_colors(n - len(ret), cmap=None)
         return ret
     return np.random.random([n, 3]).tolist()
+
+
+def colormap(scale, cmap="Spectral_r", normalize=True):
+    cmap = matplotlib.colormaps.get_cmap(cmap)
+    if normalize: scale = (scale - scale.min()) / (scale.max() - scale.min())
+    return (cmap(scale)[:, :, :3] * 255)[:, :, ::-1].astype(np.uint8)
 
 
 def figure3d():
