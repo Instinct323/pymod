@@ -142,4 +142,4 @@ if __name__ == "__main__":
     # PythonExtLibs.dump(["/usr/lib/python3/dist-packages"])
     # PythonExtLibs.temp_disable()
     # CondaEnv.config()
-    PythonEnv.install("ftfy")
+    PythonEnv.install("pikepdf")

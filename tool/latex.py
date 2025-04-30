@@ -43,7 +43,4 @@ def from_latexmat(context: str,
 
 
 if __name__ == '__main__':
-    # print(vec2latexmat([""] * 9, (3, 3)))
-    A = from_latexmat(r"""100 & 99 \\
-99 & 98""", eval)
-    print(from_numpy(np.linalg.inv(A)))
+    print(vec2latexmat([""] * 9, (3, 3)))
