@@ -132,7 +132,7 @@ class TspPath(ChromosomeBase):
 
     def __init__(self, data=None):
         # self.data = data if isinstance(data, np.ndarray) else np.random.permutation(self.n)
-        if isinstance(data, np.ndarray):
+        if data is not None:
             self.data = data
         else:
             if self.cluster:

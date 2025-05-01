@@ -155,7 +155,7 @@ class HexagonalMesh:
         self._w, self._h = w, h
         self.data = self.default[None, None].repeat(h, 0).repeat(w, 1)
         # 对给定的数据进行裁剪
-        if isinstance(data, np.ndarray):
+        if data is not None:
             data = data.flatten()[:self.data.size].astype(self.default.dtype)
             self.data = data.reshape(self.data.shape)
 

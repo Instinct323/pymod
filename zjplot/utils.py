@@ -203,7 +203,7 @@ def corrplot(df: pd.DataFrame,
     # 显示上三角部分的相关系数标注
     ax = sns.heatmap(df * 0, vmax=1, annot=df, fmt=".2f", cbar=False, cmap="binary", square=True,
                      mask=np.tril(np.ones_like(df, dtype=bool)))
-    r = (size if isinstance(size, np.ndarray) else np.ones_like(df)) / 2
+    r = (np.ones_like(df) if size is None else size) / 2
     # 获取颜色映射对象
     cmap = plt.get_cmap(cmap)
     # 创建一个归一化对象，用于将相关系数映射到颜色

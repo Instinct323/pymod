@@ -26,7 +26,7 @@ def kernel_select(img, k, s=1, d=1, pad_value=0, axis=0):
 
 def kernel_func(x1, x2=None, kernel="rbf", args=(1,)):
     # K(x, x') = Φ(x)^T Φ(x')
-    x2 = x2 if isinstance(x2, np.ndarray) else x1
+    x2 = x1 if x2 is None else x2
     # linear function
     if kernel == "linear":
         return x1 @ x2.T

@@ -41,7 +41,7 @@ class Spot:
 
     def produce(self, filt=None):
         # 筛除生存时间耗尽的斑点
-        if isinstance(filt, np.ndarray):
+        if filt is not None:
             for key in ("start", "color", "xy", "radius", "deltas"):
                 setattr(self, key, getattr(self, key)[filt])
         # 补全缺失的斑点

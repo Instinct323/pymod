@@ -81,7 +81,7 @@ class SingleObjTrack(KalmenFilter):
         self._time_since_update = 0
 
     def track(self, measurement=None):
-        if isinstance(measurement, np.ndarray):
+        if measurement is not None:
             self._hits, self._time_since_update = self._hits + 1, 0
             if self:
                 self.status = self.predict(*self.status)
@@ -90,7 +90,7 @@ class SingleObjTrack(KalmenFilter):
             if self:
                 self.status = self.predict(*self.status)
                 measurement = self.status[0][:self._ndim]
-        if isinstance(measurement, np.ndarray):
+        if measurement is not None:
             self.status = self.update(measurement, *self.status) \
                 if self else self.initiate(measurement)
         return self.status[0]

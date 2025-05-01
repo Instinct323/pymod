@@ -16,7 +16,7 @@ class AsciiArt:
 
     def __call__(self, img, rows=20):
         img = cv2.imread(str(img), flags=cv2.IMREAD_GRAYSCALE)
-        if isinstance(img, np.ndarray):
+        if img is not None:
             scale = rows / img.shape[0] * np.array([1, 2.8])
             # 得到新的尺寸
             new_shape = np.round(np.array(img.shape) * scale).astype(np.int32)
@@ -69,7 +69,7 @@ class Puzzle:
 
     def imread(self, file, warn_only=True):
         img = cv2.imread(str(file))
-        check = isinstance(img, np.ndarray)
+        check = img is not None
         # 无法读取时发出警告
         if not check:
             msg = f"Unreadable image file: {file}"
