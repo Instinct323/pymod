@@ -69,22 +69,12 @@ def fig2img(fig: plt.Figure = None):
     return img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
 
 
-def savefig(file: Path,
-            crop_white: bool = True):
-    """ 保存图像"""
-    file = Path(file)
-    file.parent.mkdir(parents=True, exist_ok=True)
-    # 裁剪白边
-    if crop_white:
-        import cv2
-        img = fig2img()
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        x, y, w, h = cv2.boundingRect(255 - gray)
-        # 保存图像
-        buffer = cv2.imencode(file.suffix, img[y:y + h, x:x + w, ::-1])[1]
-        file.write_bytes(buffer)
-    else:
-        plt.savefig(file)
+def crop_white(file: Path):
+    import cv2
+    img = cv2.imread(file)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    x, y, w, h = cv2.boundingRect(255 - gray)
+    cv2.imwrite(file, img[y:y + h, x:x + w])
 
 
 def pie_kwd(labels, decimal=2, colors=None):
