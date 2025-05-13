@@ -8,8 +8,7 @@ import torch
 import yaml
 from torch import nn
 
-logging.basicConfig(format="%(message)s", level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("utils")
 
 
 def is_parallel(model):

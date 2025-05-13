@@ -8,8 +8,7 @@ import yaml
 
 from .result import Result
 
-logging.basicConfig(format="%(message)s", level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("utils")
 
 
 class ModelScaling:

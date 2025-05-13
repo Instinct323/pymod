@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 
 logging.basicConfig(format="%(message)s", level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("utils")
 
 # matplotlib 颜色常量
 red = "orangered"

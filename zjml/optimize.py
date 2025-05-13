@@ -5,7 +5,7 @@ import torch
 from tqdm import tqdm
 
 logging.basicConfig(format="%(message)s", level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("utils")
 
 torch.autograd.set_detect_anomaly(True)
 

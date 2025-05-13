@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 logging.basicConfig(format="[%(levelname)s] %(message)s", level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger("utils")
 
 
 class AsciiArt:
