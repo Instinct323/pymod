@@ -20,7 +20,6 @@ runs
 install
 
 # Neural Network weights
-checkpoints
 *.pt
 *.pth
 *.onnx

@@ -61,8 +61,8 @@ class GitRepo:
 
 
 if __name__ == '__main__':
-    # myjammy = RemoteHost("root", "127.0.0.1", 30021)
-    # print(myjammy.upload(r"D:\Information\Notes", "/home/workbench/tmp"))
+    # remote = RemoteHost("tongzanjia", "10.16.95.165")
+    # print(remote.scp("/home/tongzj/.cache/huggingface", "/data1/tongzj/huggingface", True)), exit()
 
     ROOT = Path("D:/" if os.name == "nt" else "/media/tongzj/Data")
 

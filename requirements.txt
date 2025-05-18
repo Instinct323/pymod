@@ -11,6 +11,7 @@ pandas
 pyyaml
 scikit-learn
 seaborn
+supervision
 tqdm
 xlrd
 
