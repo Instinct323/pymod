@@ -4,6 +4,7 @@ from typing import Union, Tuple
 
 import cv2
 import numpy as np
+import supervision as sv
 
 BG_COLOR = 114
 # {"bmp", "webp", "pfm", "ppm", "ras", "pnm", "dib", "tiff", "pbm", "pic",
@@ -21,28 +22,12 @@ def to_tensor(img: np.ndarray,
     return img.permute(0, *pdim) if img.dim() == 4 else img.permute(*pdim)
 
 
-def scale(src: np.ndarray,
-          img_size: Union[int, Tuple[int, int]] = None,
-          r: float = None):
-    src_size = np.array(src.shape[1::-1])
-    # 未指定缩放比例, 使用 img_size 获取
-    if not r:
-        img_size = np.array(to_2tuple(img_size))
-        r = min(img_size / src_size)
-    # 使用 r 缩放图像
-    img_size = np.round(r * src_size).astype(np.int64)
-    if np.any(img_size != src_size):
-        src = cv2.resize(src, img_size)
-        r = min(img_size / src_size)
-    return src, r
-
-
 def load_img(file: Union[str, Path],
              img_size: int = None) -> np.ndarray:
     bgr = cv2.imread(str(file))
     assert isinstance(bgr, np.ndarray), f"Error loading data from {file}"
     if img_size:
-        bgr = scale(bgr, img_size)[0]
+        bgr = sv.resize_image(bgr, [img_size] * 2, keep_aspect_ratio=True)
     return bgr
 
 
@@ -62,7 +47,8 @@ def fsize_lim_save(file: Path,
     best = (0, None)
     for i in range(max_iter):
         # 图像缩放, 最大缩放比例为 2
-        tmp, r_img = scale(img, r=min(2, r_img * capa_tar / capacity[-1]))
+        tmp = sv.scale_image(img, min(2, r_img * capa_tar / capacity[-1]))
+        r_img = tmp.shape[0] / img.shape[0]
         cv2.imwrite(str(file), tmp)
         capacity.append(file.stat().st_size / fsize)
         # 保存最好的结果
@@ -74,7 +60,7 @@ def fsize_lim_save(file: Path,
         if capacity[-1] in capacity[-3:-1]:
             capa_tar = 1 - eps * np.random.random()
     # 重新缩放图像
-    cv2.imwrite(str(file), scale(img, r=best[1])[0])
+    cv2.imwrite(str(file), sv.scale_image(img, best[1])[0])
     return best[1]
 
 
@@ -84,33 +70,6 @@ def check_imgfile(file: Path):
     assert file.suffix[1:] in IMG_FORMAT, f"Unsupported image format: {file.suffix}"
     assert not re.search(r"[\u4e00-\u9fa5]", file.stem), f"Invalid image name: {file}"
     return file
-
-
-def letter_box(bgr: np.ndarray,
-               img_size: Union[int, Tuple[int, int]],
-               pad: Union[int, Tuple[int, int, int]] = BG_COLOR,
-               stride: int = None):
-    """ 边界填充至指定尺寸"""
-    img_size = to_2tuple(img_size)
-    pad = (pad,) * 3 if isinstance(pad, int) else pad
-    bgr, r = scale(bgr, img_size)
-    # 放缩后的原始尺寸
-    h, w = bgr.shape[:2]
-    dh, dw = img_size[1] - h, img_size[0] - w
-    # 最小化边界尺寸
-    if stride: dh, dw = map(lambda x: x % stride, (dh, dw))
-    dh, dw = map(lambda x: x / 2, (dh, dw))
-    # 添加边界
-    top, bottom = map(round, (dh - 0.1, dh + 0.1))
-    left, right = map(round, (dw - 0.1, dw + 0.1))
-    bgr = cv2.copyMakeBorder(bgr, top, bottom, left, right, cv2.BORDER_CONSTANT, value=pad)  # add border
-    return bgr, r, (dh, dw)
-
-
-def img_mul(img: np.ndarray,
-            alpha: float):
-    img = img.astype(np.float16)
-    return np.uint8(np.clip((img * alpha).round(), a_min=0, a_max=255))
 
 
 class VideoWriter(cv2.VideoWriter):
@@ -129,7 +88,7 @@ class VideoWriter(cv2.VideoWriter):
                  pad: int = 255,
                  cvt_color: int = None):
         self.img_size = width, round(width / aspect_radio)
-        self.pad = pad
+        self.pad = [pad] * 3
         self.cvt_color = cvt_color
         fourcc = cv2.VideoWriter_fourcc(*"H264")
         assert Path(dst).suffix == ".mp4", "The video format must be mp4"
@@ -144,7 +103,7 @@ class VideoWriter(cv2.VideoWriter):
                 raise TypeError("Unrecognized image type")
         # 颜色空间变换
         if self.cvt_color is not None: img = cv2.cvtColor(img, self.cvt_color)
-        super().write(letter_box(img, self.img_size, pad=self.pad)[0])
+        super().write(sv.letterbox_image(img, self.img_size, self.pad)[0])
 
     def save(self):
         self.release()

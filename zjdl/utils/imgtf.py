@@ -3,6 +3,12 @@ from collections import Counter
 from pymod.utils.zjcv import *
 
 
+def img_mul(img: np.ndarray,
+            alpha: float):
+    img = img.astype(np.float16)
+    return np.uint8(np.clip((img * alpha).round(), a_min=0, a_max=255))
+
+
 class _augment:
 
     def get_param(self) -> dict:
