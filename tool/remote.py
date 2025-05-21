@@ -61,7 +61,7 @@ class GitRepo:
 
 
 if __name__ == '__main__':
-    # remote = RemoteHost("tongzanjia", "10.16.95.165")
+    # remote = RemoteHost("tongzanjia", "")
     # print(remote.scp("/home/tongzj/.cache/huggingface", "/data1/tongzj/huggingface", True)), exit()
 
     ROOT = Path("D:/" if os.name == "nt" else "/media/tongzj/Data")
