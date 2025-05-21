@@ -285,16 +285,15 @@ if __name__ == "__main__":
 
         @classmethod
         def main(cls):
-            import cv2
+            import supervision as sv
             from pathlib import Path
             from pymod.zjplot.utils import PltVideo
-            from pymod.utils.zjcv import VideoWriter
 
             root = Path(r"D:\Downloads")
             cls.b_rm_dup = False
 
             file = root / ("auck-" + ("best.mp4" if cls.b_rm_dup else "w-dup.mp4"))
-            with PltVideo(323, VideoWriter(file, cvt_color=cv2.COLOR_RGB2BGR)) as pv:
+            with PltVideo(file, sv.VideoInfo(width=1920, height=1440, fps=30), 323) as pv:
                 # 初始化 PSO, 开始优化
                 best, log = My_PSO(100).fit(200, DecayScheduler(), vis_itv=1, plt_video=pv)
             print(best, log, sep="\n")

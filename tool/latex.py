@@ -43,4 +43,4 @@ def from_latexmat(context: str,
 
 
 if __name__ == '__main__':
-    print(vec2latexmat(np.arange(12), (3, 4)))
+    pass

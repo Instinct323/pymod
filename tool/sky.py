@@ -1,5 +1,7 @@
 from typing import Callable, Iterable
 
+import cv2
+from PySide2.examples.charts.audio import resolution
 from tqdm import tqdm
 
 from pymod.utils.zjcv import *
@@ -39,24 +41,24 @@ def star_trails_image(
 
 
 if __name__ == "__main__":
-    i = 1
+    i = 0
 
     # exp 1: 星轨视频制作
     if i == 0:
         # 生成序列
-        src = Path("D:/Information/Data/dataset/dali-star-trails")
+        src = Path(r"D:\Information\Source\dataset\dali-star-trails")
         raw = src.parent / "raw.mp4"
         if src.is_dir() and not raw.is_file():
-            with VideoWriter(raw) as vw:
-                for img in src.iterdir():
-                    vw.write(img)
+            with VideoSink(raw) as vs:
+                for img in tqdm(list(src.iterdir()), desc="Generating video"):
+                    vs.write_frame(img)
         # 星轨效果
         target = src.parent / "target.mp4"
         dst = src.parent / "final.mp4"
         if target.is_file() and not dst.is_file():
-            with VideoWriter(dst) as vw:
-                for img in star_trails_video(VideoCap(target)):
-                    vw.write(img)
+            with VideoSink(dst) as vs:
+                for img in star_trails_video(sv.get_video_frames_generator(target)):
+                    vs.write_frame(img)
                     cv2.imshow("s", img)
                     cv2.waitKey(1)
 

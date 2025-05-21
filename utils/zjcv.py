@@ -72,108 +72,29 @@ def check_imgfile(file: Path):
     return file
 
 
-class VideoWriter(cv2.VideoWriter):
+class VideoSink(sv.VideoSink):
     """ :param dst: 视频文件名称 (*.mp4)
         :param width: 视频宽度
         :param aspect_radio: 视频宽高比
-        :param fps: 视频帧率
-        :param pad: 边界填充颜色
-        :param cvt_color: 颜色空间转换"""
+        :param fps: 视频帧率 """
 
     def __init__(self,
                  dst: Union[Path, str],
                  width: int = 1920,
                  aspect_radio: float = 4 / 3,
                  fps: int = 30,
-                 pad: int = 255,
-                 cvt_color: int = None):
-        self.img_size = width, round(width / aspect_radio)
+                 pad: int = 255):
+        super().__init__(str(dst), sv.VideoInfo(width=width, height=round(width / aspect_radio), fps=fps))
         self.pad = [pad] * 3
-        self.cvt_color = cvt_color
-        fourcc = cv2.VideoWriter_fourcc(*"H264")
-        assert Path(dst).suffix == ".mp4", "The video format must be mp4"
-        super().__init__(str(dst), fourcc, fps, self.img_size)
 
-    def write(self, img: Union[np.ndarray, str, Path]):
+    def write_frame(self, img: Union[np.ndarray, str, Path]):
         if not isinstance(img, np.ndarray):
             # 从其他数据类型加载图像
             if isinstance(img, (str, Path)):
                 img = load_img(img)
             else:
                 raise TypeError("Unrecognized image type")
-        # 颜色空间变换
-        if self.cvt_color is not None: img = cv2.cvtColor(img, self.cvt_color)
-        super().write(sv.letterbox_image(img, self.img_size, self.pad)[0])
-
-    def save(self):
-        self.release()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.save()
-        if exc_type: return False
-        return self
-
-
-class VideoCap(cv2.VideoCapture):
-    """ 视频捕获
-        :param src: 视频文件名称 (默认连接摄像头)
-        :param delay: 视频帧的滞留时间 (ms)
-        :param dpi: 相机分辨率"""
-
-    def __init__(self,
-                 src: Union[int, str, Path] = 0,
-                 delay: int = 0,
-                 dpi: list = None):
-        src = str(src) if isinstance(src, Path) else src
-        super().__init__(src)
-        if not self.isOpened():
-            raise RuntimeError("Failed to initialize video capture")
-        self.delay = delay
-        # 设置相机的分辨率
-        if dpi:
-            assert src == 0, "Only camera can set resolution"
-            self.set(cv2.CAP_PROP_FRAME_WIDTH, dpi[0])
-            self.set(cv2.CAP_PROP_FRAME_HEIGHT, dpi[1])
-
-    def __iter__(self):
-        def generator():
-            while True:
-                ok, image = self.read()
-                if not ok: break
-                if self.delay:
-                    cv2.imshow("frame", image)
-                    cv2.waitKey(self.delay)
-                yield image
-            # 回到开头
-            self.set(cv2.CAP_PROP_POS_FRAMES, 0)
-
-        return generator()
-
-    def __len__(self):
-        return round(self.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    def flow(self):
-        delay, self.delay = self.delay, 0
-        gray1 = cv2.cvtColor(next(self), cv2.COLOR_BGR2GRAY)
-        for rgb in self:
-            gray2 = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY)
-            # 两通道, 分别表示像素在 x,y 方向上的位移值
-            flow = cv2.calcOpticalFlowFarneback(gray1, gray2, None, pyr_scale=0.5, levels=3, winsize=15,
-                                                iterations=3, poly_n=5, poly_sigma=1.2, flags=0)
-            yield rgb, flow
-            # 光流图的位移: 笛卡尔 -> 极坐标, hue 表示相角, value 表示幅度
-            if delay:
-                v, h = cv2.cartToPolar(flow[..., 0], flow[..., 1])
-                hsv = np.full_like(rgb, fill_value=255)
-                hsv[..., 0] = h * 90 / np.pi
-                hsv[..., 2] = cv2.normalize(v, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-                cv2.imshow("frame", cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR))
-                cv2.waitKey(delay)
-            gray1 = gray2
-        self.delay = delay
+        super().write_frame(sv.letterbox_image(img, self.video_info.resolution_wh, self.pad))
 
 
 if __name__ == "__main__":

@@ -2,12 +2,14 @@ import logging
 from pathlib import Path
 from typing import Union, Tuple
 
+import cv2
 import matplotlib
 import matplotlib.patches as pch
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import supervision as sv
 
 logging.basicConfig(format="%(message)s", level=logging.INFO)
 LOGGER = logging.getLogger("utils")
@@ -293,46 +295,18 @@ def residplot(x: np.ndarray,
     return sns.scatterplot(x=x, y=y, color=cmap(s), s=size[0] + (size[1] - size[0]) * s, zorder=1)
 
 
-class PltVideo:
-    """ :param fig_id: plt.figure 的 id
-        :param video_writer: zjcv.VideoWriter 对象
-
-        :example:
-        >>> import cv2
-        >>> from pymod.utils import zjcv
-        >>>
-        >>> def draw(pv):
-        ...     plt.figure(100)
-        ...     plt.clf()
-        ...     plt.scatter(np.arange(100), np.random.random(100))
-        ...     pv.write()
-        ...     plt.pause(1e-3)
-        >>>
-        >>> with PltVideo(100, zjcv.VideoWriter(r"C:\Downloads\demo.mp4", cvt_color=cv2.COLOR_RGB2BGR)) as pv:
-        ...     for i in range(90): draw(pv)
-        """
+class PltVideo(sv.VideoSink):
+    """ :param fig_id: plt.figure 的 id """
 
     def __init__(self,
-                 fig_id: int,
-                 video_writer: "VideoWriter"):
+                 target_path: str,
+                 video_info: sv.VideoInfo,
+                 fig_id: int):
         self.fig_id = fig_id
-        for k in "write", "save", "__enter__", "__exit__":
-            assert hasattr(video_writer, k), f"{type(video_writer).__name__} has no function {k}"
-        self.video_writer = video_writer
+        super().__init__(target_path, video_info)
 
     def write(self):
-        self.video_writer.write(fig2img(plt.figure(self.fig_id)))
-
-    def save(self):
-        self.video_writer.save()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.save()
-        if exc_type: return False
-        return self
+        self.write_frame(cv2.cvtColor(fig2img(plt.figure(self.fig_id)), cv2.COLOR_RGB2BGR))
 
 
 if __name__ == "__main__":
