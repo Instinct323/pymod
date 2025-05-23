@@ -1,8 +1,30 @@
 import bisect
+from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+
+def farthest_point_sampling(pts: np.ndarray,
+                            num_samples: Union[int, float]):
+    """ Farthest Point Sampling (FPS) algorithm.
+        :param pts: The input point cloud.
+        :param num_samples: The number of points to sample.
+        :return: The sampled points and their indices."""
+    n = len(pts)
+    if isinstance(num_samples, float): num_samples = int(num_samples * n)
+    if num_samples > n: return pts, None
+
+    distances = np.full(n, np.inf)
+    indices = np.zeros(num_samples, dtype=int)
+    indices[0] = np.random.randint(0, n)
+
+    for i in range(num_samples - 1):
+        distances = np.minimum(distances, np.linalg.norm(pts - pts[indices[i]], axis=1))
+        indices[i + 1] = np.argmax(distances)
+
+    return pts[indices], indices
 
 
 def pearson(x, eps=1e-8):

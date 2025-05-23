@@ -50,3 +50,7 @@ pypdf2
 # cmake==3.16.3
 git-filter-repo
 nvitop
+
+# --- ROS ---
+catkin-tools
+rospkg
