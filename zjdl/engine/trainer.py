@@ -45,17 +45,19 @@ class CosineLR(torch.optim.lr_scheduler.LambdaLR):
 
 
 class Trainer:
-    """ :param model: 网络模型
-        :param project: 项目目录 (Path)
-            :ivar best.pt: 最优模型的字典
-            :ivar last.pt: 最新模型的字典
-        :param hyp: 超参数字典
-            :key epochs: 训练总轮次
-            :key optimizer: 优化器类型
-            :key lr0, lrf: 起始学习率, 最终学习率 (比例)
-            :key weight_decay: 权值的 L2 范数系数
-            :key device: 设备 id
-            :key batch_size: 批尺寸"""
+    """
+    :param model: 网络模型
+    :param project: 项目目录 (Path)
+        :ivar best.pt: 最优模型的字典
+        :ivar last.pt: 最新模型的字典
+    :param hyp: 超参数字典
+        :key epochs: 训练总轮次
+        :key optimizer: 优化器类型
+        :key lr0, lrf: 起始学习率, 最终学习率 (比例)
+        :key weight_decay: 权值的 L2 范数系数
+        :key device: 设备 id
+        :key batch_size: 批尺寸
+        """
     training = property(lambda self: self.model.training)
     lr = property(lambda self: self._optim.param_groups[0]["lr"])
 

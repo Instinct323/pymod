@@ -5,19 +5,21 @@ import numpy as np
 
 
 class RANSAC(dict):
-    """ Random Sample Consensus (RANSAC) algorithm
-        :param n: number of minimum samples
-        :param t: threshold value
-        :param k: number of iterations
-        :param w: probability of at least one sample is free from outliers
-        :param p: probability of success
+    """
+    Random Sample Consensus (RANSAC) algorithm
+    :param n: number of minimum samples
+    :param t: threshold value
+    :param k: number of iterations
+    :param w: probability of at least one sample is free from outliers
+    :param p: probability of success
 
-        Usage:
+    Usage:
 
-        for i in RANSAC.index_sampler(len(DATA)):
-            MODEL.fit(DATA[i])
-            error = MODEL.error(DATA[i])
-            RANSAC.save_if_better(error, MODEL.export)"""
+    for i in RANSAC.index_sampler(len(DATA)):
+        MODEL.fit(DATA[i])
+        error = MODEL.error(DATA[i])
+        RANSAC.save_if_better(error, MODEL.export)
+    """
 
     def __init__(self,
                  n: int,
@@ -42,8 +44,10 @@ class RANSAC(dict):
     def save_if_better(self,
                        error: np.ndarray,
                        params_export: Callable):
-        """ :param error: error of current model for all samples
-            :param params_export: export current model parameters"""
+        """
+        :param error: error of current model for all samples
+        :param params_export: export current model parameters
+        """
         inliers = error < self.t
         fitness = inliers.mean()
         if fitness > self["fitness"]:

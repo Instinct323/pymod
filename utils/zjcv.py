@@ -73,10 +73,12 @@ def check_imgfile(file: Path):
 
 
 class VideoSink(sv.VideoSink):
-    """ :param dst: 视频文件名称 (*.mp4)
-        :param width: 视频宽度
-        :param aspect_radio: 视频宽高比
-        :param fps: 视频帧率 """
+    """
+    :param dst: 视频文件名称 (*.mp4)
+    :param width: 视频宽度
+    :param aspect_radio: 视频宽高比
+    :param fps: 视频帧率
+    """
 
     def __init__(self,
                  dst: Union[Path, str],

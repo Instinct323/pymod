@@ -57,9 +57,11 @@ class SE2(_SEn):
 
     def transform(self, dx: float = 0., dy: float = 0.,
                   theta: float = 0, relative: bool = True):
-        """ :param dx,dy: 平移变换的参数
-            :param theta: 旋转变换的参数
-            :param relative: 是否使用相对变换"""
+        """
+        :param dx,dy: 平移变换的参数
+        :param theta: 旋转变换的参数
+        :param relative: 是否使用相对变换
+        """
         mat = np.concatenate((np.eye(3, 2, dtype=self.dtype),
                               np.array((dx, dy, 1))[:, None]), axis=-1)
         if theta:
@@ -89,18 +91,20 @@ class SE3(_SEn):
 
     @classmethod
     def rot(cls, yaw=0, pitch=0, roll=0) -> np.ndarray:
-        """ :param yaw: 偏航角, 绕 z 轴旋转
-            :param pitch: 俯仰角, 绕 y 轴旋转
-            :param roll: 滚转角, 绕 x 轴旋转
+        """
+        :param yaw: 偏航角, 绕 z 轴旋转
+        :param pitch: 俯仰角, 绕 y 轴旋转
+        :param roll: 滚转角, 绕 x 轴旋转
 
-            :example:
-            >>> rpy = [30, 20, 10]
-            >>> rot = SE3.rot
+        :example:
+        >>> rpy = [30, 20, 10]
+        >>> rot = SE3.rot
 
-            >>> a = rot(*rpy[::-1])
-            >>> b = rot(yaw=rpy[2]) @ rot(pitch=rpy[1]) @ rot(roll=rpy[0])
-            >>> np.square(a - b).sum()
-            8.049117e-15"""
+        >>> a = rot(*rpy[::-1])
+        >>> b = rot(yaw=rpy[2]) @ rot(pitch=rpy[1]) @ rot(roll=rpy[0])
+        >>> np.square(a - b).sum()
+        8.049117e-15
+        """
         mat = np.eye(4, dtype=cls.dtype)
         mat[:3, :3] = SO3.from_euler("ZYX", [yaw, pitch, roll], degrees=True).as_matrix()
         return mat

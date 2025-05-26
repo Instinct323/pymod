@@ -11,15 +11,6 @@ torch.autograd.set_detect_anomaly(True)
 
 
 class minimize:
-    """ :param x: The variable being optimized (torch.tensor)
-        :param loss_fcn: Loss function with x as input
-        :param lr: Learning rate
-        :param patience: Tolerance for no progress in optimization
-        :param eval_fcn: The loss function used for the evaluation
-        :param max_iter: Maximum number of iterations
-        :param prefix: Prefix of the progress bar
-        :param title: Show the title
-        :return: optimal solution, min loss, log of loss"""
 
     def __new__(cls,
                 x: torch.tensor,
@@ -31,6 +22,17 @@ class minimize:
                 prefix: str = "Minimize",
                 title: bool = True,
                 leave: bool = True):
+        """
+        :param x: The variable being optimized (torch.tensor)
+        :param loss_fcn: Loss function with x as input
+        :param lr: Learning rate
+        :param patience: Tolerance for no progress in optimization
+        :param eval_fcn: The loss function used for the evaluation
+        :param max_iter: Maximum number of iterations
+        :param prefix: Prefix of the progress bar
+        :param title: Show the title
+        :return: optimal solution, min loss, log of loss
+        """
         assert patience or max_iter
         # Initialize the variable
         x.requires_grad = True

@@ -32,10 +32,12 @@ def grad_cam(model: nn.Module,
              method=EigenGradCAM,
              use_cuda=False,
              mean_std=[[0., 0., 0.], [1., 1., 1.]], ):
-    """ Documentation: https://jacobgil.github.io/pytorch-gradcam-book
-        e.g.,
-        model = torchvision.models.resnet50(pretrained=True)
-        target_layers = [model.layer4]"""
+    """
+    Documentation: https://jacobgil.github.io/pytorch-gradcam-book
+    e.g.,
+    model = torchvision.models.resnet50(pretrained=True)
+    target_layers = [model.layer4]
+    """
     model.eval(), project.mkdir(parents=True, exist_ok=True)
     mean_std = torch.tensor(mean_std)[..., None, None]
     imwrite = lambda file, img: cv2.imwrite(str(project / file), img)

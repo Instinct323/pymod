@@ -96,8 +96,10 @@ def try_except(func):
 
 
 def parse_txt_cfg(file, encoding="utf-8", comments="#"):
-    """ Supported syntax:
-        content     # comment """
+    """
+    Supported syntax:
+        content     # comment
+    """
     with open(file, encoding=encoding) as f:
         for i_line in enumerate(s.split(comments)[0].strip() for s in f.read().splitlines()):
             if i_line[1]: yield i_line

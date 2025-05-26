@@ -23,9 +23,11 @@ def bp_times(loader: DataLoader, epochs: int):
 
 
 def hold_out(cls_cnt: pd.DataFrame, scale: float, seed=0):
-    """ :param cls_cnt: Dataframe[classes, img_id]
-        :param scale: 各类别分布在训练集中的比例
-        :return: 训练集 id 列表, 验证集 id 列表"""
+    """
+    :param cls_cnt: Dataframe[classes, img_id]
+    :param scale: 各类别分布在训练集中的比例
+    :return: 训练集 id 列表, 验证集 id 列表
+    """
     cls_cnt = cls_cnt.copy(deep=True)
     dtype = np.int64 if "int" in str(next(iter(cls_cnt.dtypes))) else np.float64
     radio = scale / (1 - scale)
@@ -62,9 +64,11 @@ def hold_out(cls_cnt: pd.DataFrame, scale: float, seed=0):
 
 
 def undersampling(cls_cnt: pd.DataFrame, n, seed=0):
-    """ :param cls_cnt: Dataframe[classes, img_id]
-        :param n: 各类别实例的采样数量 (int, float, list, tuple)
-        :return: 训练集 id 列表, 验证集 id 列表"""
+    """
+    :param cls_cnt: Dataframe[classes, img_id]
+    :param n: 各类别实例的采样数量 (int, float, list, tuple)
+    :return: 训练集 id 列表, 验证集 id 列表
+    """
     cls_cnt = cls_cnt.copy(deep=True)
     dtype = np.int64 if "int" in str(next(iter(cls_cnt.dtypes))) else np.float64
     np.random.seed(seed)

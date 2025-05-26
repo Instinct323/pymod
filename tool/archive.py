@@ -16,10 +16,12 @@ to_2tuple = lambda x: x if x is None or isinstance(x, (list, tuple)) else (x,) *
 def make_blurred_border(src: np.ndarray,
                         img_size: Union[int, Tuple[int, int]] = None,
                         aspect_ratio: float = None):
-    """ 生成带有模糊边框的图像
-        :param src: 原图像 (OpenCV 格式)
-        :param img_size: 目标尺寸
-        :param aspect_ratio: 长:宽 """
+    """
+    生成带有模糊边框的图像
+    :param src: 原图像 (OpenCV 格式)
+    :param img_size: 目标尺寸
+    :param aspect_ratio: 长:宽
+    """
     int_round = lambda x: np.round(x).astype(np.int64)
     src_size = np.array(src.shape[1::-1])
     img_size = np.array(to_2tuple(img_size))
@@ -66,8 +68,10 @@ def make_blurred_border(src: np.ndarray,
 
 
 class FileArchiver:
-    """ 文件有序归档管理器
-        :param file_fmt: 文件名格式, %i 序号, %n 文件名 """
+    """
+    文件有序归档管理器
+    :param file_fmt: 文件名格式, %i 序号, %n 文件名
+    """
 
     def __init__(self,
                  txt_cfg: Union[str, Path],

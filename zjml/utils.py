@@ -8,10 +8,12 @@ import pandas as pd
 
 def farthest_point_sampling(pts: np.ndarray,
                             num_samples: Union[int, float]):
-    """ Farthest Point Sampling (FPS) algorithm.
-        :param pts: The input point cloud.
-        :param num_samples: The number of points to sample.
-        :return: The sampled points and their indices."""
+    """
+    Farthest Point Sampling (FPS) algorithm.
+    :param pts: The input point cloud.
+    :param num_samples: The number of points to sample.
+    :return: The sampled points and their indices.
+    """
     n = len(pts)
     if isinstance(num_samples, float): num_samples = int(num_samples * n)
     if num_samples > n: return pts, None
@@ -28,8 +30,10 @@ def farthest_point_sampling(pts: np.ndarray,
 
 
 def pearson(x, eps=1e-8):
-    """ 皮尔逊相关系数
-        :param x: [n, 2]"""
+    """
+    皮尔逊相关系数
+    :param x: [n, 2]
+    """
     assert x.shape[1] == 2 and x.ndim == 2
     mean = x.mean(axis=0)
     unbiased = x - mean
@@ -64,8 +68,10 @@ def auckley_func(x, a1=20, a2=0.2, a3=np.pi * 2):
 
 
 def runge_kutta(pdfunc, init, dt, n):
-    """ :param pdfunc: 偏微分函数
-        :param init: 初值条件"""
+    """
+    :param pdfunc: 偏微分函数
+    :param init: 初值条件
+    """
     ret = [np.array(init)]
     for _ in range(n):
         k1 = pdfunc(ret[-1])
@@ -109,9 +115,11 @@ class MarkovChain:
         return vt[-1] / vt[-1].sum()
 
     def update_state(self, s, t):
-        """ :param s: 当前状态
-            :param t: 转移次数
-            :return: 新状态概率分布"""
+        """
+        :param s: 当前状态
+        :param t: 转移次数
+        :return: 新状态概率分布
+        """
         return np.linalg.matrix_power(self.T, t) @ s
 
 

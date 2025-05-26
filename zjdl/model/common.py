@@ -258,8 +258,10 @@ class ConvGRU(nn.Module):
         self.convh = Conv(c1 + ch, ch, k, act=nn.Tanh)
 
     def forward(self, x, h):
-        """ :param x: input
-            :param h: hidden state"""
+        """
+        :param x: input
+        :param h: hidden state
+        """
         xh = torch.cat((x, h), dim=1)
         z = self.convz(xh)      # update gate
         r = self.convr(xh)      # reset gate
@@ -284,8 +286,10 @@ class ConvFFN(nn.Module):
 
 @register_module("c1")
 class FastAttention(nn.Module):
-    """ k > 0: RepMixer-FFN
-        k = 0: Self Attention-FFN"""
+    """
+    k > 0: RepMixer-FFN
+    k = 0: Self Attention-FFN
+    """
 
     def __init__(self, c1, k=3):
         super().__init__()
@@ -379,10 +383,12 @@ class Upsample(nn.Upsample):
 
 
 class DropBlock(nn.Module):
-    """ :param k: size of the masking area
-        :param drop: target value of drop_prob
-        :cvar epochs: the number of epochs in which drop_prob reaches its target value
-        :cvar scheme: drop_prob adjustment scheme"""
+    """
+    :param k: size of the masking area
+    :param drop: target value of drop_prob
+    :cvar epochs: the number of epochs in which drop_prob reaches its target value
+    :cvar scheme: drop_prob adjustment scheme
+    """
     epochs = 10
     scheme = "linear"
     _progress = property(lambda self: torch.clip(self.cnt / self.epochs, min=0, max=1).item())
@@ -490,8 +496,10 @@ class AttnPool(nn.Module):
 
 @register_module("c1,c2")
 class MixFFN(nn.Module):
-    """ :param e: 全连接层通道膨胀比
-        :param k: 深度可分离卷积的尺寸 (k<2 时不使用)"""
+    """
+    :param e: 全连接层通道膨胀比
+    :param k: 深度可分离卷积的尺寸 (k<2 时不使用)
+    """
 
     def __init__(self, c1, c2=None, e=4., k=3, drop=0.1,
                  act: Optional[nn.Module] = QuickGELU):
@@ -620,10 +628,12 @@ class SeqConv(nn.Conv2d):
 
 @register_module("c1")
 class MultiheadAttn(nn.Module):
-    """ :param nhead: 注意力头数
-        :param s: SRA 的 stride (s<2 时不使用)
-        :param drop: 注意力权值的 dropout
-        :param bias: QKV 线性映射的偏置"""
+    """
+    :param nhead: 注意力头数
+    :param s: SRA 的 stride (s<2 时不使用)
+    :param drop: 注意力权值的 dropout
+    :param bias: QKV 线性映射的偏置
+    """
 
     def __init__(self, c1, nhead=8, s=0, drop=0.1, qk_norm=False, bias=True):
         super().__init__()
@@ -701,12 +711,14 @@ class TranEncoder(nn.Module):
 
 @register_module("c1,c2", "n")
 class PyramidViT(nn.Module):
-    """ :param n: TranEncoder 堆叠数
-        :param r: SRA 中空间缩减时的 stride (r<2 时不使用)
-        :param e: TranEncoder 全连接层通道膨胀比
-        :param nhead: 注意力头数
-        :param drop: 注意力权值、各个层的 dropout
-        :param droppath: 残差连接的 droppath"""
+    """
+    :param n: TranEncoder 堆叠数
+    :param r: SRA 中空间缩减时的 stride (r<2 时不使用)
+    :param e: TranEncoder 全连接层通道膨胀比
+    :param nhead: 注意力头数
+    :param drop: 注意力权值、各个层的 dropout
+    :param droppath: 残差连接的 droppath
+    """
 
     def __init__(self, c1, c2, k=3, s=2, r=4, e=4., nhead=8, drop=0.1, droppath=0., n=3):
         super().__init__()
@@ -736,12 +748,14 @@ class AssignAttn(MultiheadAttn):
 
 @register_module("c1", "n")
 class GroupingLayer(nn.Module):
-    """ :param n: TranEncoder 深度
-        :param g: Group token 的数量
-        :param e: MixFFN 全连接层通道膨胀比
-        :param nhead: 注意力头数
-        :param drop: MHA,MixFFN 中的 dropout
-        :param droppath: 残差连接的 droppath"""
+    """
+    :param n: TranEncoder 深度
+    :param g: Group token 的数量
+    :param e: MixFFN 全连接层通道膨胀比
+    :param nhead: 注意力头数
+    :param drop: MHA,MixFFN 中的 dropout
+    :param droppath: 残差连接的 droppath
+    """
     assignment = property(lambda self: self._memory)
 
     def __init__(self, c1, g=8, e=4., nhead=8, drop=0.1, droppath=0., n=3):

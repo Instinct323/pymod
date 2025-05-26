@@ -43,10 +43,12 @@ class Memory:
 
 
 class DataIO(Memory):
-    """ :ivar send: 返回要发送的数据
-        :ivar recv: 写入接收到的数据
-        :ivar read: 读取接收到的数据
-        :ivar write: 写入要发送的数据"""
+    """
+    :ivar send: 返回要发送的数据
+    :ivar recv: 写入接收到的数据
+    :ivar read: 读取接收到的数据
+    :ivar write: 写入要发送的数据
+    """
 
     def __init__(self, i_len=1, o_len=1):
         super().__init__()
@@ -77,11 +79,13 @@ class DataIO(Memory):
 
 
 class TcpSocket(socket.socket):
-    """ :param port: 作为服务端时所开放的端口
-        :param timeout: 传输数据时的超时时间
-        :ivar host: 本机网络的 IPv4 地址
-        :ivar sockname: 连接成功 -> 自身地址
-        :ivar peername: 连接成功 -> 对方地址"""
+    """
+    :param port: 作为服务端时所开放的端口
+    :param timeout: 传输数据时的超时时间
+    :ivar host: 本机网络的 IPv4 地址
+    :ivar sockname: 连接成功 -> 自身地址
+    :ivar peername: 连接成功 -> 对方地址
+    """
 
     def __init__(self, port=22, timeout=1e-3):
         super().__init__(family=socket.AF_INET, type=socket.SOCK_STREAM)

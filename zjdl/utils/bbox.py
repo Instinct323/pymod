@@ -107,9 +107,11 @@ class BBoxPlotter(list):
         return img
 
     def check_dataset(self, image_dir, label_dir, detect_dir=None):
-        """ :param image_dir: Original image directory
-            :param label_dir: Tag file directory (cls, *xywh)
-            :param detect_dir: Detect result directory"""
+        """
+        :param image_dir: Original image directory
+        :param label_dir: Tag file directory (cls, *xywh)
+        :param detect_dir: Detect result directory
+        """
         if detect_dir and not detect_dir.is_dir(): detect_dir.mkdir()
         for img_file in tqdm(list(image_dir.iterdir())):
             txt = label_dir / img_file.with_suffix(".txt").name

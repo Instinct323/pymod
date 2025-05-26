@@ -33,9 +33,11 @@ class ReplayBuffer:
 
 
 class DQN(Trainer):
-    """ Deep Q Network
-        :param qnet: 动作值函数网络
-        :param buffer_cap: 经验回放池容量"""
+    """
+    Deep Q Network
+    :param qnet: 动作值函数网络
+    :param buffer_cap: 经验回放池容量
+    """
 
     def __init__(self,
                  qnet: nn.Module,

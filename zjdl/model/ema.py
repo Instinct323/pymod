@@ -8,8 +8,10 @@ from .model import is_parallel
 
 
 class EmaModel:
-    """ Mean teachers are better role models
-        通过学生的 state_dict 保存 / 加载参数"""
+    """
+    Mean teachers are better role models
+    通过学生的 state_dict 保存 / 加载参数
+    """
 
     def __init__(self,
                  model: nn.Module,

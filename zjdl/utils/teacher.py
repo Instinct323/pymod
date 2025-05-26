@@ -33,9 +33,11 @@ class SoftLabel:
 
 
 class Knowledge(SimpleDataset):
-    """ :param cache: 教师知识的存储文件
-        :ivar writeable: 可写状态
-        :ivar as_read: 保存当前知识库"""
+    """
+    :param cache: 教师知识的存储文件
+    :ivar writeable: 可写状态
+    :ivar as_read: 保存当前知识库
+    """
     orient = "index"
 
     def __init__(self,
@@ -81,9 +83,11 @@ class Knowledge(SimpleDataset):
 
     @torch.no_grad()
     def generate(self, logit_getter, batch_size, n):
-        """ :param logit_getter: 从图像中提取 logits 的函数
-            :param batch_size: 生成知识的批次大小
-            :param n: 知识量相对于数据集的倍数"""
+        """
+        :param logit_getter: 从图像中提取 logits 的函数
+        :param batch_size: 生成知识的批次大小
+        :param n: 知识量相对于数据集的倍数
+        """
         assert self.writeable, "Cannot input knowledge in read mode"
         loader = torch.utils.data.DataLoader(self, batch_size=batch_size, shuffle=False)
         for i in range(n):

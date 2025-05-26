@@ -10,11 +10,13 @@ EPS = 1e-8
 
 
 class Scheduler:
-    """ 优化参数调度器
-        :param dt: 单位时间
-        :param w_inertia: 惯性权重
-        :param w_self: 自身经验权重
-        :param w_other: 群体经验权重"""
+    """
+    优化参数调度器
+    :param dt: 单位时间
+    :param w_inertia: 惯性权重
+    :param w_self: 自身经验权重
+    :param w_other: 群体经验权重
+    """
     dt = property(lambda self: self.cur[0])
     w_inertia = property(lambda self: self.cur[1])
     w_self = property(lambda self: self.cur[2])
@@ -43,10 +45,12 @@ class DecayScheduler(Scheduler):
 
 
 class ParticleSwarmOpt:
-    """ 粒子群优化器 (reference: https://zhuanlan.zhihu.com/p/346355572)
-        :param n: 粒子群规模
-        :param elite_radio: 精英粒子百分比
-        :param best_unit: 已知最优个体"""
+    """
+    粒子群优化器 (reference: https://zhuanlan.zhihu.com/p/346355572)
+    :param n: 粒子群规模
+    :param elite_radio: 精英粒子百分比
+    :param best_unit: 已知最优个体
+    """
     b_rm_dup = True
     fig_id = 323
 
@@ -94,10 +98,12 @@ class ParticleSwarmOpt:
             patience: int = np.inf,
             vis_itv: Union[float, int] = 0,
             plt_video: Optional["PltVideo"] = None):
-        """ :param epochs: 训练轮次
-            :param sche: 优化参数调度器
-            :param patience: 允许搜索无进展的次数
-            :param vis_itv: 可视化的时间间隔 (比例 / 轮次)"""
+        """
+        :param epochs: 训练轮次
+        :param sche: 优化参数调度器
+        :param patience: 允许搜索无进展的次数
+        :param vis_itv: 可视化的时间间隔 (比例 / 轮次)
+        """
         prefix = "PSO-fit"
         sche = sche or Scheduler()
         # 可视化间隔

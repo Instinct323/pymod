@@ -42,11 +42,13 @@ class DisjointSet:
 
 
 class SegmentTree:
-    """ :param oper: 二元运算函数
-        :param v0: 满足 oper(x, v0) = x 的值
+    """
+    :param oper: 二元运算函数
+    :param v0: 满足 oper(x, v0) = x 的值
 
-        :ivar index: 数组元素在二叉树的结点索引
-        :ivar tree: 以二叉树形式存储的聚合值"""
+    :ivar index: 数组元素在二叉树的结点索引
+    :ivar tree: 以二叉树形式存储的聚合值
+    """
 
     def __init__(self,
                  arr: List,
@@ -116,15 +118,17 @@ class SegmentTree:
 
 
 class PdrChecker:
-    """ hash 算法判断回文串
-        :param hashv: 字符串的 hash 值对应的列表
-        :param base: max(hashv) + 1
+    """
+    hash 算法判断回文串
+    :param hashv: 字符串的 hash 值对应的列表
+    :param base: max(hashv) + 1
 
-        :example:
-        >>> hashv = [ord(c) - 97 for c in "racecar"]
-        >>> checker = PdrChecker(hashv, 26)
-        >>> checker[1:6]
-        True"""
+    :example:
+    >>> hashv = [ord(c) - 97 for c in "racecar"]
+    >>> checker = PdrChecker(hashv, 26)
+    >>> checker[1:6]
+    True
+    """
 
     def __init__(self,
                  hashv: Tuple[int],
@@ -430,9 +434,11 @@ def floyd(adj: List[List]):
 
 def topo_sort(in_degree: List[int],
               adj: Dict[int, Dict]):
-    """ AOV 网拓扑排序 (最小字典序)
-        :param in_degree: 入度表
-        :param adj: 图的邻接表"""
+    """
+    AOV 网拓扑排序 (最小字典序)
+    :param in_degree: 入度表
+    :param adj: 图的邻接表
+    """
     order = []
     undone = [i for i, v in enumerate(in_degree) if v == 0]
     heapq.heapify(undone)

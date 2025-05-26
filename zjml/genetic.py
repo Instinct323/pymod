@@ -26,11 +26,13 @@ class ChromosomeBase:
 
 
 class GeneticOpt:
-    """ 遗传算法
-        :param cross_proba: 交叉概率
-        :param mut_proba: 变异概率
-        :param well_radio: 最优个体比例
-        :ivar group: 染色体群体"""
+    """
+    遗传算法
+    :param cross_proba: 交叉概率
+    :param mut_proba: 变异概率
+    :param well_radio: 最优个体比例
+    :ivar group: 染色体群体
+    """
 
     def __init__(self,
                  chromosome: Type[ChromosomeBase],
@@ -77,9 +79,11 @@ class GeneticOpt:
     def fit(self, epochs: int,
             patience: int = np.inf,
             prefix: str = "GA-fit"):
-        """ :param epochs: 训练轮次
-            :param patience: 允许搜索无进展的次数
-            :param prefix: 进度条前缀"""
+        """
+        :param epochs: 训练轮次
+        :param patience: 允许搜索无进展的次数
+        :param prefix: 进度条前缀
+        """
         pbar = trange(epochs)
         angry = 0
         # 最优个体数, 随机选取数

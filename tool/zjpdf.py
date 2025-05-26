@@ -6,8 +6,10 @@ from tqdm import tqdm
 
 def load_pdf(src: Path,
              pages_filter: Callable[[int], bool] = None):
-    """ :param src: pdf 文件
-        :param pages_filter: 过滤函数"""
+    """
+    :param src: pdf 文件
+    :param pages_filter: 过滤函数
+    """
     from pdfminer.converter import PDFPageAggregator
     from pdfminer.layout import LAParams
     from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
@@ -58,10 +60,12 @@ def merge_pdf(src: Iterator[Path], dst: Path):
 
 
 def pdf2img(file: Path, suffix=".png", root="Project", blowup=15):
-    """ :param file: pdf 文件
-        :param suffix: 图像后缀名
-        :param root: 保存的源目录
-        :param blowup: 图像清晰度"""
+    """
+    :param file: pdf 文件
+    :param suffix: 图像后缀名
+    :param root: 保存的源目录
+    :param blowup: 图像清晰度
+    """
     import fitz
 
     root = file.parent / root

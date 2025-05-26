@@ -53,8 +53,10 @@ class ModelScaling:
         self.plans.to_json(plan_file, orient=self.orient, indent=4)
 
     def __call__(self, fitness, epochs):
-        """ :param fitness(cfg, epoch) -> float: 适应度函数
-            :param epochs: 复合缩放总轮次"""
+        """
+        :param fitness(cfg, epoch) -> float: 适应度函数
+        :param epochs: 复合缩放总轮次
+        """
         result = Result(self.project, title=self.attr + ("fitness",))
         # 检查训练总轮次
         if len(self.plans) < epochs:

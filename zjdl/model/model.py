@@ -45,20 +45,22 @@ def cfg_modify(yaml_cfg: dict, modify: Union[tuple, list]):
 
 
 class YamlModel(nn.Module):
-    """ :param yaml_cfg:
-            depth_multiple: 模块深度增益
-            width_multiple: 卷积宽度增益
-            fixed_layers: 不受增益影响的层索引
+    """
+    :param yaml_cfg:
+        depth_multiple: 模块深度增益
+        width_multiple: 卷积宽度增益
+        fixed_layers: 不受增益影响的层索引
 
-            in_channals: 输入的通道数量
-            img_size: 输入的图像尺寸
+        in_channals: 输入的通道数量
+        img_size: 输入的图像尺寸
 
-            freeze: 欲冻结的层切片
-            architecture:
-                from: 输入来源
-                number: 串联深度 / 模块 n 参数
-                module: 模块名称
-                args: 模块初始化参数 (c2, ...)"""
+        freeze: 欲冻结的层切片
+        architecture:
+            from: 输入来源
+            number: 串联深度 / 模块 n 参数
+            module: 模块名称
+            args: 模块初始化参数 (c2, ...)
+    """
     device = property(lambda self: next(self.parameters()).device)
 
     def __init__(self, yaml_cfg: Union[Path, dict], ch_divisor: int = 4):

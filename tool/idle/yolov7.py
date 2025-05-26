@@ -26,9 +26,11 @@ def count_bbox(label_dir, n_cls):
 
 
 def prune_dataset(image_dir, label_dir, cls_pool=None, min_n_boxes=1):
-    """ Pruning of the dataset in YOLOv7 format
-        cls_pool: The indexes of the category to keep
-        min_n_boxes: Minimum number of bounding boxes per image"""
+    """
+    Pruning of the dataset in YOLOv7 format
+    :param cls_pool: The indexes of the category to keep
+    :param min_n_boxes: Minimum number of bounding boxes per image
+    """
     if cls_pool: cls_pool = {cls: i for i, cls in enumerate(
         range(cls_pool) if isinstance(cls_pool, int) else cls_pool)}
     # Read the image and clear any image that has no corresponding txt

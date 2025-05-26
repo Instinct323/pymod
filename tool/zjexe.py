@@ -21,16 +21,18 @@ def pyc2py(pyc):
 
 
 class Installer:
-    """ cite: https://blog.csdn.net/qq_55745968/article/details/135430884
+    """
+    cite: https://blog.csdn.net/qq_55745968/article/details/135430884
 
-        :param main: 主程序文件
-        :param console: 是否显示控制台
-        :param icon: 图标文件
-        :param paths: 搜索路径 (非必需)
-        :param hiddenimports: 导入模块 (非必需)
+    :param main: 主程序文件
+    :param console: 是否显示控制台
+    :param icon: 图标文件
+    :param paths: 搜索路径 (非必需)
+    :param hiddenimports: 导入模块 (非必需)
 
-        :ivar opt_mode: 模式参数 (不适用于 spec)
-        :ivar opt_general: 通用的参数"""
+    :ivar opt_mode: 模式参数 (不适用于 spec)
+    :ivar opt_general: 通用的参数
+    """
     exe = Path(sys.executable).parent / "Scripts" / "pyinstaller"
 
     def __init__(self,
@@ -59,8 +61,10 @@ class Installer:
             self.opt_general.append(f"--hidden-import {m}")
 
     def install(self, one_file=True, spec=False):
-        """ :param one_file: 单文件打包 / 多文件打包
-            :param spec: 使用 spec 文件打包"""
+        """
+        :param one_file: 单文件打包 / 多文件打包
+        :param spec: 使用 spec 文件打包
+        """
         opt_mode = " ".join(self.opt_mode + ["-F" if one_file else "-D"])
         opt_general = " ".join(self.opt_general)
         target = self.spec if spec else (opt_mode + " " + str(self.main))

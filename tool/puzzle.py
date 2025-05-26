@@ -44,11 +44,13 @@ class NumString:
 
 
 class Puzzle:
-    """ :param img: 前景图像文件
-        :param material: 隐藏图像素材包的路径
-        :param shape: 前景图像的目标分割形状
-        :param dpi: 前景图像的宽度
-        :param pad_width: 隐藏图像的侧边距"""
+    """
+    :param img: 前景图像文件
+    :param material: 隐藏图像素材包的路径
+    :param shape: 前景图像的目标分割形状
+    :param dpi: 前景图像的宽度
+    :param pad_width: 隐藏图像的侧边距
+    """
 
     def __init__(self,
                  img: Path,

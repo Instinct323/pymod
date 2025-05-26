@@ -5,11 +5,13 @@ from torch import nn
 
 
 class IouLoss(nn.Module):
-    """ :param monotonous: {
-            None: origin
-            True: monotonic FM
-            False: non-monotonic FM
-        }"""
+    """
+    :param monotonous: {
+        None: origin
+        True: monotonic FM
+        False: non-monotonic FM
+    }
+    """
     momentum = 1e-2
     alpha = 1.7
     delta = 2.7

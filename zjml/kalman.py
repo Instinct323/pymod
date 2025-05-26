@@ -3,10 +3,12 @@ import scipy.linalg
 
 
 class KalmenFilter:
-    """ 卡尔曼滤波器 (单目标):
-        :cvar _std_weight_position: 位置标准差权值
-        :cvar _std_weight_velocity: 速度标准差权值
-        :ivar _motion_tran: 状态转移矩阵"""
+    """
+    卡尔曼滤波器 (单目标):
+    :cvar _std_weight_position: 位置标准差权值
+    :cvar _std_weight_velocity: 速度标准差权值
+    :ivar _motion_tran: 状态转移矩阵
+    """
     _std_weight_position = 1 / 20
     _std_weight_velocity = 1 / 160
 

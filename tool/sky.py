@@ -11,9 +11,11 @@ def star_trails_video(
         src: Iterable[np.ndarray],
         decay: float = 0.99,
         agg_fun: Callable = np.maximum):
-    """ 制作星轨视频
-        :param src: 图像数组 [B, H, W, C]
-        :param decay: 亮度衰减系数"""
+    """
+    制作星轨视频
+    :param src: 图像数组 [B, H, W, C]
+    :param decay: 亮度衰减系数
+    """
     assert 0 < decay <= 1
     src = iter(tqdm(src))
     # 处理第一张图像
@@ -30,9 +32,11 @@ def star_trails_image(
         src: Iterable[np.ndarray],
         weight: Iterable[float],
         agg_fun: Callable = np.maximum):
-    """ 制作星轨图像
-        :param src: 图像数组 [B, H, W, C]
-        :param weight: 图像权重"""
+    """
+    制作星轨图像
+    :param src: 图像数组 [B, H, W, C]
+    :param weight: 图像权重
+    """
     cur = None
     for w, img in zip(weight, map(np.float32, src)):
         assert 0 <= w <= 1
