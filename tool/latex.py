@@ -1,11 +1,11 @@
 import re
-from typing import Tuple, Union, Callable
+from typing import Union, Callable
 
 import numpy as np
 
 
 def vec2latexmat(vector: Union[tuple, list],
-                 shape: Tuple[int, int],
+                 shape: tuple[int, int],
                  bracket: str = "[",
                  newline: str = "\n") -> str:
     """

@@ -1,7 +1,5 @@
 from typing import Callable, Iterable
 
-import cv2
-from PySide2.examples.charts.audio import resolution
 from tqdm import tqdm
 
 from pymod.utils.zjcv import *

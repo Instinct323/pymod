@@ -1,4 +1,4 @@
-from typing import Union, List, Callable
+from typing import Union, Callable
 
 import numpy as np
 
@@ -18,7 +18,7 @@ def rbf_affinity(x):
 class LAME:
 
     def __init__(self,
-                 nc: Union[int, List[int]],
+                 nc: Union[int, list[int]],
                  affinity: Callable = rbf_affinity,
                  max_iter: int = 100):
         self.nc = nc if isinstance(nc, int) else np.cumsum(1 if x == 2 else x for x in nc)

@@ -1,4 +1,4 @@
-from typing import Callable, List, Tuple
+from typing import Callable
 
 import numpy as np
 from torch import nn
@@ -38,7 +38,7 @@ class Pruner:
         """ 保存裁剪后的参数"""
         for m, name in self.param: prune.remove(m, name)
 
-    def param_search(self, model: nn.Module, name: str) -> List[Tuple[nn.Module, str]]:
+    def param_search(self, model: nn.Module, name: str) -> list[tuple[nn.Module, str]]:
         """ 搜索具有属性 name 的模块"""
         ret = []
         for m in model._modules.values():

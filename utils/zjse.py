@@ -1,5 +1,5 @@
 import bisect
-from typing import Iterable, Dict
+from typing import Iterable
 
 import numpy as np
 from scipy.spatial import transform
@@ -116,7 +116,7 @@ def abs_trans_error(pred: np.ndarray, gt: np.ndarray):
     return np.sqrt(np.square(pred - gt).sum(axis=-1).mean())
 
 
-def eval_trajectory(pred: Dict[int, SE3], gt: Dict[int, SE3], plot: bool = True):
+def eval_trajectory(pred: dict[int, SE3], gt: dict[int, SE3], plot: bool = True):
     # 对齐时间戳
     pred_se, gt_se = [], []
     for tp, tgt in nearest_timestamp(pred.keys(), gt.keys()):

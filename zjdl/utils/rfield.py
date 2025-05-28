@@ -1,7 +1,7 @@
 import collections
 import copy
 import warnings
-from typing import Union, Tuple
+from typing import Union
 
 import matplotlib.pyplot as plt
 import torch
@@ -23,7 +23,7 @@ class ReceptiveField:
     def __init__(self,
                  model: nn.Module,
                  tar_layer: Union[int, nn.Module],
-                 img_size: Union[int, Tuple[int, int]],
+                 img_size: Union[int, tuple[int, int]],
                  use_cuda: bool = False,
                  use_copy: bool = False,
                  n_channels: int = 3):

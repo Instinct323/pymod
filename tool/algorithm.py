@@ -4,7 +4,7 @@ import math
 import operator
 import random
 from collections import Counter
-from typing import Dict, List, Callable, Tuple
+from typing import Callable
 
 
 class DisjointSet:
@@ -51,7 +51,7 @@ class SegmentTree:
     """
 
     def __init__(self,
-                 arr: List,
+                 arr: list,
                  oper: Callable = operator.add,
                  v0: int = 0):
         self.arr = arr
@@ -131,7 +131,7 @@ class PdrChecker:
     """
 
     def __init__(self,
-                 hashv: Tuple[int],
+                 hashv: tuple[int],
                  base: int):
         self.base = base
         # 正/逆序 hash 序列
@@ -368,7 +368,7 @@ def manacher(s):
 
 
 def dijkstra(src: int,
-             adj: Dict[int, Dict]):
+             adj: dict[int, dict]):
     """ 单源最短路径 (不带负权)
         :param src: 源点
         :param adj: 图的邻接表"""
@@ -391,7 +391,7 @@ def dijkstra(src: int,
 
 
 def spfa(src: int,
-         adj: Dict[int, Dict]):
+         adj: dict[int, dict]):
     """ 单源最短路径 (带负权)
         :param src: 源点
         :param adj: 图的邻接表"""
@@ -418,7 +418,7 @@ def spfa(src: int,
     return info
 
 
-def floyd(adj: List[List]):
+def floyd(adj: list[list]):
     """ 多源最短路径 (带负权)
         :param adj: 图的邻接矩阵"""
     # import itertools as it
@@ -432,8 +432,8 @@ def floyd(adj: List[List]):
             adj[i][j] = adj[j][i] = min(adj[i][j], adj[i][m] + adj[m][j])
 
 
-def topo_sort(in_degree: List[int],
-              adj: Dict[int, Dict]):
+def topo_sort(in_degree: list[int],
+              adj: dict[int, dict]):
     """
     AOV 网拓扑排序 (最小字典序)
     :param in_degree: 入度表
@@ -453,7 +453,7 @@ def topo_sort(in_degree: List[int],
 
 
 def prim(src: int,
-         adj: Dict[int, Dict]):
+         adj: dict[int, dict]):
     """ 最小生成树
         :param src: 源点
         :param adj: 图的邻接表"""

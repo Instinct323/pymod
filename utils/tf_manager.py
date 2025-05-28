@@ -44,7 +44,8 @@ class _TransformManager(dict):
                   src: str,
                   dst: str) -> np.ndarray:
         """ Apply rotation only to vectors. """
-        tf = self[src, dst]
+        if src == dst: return vec.copy()
+        tf = self[src][dst]
         return np.einsum('ij, ...j -> ...i', tf[:3, :3], vec)
 
     def apply_pcd(self,
@@ -52,7 +53,8 @@ class _TransformManager(dict):
                   src: str,
                   dst: str) -> np.ndarray:
         """ Apply full transformation (rotation + translation) to a point cloud. """
-        tf = self[src, dst]
+        if src == dst: return pcd.copy()
+        tf = self[src][dst]
         if pcd.shape[-1] == 4:
             return np.einsum('ij, ...j -> ...i', tf, pcd)
         elif pcd.shape[-1] == 3:
@@ -78,10 +80,10 @@ if __name__ == '__main__':
 
     # Test point cloud transformation
     res1 = TFmanager.apply_pcd(pcd, "camera", "world")
-    res2 = (TFmanager["camera", "world"] @ pcd.reshape(-1, 4).T).T.reshape(*pcd.shape)
+    res2 = (TFmanager["camera"]["world"] @ pcd.reshape(-1, 4).T).T.reshape(*pcd.shape)
     print(np.abs(res1 - res2).sum())
 
     # Test vector transformation
     res3 = TFmanager.apply_vec(pcd[..., :3], "camera", "world")
-    res4 = (TFmanager["camera", "world"][:3, :3] @ pcd[..., :3].reshape(-1, 3).T).T.reshape(*pcd[..., :3].shape)
+    res4 = (TFmanager["camera"]["world"][:3, :3] @ pcd[..., :3].reshape(-1, 3).T).T.reshape(*pcd[..., :3].shape)
     print(np.abs(res3 - res4).sum())

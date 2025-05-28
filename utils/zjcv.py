@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Union, Tuple
+from typing import Union
 
 import cv2
 import numpy as np
@@ -16,7 +16,7 @@ clip_abs = lambda x, a: np.clip(x, a_min=-a, a_max=a)
 
 
 def to_tensor(img: np.ndarray,
-              pdim: Tuple[int] = (-1, -3, -2)):
+              pdim: tuple[int] = (-1, -3, -2)):
     import torch
     img = torch.from_numpy(np.ascontiguousarray(img[..., ::-1]))
     return img.permute(0, *pdim) if img.dim() == 4 else img.permute(*pdim)

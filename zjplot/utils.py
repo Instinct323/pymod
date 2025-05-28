@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Union, Tuple
+from typing import Union
 
 import cv2
 import matplotlib
@@ -216,9 +216,9 @@ def corrplot(df: pd.DataFrame,
 def threshold_scatter(x: np.ndarray,
                       y: np.ndarray,
                       z: np.ndarray,
-                      threshold: Union[float, Tuple[float, float]],
+                      threshold: Union[float, tuple[float, float]],
                       cmap: str = "coolwarm",
-                      size: Tuple[float, float] = (5, 40),
+                      size: tuple[float, float] = (5, 40),
                       eps: float = 1e-8):
     """ 绘制阈值散点图"""
     if hasattr(threshold, "__len__"):
@@ -244,7 +244,7 @@ def threshold_scatter(x: np.ndarray,
 def grading_scatter(samples: pd.DataFrame,
                     bounds: list,
                     cmap: str = "autumn_r",
-                    size: Tuple[float, float] = (5, 40),
+                    size: tuple[float, float] = (5, 40),
                     float_fmt="%s"):
     """ 分级散点图
         :param samples: 样本数据 (x, y, z)
