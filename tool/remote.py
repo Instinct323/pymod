@@ -66,8 +66,7 @@ if __name__ == '__main__':
 
     ROOT = Path("D:/" if os.name == "nt" else "/media/tongzj/Data")
 
-    repos = (ROOT / "Workbench/cppmod", ROOT / "Workbench/pymod",
-             ROOT / "Workbench/EnvConfig", ROOT / "Information/notes")
+    repos = (ROOT / "Workbench/cppmod", ROOT / "Workbench/pymod", ROOT / "Workbench/EnvConfig", ROOT / "Information/notes")
     repos = [GitRepo(p) for p in repos]
 
     for r in repos:
