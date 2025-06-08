@@ -1,6 +1,19 @@
 import numpy as np
 
-__all__ = ["TFmanager"]
+
+def apply_vec(vec: np.ndarray,
+              tf: np.ndarray) -> np.ndarray:
+    """ Apply rotation only to vectors. """
+    return np.einsum('ij, ...j -> ...i', tf[:3, :3], vec)
+
+
+def apply_pcd(pcd: np.ndarray,
+              tf: np.ndarray) -> np.ndarray:
+    """ Apply full transformation (rotation + translation) to a point cloud. """
+    if pcd.shape[-1] == 4:
+        return np.einsum('ij, ...j -> ...i', tf, pcd)
+    elif pcd.shape[-1] == 3:
+        return apply_vec(pcd, tf) + tf[:3, 3]
 
 
 class _TransformManager(dict):
@@ -43,22 +56,13 @@ class _TransformManager(dict):
                   vec: np.ndarray,
                   src: str,
                   dst: str) -> np.ndarray:
-        """ Apply rotation only to vectors. """
-        if src == dst: return vec.copy()
-        tf = self[src][dst]
-        return np.einsum('ij, ...j -> ...i', tf[:3, :3], vec)
+        return vec.copy() if src == dst else apply_vec(vec, self[src][dst])
 
     def apply_pcd(self,
                   pcd: np.ndarray,
                   src: str,
                   dst: str) -> np.ndarray:
-        """ Apply full transformation (rotation + translation) to a point cloud. """
-        if src == dst: return pcd.copy()
-        tf = self[src][dst]
-        if pcd.shape[-1] == 4:
-            return np.einsum('ij, ...j -> ...i', tf, pcd)
-        elif pcd.shape[-1] == 3:
-            return np.einsum('ij, ...j -> ...i', tf[:3, :3], pcd) + tf[:3, 3]
+        return pcd.copy() if src == dst else apply_pcd(pcd, self[src][dst])
 
 
 TFmanager = _TransformManager()
