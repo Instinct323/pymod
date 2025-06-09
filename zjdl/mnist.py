@@ -20,8 +20,8 @@ def random_dropout(x, p=0.4):
     return x * mask
 
 
-CFG = Path("cfg/cnn/mnist.yaml")
-HYP = Path("cfg/hyp.yaml")
+CFG = Path("config/cnn/mnist.yaml")
+HYP = Path("config/hyp.yaml")
 PROJECT = Path("runs/mnist")
 DATA = Path("data")
 

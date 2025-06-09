@@ -145,13 +145,13 @@ class Path(pathlib.WindowsPath if os.name == "nt" else pathlib.PosixPath, pathli
 
     def binary(self, data=None, **kwargs):
         import pickle
-        return pickle.load(self.open("rb"), **kwargs) \
-            if data is None else pickle.dump(data, self.open("wb"), **kwargs)
+        return pickle.loads(self.read_bytes(), **kwargs) \
+            if data is None else self.write_bytes(pickle.dumps(data, **kwargs))
 
     def json(self, data=None, **kwargs):
         import json
-        return json.load(self.open("r"), **kwargs) \
-            if data is None else json.dump(data, self.open("w"), indent=4, **kwargs)
+        return json.loads(self.read_text(), **kwargs) \
+            if data is None else self.write_text(json.dumps(data, indent=4, **kwargs))
 
     def yaml(self, data=None, **kwargs):
         import yaml

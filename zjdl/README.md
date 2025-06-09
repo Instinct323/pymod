@@ -1,7 +1,7 @@
 # Project Structure
 
 ```
-├── cfg: yaml 配置文件
+├── config: yaml 配置文件
 ├── deploy: torch 模型转换
     ├── onnx_run: ONNX 模型管理
     └── openvino: OpenVINO 模型管理
