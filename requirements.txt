@@ -16,7 +16,7 @@ tqdm
 xlrd
 
 # --- torch ---
-# torch==2.4.1+cu121: https://pytorch.org/get-started/locally/
+# torch==2.5.1+cu124: https://pytorch.org/get-started/locally/
 # pytorch3d (linux-64): git+https://github.com/facebookresearch/pytorch3d.git@stable
 # grad-cam
 # accelerate diffusers[torch] huggingface_hub[hf_xet]
