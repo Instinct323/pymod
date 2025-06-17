@@ -7,8 +7,8 @@ from typing import Callable, Sequence
 import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 
-from .bbox import *
 from .imgtf import *
+from tqdm import tqdm
 from pymod.utils.utils import LOGGER, Path
 
 
@@ -206,7 +206,7 @@ class MosaicDataset(_BaseDataset):
                  imgpool: ImagePool,
                  indexes: Sequence = None,
                  aughyp: dict = {},
-                 labeltf=BBoxTransformer):
+                 labeltf="TODO: BBoxTransformer"):
         super().__init__(imgpool, indexes)
         self.labeltf = labeltf
         self.flip = RandomFlip(aughyp)

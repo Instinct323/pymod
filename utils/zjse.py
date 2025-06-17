@@ -1,4 +1,5 @@
 import bisect
+from dataclasses import dataclass
 from typing import Iterable
 
 import numpy as np
@@ -7,26 +8,23 @@ from scipy.spatial import transform
 SO3 = transform.Rotation  # 特殊正交群
 
 
+@dataclass
 class Translation:
     """ 位移向量"""
-
-    def __init__(self, tx, ty, tz):
-        self.t = np.array([tx, ty, tz])
+    t: np.ndarray
 
     def as_matrix(self):
         return self.t[:, None]
 
     def __neg__(self):
-        return Translation(*(-self.t))
+        return Translation(-self.t)
 
 
+@dataclass
 class SE3:
     """ 特殊欧式群"""
-
-    def __init__(self, R: SO3, t: Translation):
-        assert isinstance(R, SO3) and isinstance(t, Translation)
-        self.R = R
-        self.t = t
+    R: SO3
+    t: Translation
 
     def as_matrix(self):
         return np.block([[self.R.as_matrix(), self.t.t[:, None]], [0, 0, 0, 1]])
@@ -35,13 +33,13 @@ class SE3:
         return np.concatenate([self.t.t, self.R.as_quat()])
 
     def inverse(self):
-        return SE3(self.R.inv(), Translation(*(-self.R.as_matrix() @ self.t.t)))
+        return SE3(self.R.inv(), Translation(-self.R.as_matrix() @ self.t.t))
 
     def __mul__(self, other):
         if isinstance(other, SE3):
             return SE3(self.R * other.R, self * other.t)
         elif isinstance(other, Translation):
-            return Translation(*(self.R.as_matrix() @ other.t + self.t.t))
+            return Translation(self.R.as_matrix() @ other.t + self.t.t)
         else:
             raise TypeError(f"Unsupported type: {type(other)}")
 
@@ -58,12 +56,12 @@ class SE3:
                     yield pose if len(line) & 1 else (int(line[0]), pose)
                 # timestamp, tx, ty, tz, qw, qx, qy, qz
                 if len(line) in (7, 8):
-                    pose = cls(SO3.from_quat(np.append(line[-3:], line[-4])), Translation(*line[-7: -4]))
+                    pose = cls(SO3.from_quat(np.append(line[-3:], line[-4])), Translation(np.array(line[-7: -4])))
                     yield pose if len(line) & 1 else (int(line[0]), pose)
                 # timestamp, 4x4 matrix
                 elif len(line) in (12, 13, 16, 17):
                     m = np.array(line[len(line) & 1:]).reshape(-1, 4)
-                    pose = cls(SO3.from_matrix(m[:3, :3]), Translation(*m[:3, 3]))
+                    pose = cls(SO3.from_matrix(m[:3, :3]), Translation(np.array(m[:3, 3])))
                     yield (int(line[0]), pose) if len(line) & 1 else pose
                 else:
                     raise NotImplementedError(f"Unsupported format: {line}")

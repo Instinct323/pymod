@@ -4,6 +4,7 @@ from typing import Sequence
 import cv2
 import numpy as np
 import torch
+from dataclasses import dataclass, field
 # pip install grad-cam
 from pytorch_grad_cam import EigenGradCAM, GuidedBackpropReLUModel
 from pytorch_grad_cam.utils.image import show_cam_on_image, deprocess_image
@@ -11,16 +12,15 @@ from torch import nn
 from tqdm import tqdm
 
 
+@dataclass
 class Target:
-
-    def __init__(self, category=None):
-        self.category = self.i = category
+    category: int = field(default=None)
 
     def __call__(self, x):
-        self.i = self.category
-        if self.i is None:
-            self.i = x.argmax(dim=-1).item()
-        return x[..., self.i]
+        i = self.category
+        if i is None:
+            i = x.argmax(dim=-1).item()
+        return x[..., i]
 
 
 def grad_cam(model: nn.Module,
@@ -57,11 +57,11 @@ def grad_cam(model: nn.Module,
         grayscale_cam = cam(input_tensor=input_tensor, targets=[tar])
         cam_image = show_cam_on_image(bgr_img, grayscale_cam[0], use_rgb=False)
         # 规定文件命名格式
-        get_name = lambda x: f"{tar.i}-{i}-{x}.png"
+        get_name = lambda x: f"{tar.category}-{i}-{x}.png"
         imwrite(get_name("cam"), cam_image)
         if gb:
             # Guided backprop
-            gback = gb_model(input_tensor, target_category=tar.i)
+            gback = gb_model(input_tensor, target_category=tar.category)
             cam_mask = grayscale_cam[0, ..., None].repeat(3, -1)
             # 绘制并保存 GuidedBP, Grad-CAM
             imwrite(get_name("gb"), deprocess_image(gback))
