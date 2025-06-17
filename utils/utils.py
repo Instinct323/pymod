@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 from functools import wraps
+from typing import Union
 
 from tqdm import tqdm
 
@@ -126,11 +127,11 @@ class Path(pathlib.WindowsPath if os.name == "nt" else pathlib.PosixPath, pathli
             f_load_dump(data, **fld_kwd)
         return data
 
-    def collect_file(self, formats):
+    def collect_file(self, formats: Union[str, list[str]]):
         formats = [formats] if isinstance(formats, str) else formats
         pools = [], []
         # Collect all files in this directory
-        qbar = tqdm(self.glob("**/*.*"))
+        qbar = tqdm(self.rglob("*.*"))
         for f in qbar:
             qbar.set_description(f"Collecting files")
             pools[f.suffix[1:] in formats].append(f)
@@ -188,5 +189,15 @@ class Path(pathlib.WindowsPath if os.name == "nt" else pathlib.PosixPath, pathli
         f.extractall(path or self.parent, pwd=pwd)
 
 
+def concat_txt(src: list[Path],
+               dst: Path,
+               encoding: str = "utf-8"):
+    with dst.open("w", encoding=encoding) as fo:
+        for p in src:
+            fo.write(p.read_text(encoding=encoding) + "\n")
+
+
 if __name__ == "__main__":
-    pass
+    os.chdir(r"D:\Information\计算方法\hw")
+    concat_txt(sorted(Path().glob("hw*.md"), key=lambda x: int(x.stem[2:])),
+               Path("concat.md"))
