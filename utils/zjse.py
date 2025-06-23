@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from typing import Iterable
 
 import numpy as np
-from scipy.spatial import transform
+import scipy
 
-SO3 = transform.Rotation  # 特殊正交群
+SO3 = scipy.spatial.transform.Rotation
 
 
 @dataclass
