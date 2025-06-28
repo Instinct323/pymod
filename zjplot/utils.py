@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from typing import Union
 
 import cv2
 import matplotlib
@@ -216,7 +215,7 @@ def corrplot(df: pd.DataFrame,
 def threshold_scatter(x: np.ndarray,
                       y: np.ndarray,
                       z: np.ndarray,
-                      threshold: Union[float, tuple[float, float]],
+                      threshold: float | tuple[float, float],
                       cmap: str = "coolwarm",
                       size: tuple[float, float] = (5, 40),
                       eps: float = 1e-8):

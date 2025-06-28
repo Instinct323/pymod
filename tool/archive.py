@@ -2,7 +2,6 @@ import math
 import shutil
 import time
 from pathlib import Path
-from typing import Union
 
 import cv2
 import numpy as np
@@ -14,7 +13,7 @@ to_2tuple = lambda x: x if x is None or isinstance(x, (list, tuple)) else (x,) *
 
 
 def make_blurred_border(src: np.ndarray,
-                        img_size: Union[int, tuple[int, int]] = None,
+                        img_size: int | tuple[int, int] = None,
                         aspect_ratio: float = None):
     """
     生成带有模糊边框的图像
@@ -74,8 +73,8 @@ class FileArchiver:
     """
 
     def __init__(self,
-                 txt_cfg: Union[str, Path],
-                 dst: Union[str, Path],
+                 txt_cfg: str | Path,
+                 dst: str | Path,
                  file_fmt: str = "%i-%n",
                  reverse: bool = False):
 

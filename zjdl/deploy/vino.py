@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Union
 
 import openvino.runtime as ov
 
@@ -14,7 +13,7 @@ class VinoModel(ov.CompiledModel):
 
     def __init__(self,
                  xml: Path,
-                 device: Union[int, str] = 1):
+                 device: int | str = 1):
         assert xml.with_suffix(".bin").is_file(), "bin file cannot be found"
         self.device = DEVICES[device] if isinstance(device, int) else device
         super().__init__(VINO_CORE.compile_model(

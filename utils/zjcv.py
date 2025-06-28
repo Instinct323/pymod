@@ -1,6 +1,5 @@
 import re
 from pathlib import Path
-from typing import Union
 
 import cv2
 import numpy as np
@@ -22,7 +21,7 @@ def to_tensor(img: np.ndarray,
     return img.permute(0, *pdim) if img.dim() == 4 else img.permute(*pdim)
 
 
-def load_img(file: Union[str, Path],
+def load_img(file: str | Path,
              img_size: int = None) -> np.ndarray:
     bgr = cv2.imread(str(file))
     assert isinstance(bgr, np.ndarray), f"Error loading data from {file}"
@@ -81,7 +80,7 @@ class VideoSink(sv.VideoSink):
     """
 
     def __init__(self,
-                 dst: Union[Path, str],
+                 dst: str | Path,
                  width: int = 1920,
                  aspect_radio: float = 4 / 3,
                  fps: int = 30,
@@ -89,7 +88,7 @@ class VideoSink(sv.VideoSink):
         super().__init__(str(dst), sv.VideoInfo(width=width, height=round(width / aspect_radio), fps=fps))
         self.pad = [pad] * 3
 
-    def write_frame(self, img: Union[np.ndarray, str, Path]):
+    def write_frame(self, img: str | Path | np.ndarray):
         if not isinstance(img, np.ndarray):
             # 从其他数据类型加载图像
             if isinstance(img, (str, Path)):

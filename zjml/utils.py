@@ -1,5 +1,4 @@
 import bisect
-from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,7 +6,7 @@ import pandas as pd
 
 
 def farthest_point_sampling(pts: np.ndarray,
-                            num_samples: Union[int, float]):
+                            num_samples: int | float):
     """
     Farthest Point Sampling (FPS) algorithm.
     :param pts: The input point cloud.

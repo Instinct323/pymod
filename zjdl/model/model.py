@@ -1,7 +1,6 @@
 import copy
 import time
 from pathlib import Path
-from typing import Union
 
 import torch.onnx
 import yaml
@@ -31,7 +30,7 @@ def switch_branch(state_dict, branch="ema"):
     return state_dict
 
 
-def cfg_modify(yaml_cfg: dict, modify: Union[tuple, list]):
+def cfg_modify(yaml_cfg: dict, modify: tuple | list):
     yaml_cfg = copy.deepcopy(yaml_cfg)
     # 使用特定语法修改配置
     for i, key, value in modify:
@@ -63,7 +62,7 @@ class YamlModel(nn.Module):
     """
     device = property(lambda self: next(self.parameters()).device)
 
-    def __init__(self, yaml_cfg: Union[Path, dict], ch_divisor: int = 4):
+    def __init__(self, yaml_cfg: Path | dict, ch_divisor: int = 4):
         super().__init__()
         self.cfg = yaml_cfg if isinstance(yaml_cfg, dict) \
             else yaml.load(yaml_cfg.read_text(), Loader=yaml.Loader)

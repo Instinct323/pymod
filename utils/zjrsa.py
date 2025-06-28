@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Union
 
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
@@ -11,7 +10,7 @@ pad = padding.OAEP(
 )
 
 
-def file2bytes(src: Union[bytes, Path]) -> bytes:
+def file2bytes(src: bytes | Path) -> bytes:
     return src.read_bytes() if isinstance(src, Path) else src
 
 
@@ -26,13 +25,13 @@ def str2bytes(src: str) -> bytes:
 class PublicKey:
 
     def __init__(self,
-                 pem: Union[bytes, Path] = None,
+                 pem: bytes | Path = None,
                  key: rsa.RSAPublicKey = None):
         self.key = serialization.load_pem_public_key(file2bytes(pem)) if pem else key
         assert self.key, "Invalid initialization parameter"
 
     def __call__(self,
-                 src: Union[bytes, Path],
+                 src: bytes | Path,
                  dst: Path = None):
         ciphertext = self.key.encrypt(file2bytes(src), padding=pad)
         if dst: dst.write_bytes(ciphertext)
@@ -51,13 +50,13 @@ class PublicKey:
 class PrivateKey:
 
     def __init__(self,
-                 pem: Union[bytes, Path] = None,
+                 pem: bytes | Path = None,
                  key_size: int = 2048):
         self.key = serialization.load_pem_private_key(file2bytes(pem)) if pem \
             else rsa.generate_private_key(public_exponent=65537, key_size=key_size)
 
     def __call__(self,
-                 src: Union[bytes, Path],
+                 src: bytes | Path,
                  dst: Path = None):
         plaintext = self.key.decrypt(file2bytes(src), padding=pad)
         if dst: dst.write_bytes(plaintext)
