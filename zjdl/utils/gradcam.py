@@ -1,10 +1,10 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
 import cv2
 import numpy as np
 import torch
-from dataclasses import dataclass, field
 # pip install grad-cam
 from pytorch_grad_cam import EigenGradCAM, GuidedBackpropReLUModel
 from pytorch_grad_cam.utils.image import show_cam_on_image, deprocess_image
@@ -14,12 +14,11 @@ from tqdm import tqdm
 
 @dataclass
 class Target:
-    category: int = field(default=None)
+    category: int = None
 
     def __call__(self, x):
         i = self.category
-        if i is None:
-            i = x.argmax(dim=-1).item()
+        if i is None: i = x.argmax(dim=-1).item()
         return x[..., i]
 
 

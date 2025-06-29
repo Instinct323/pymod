@@ -1,5 +1,4 @@
 import random
-from typing import Union
 
 import numpy as np
 import torch
@@ -25,7 +24,7 @@ def linear_probing(x, y, hlayer=tuple(), cv=5, seed=0, **mlp_kwd) -> Crosstab:
 class SimSiam(Trainer):
 
     def __init__(self, model, project, hyp,
-                 head: Union[nn.Conv2d, nn.Linear]):
+                 head: nn.Conv2d | nn.Linear):
         self.head = model.head = head
         super().__init__(model, project, hyp)
 

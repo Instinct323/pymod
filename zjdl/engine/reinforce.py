@@ -1,7 +1,6 @@
 import random
 from collections import deque
 from pathlib import Path
-from typing import Union
 
 from torch import nn
 
@@ -42,7 +41,7 @@ class DQN(Trainer):
     def __init__(self,
                  qnet: nn.Module,
                  project: Path,
-                 hyp: Union[Path, dict],
+                 hyp: Path | dict,
                  buffer_cap: int):
         self.qnet, self.qnet_target = qnet, qnet
         super().__init__(qnet, project, hyp)

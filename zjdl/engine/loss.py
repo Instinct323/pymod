@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -79,7 +77,7 @@ class MultiCrossEntropy(nn.Module):
     c1 = property(lambda self: sum(self.nf))
 
     def __init__(self,
-                 nc: Union[tuple, list],
+                 nc: tuple | list,
                  w: torch.Tensor = None,
                  gamma: float = 0,
                  momentum: float = 1e-2):

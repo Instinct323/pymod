@@ -1,10 +1,8 @@
-from typing import Union
-
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-def cal_dist(x, coef: np.array, bias: Union[int, float]):
+def cal_dist(x, coef: np.array, bias: int | float):
     """ 计算点到直线的距离 (保留正负号)
         Dist = (coef × x + bias) / ||coef||
         :param x: [n_sample, n_dim]

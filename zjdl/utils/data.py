@@ -6,10 +6,10 @@ from typing import Callable, Sequence
 
 import pandas as pd
 from torch.utils.data import DataLoader, Dataset
-
-from .imgtf import *
 from tqdm import tqdm
-from pymod.utils.utils import LOGGER, Path
+
+from pymod.utils.utils import LOGGER
+from .imgtf import *
 
 
 def ObjectArray(iterable):
@@ -130,7 +130,7 @@ class ImagePool:
             self.images = self.images[indexes]
 
     def loadimg(self,
-                img_size: Union[int, tuple] = None,
+                img_size: int | tuple = None,
                 loader: Callable[[Path, tuple], np.ndarray] = load_img):
         if self.img_size != img_size:
             self.img_size = img_size

@@ -1,4 +1,4 @@
-from typing import Sequence, Optional, Union
+from typing import Sequence, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -96,7 +96,7 @@ class ParticleSwarmOpt:
             epochs: int,
             sche: Optional[Scheduler] = None,
             patience: int = np.inf,
-            vis_itv: Union[float, int] = 0,
+            vis_itv: float | int = 0,
             plt_video: Optional["PltVideo"] = None):
         """
         :param epochs: 训练轮次

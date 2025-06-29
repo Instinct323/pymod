@@ -2,7 +2,6 @@ import logging
 import os
 import pathlib
 from functools import wraps
-from typing import Union
 
 from tqdm import tqdm
 
@@ -127,7 +126,7 @@ class Path(pathlib.WindowsPath if os.name == "nt" else pathlib.PosixPath, pathli
             f_load_dump(data, **fld_kwd)
         return data
 
-    def collect_file(self, formats: Union[str, list[str]]):
+    def collect_file(self, formats: str | list[str]):
         formats = [formats] if isinstance(formats, str) else formats
         pools = [], []
         # Collect all files in this directory
@@ -142,7 +141,7 @@ class Path(pathlib.WindowsPath if os.name == "nt" else pathlib.PosixPath, pathli
 
     def copy_to(self, dst):
         import shutil
-        shutil.copy(self, dst)
+        shutil.copy(self.resolve(), dst.resolve())
 
     def binary(self, data=None, **kwargs):
         import pickle

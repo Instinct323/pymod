@@ -1,10 +1,10 @@
 import re
-from typing import Union, Callable
+from typing import Callable
 
 import numpy as np
 
 
-def vec2latexmat(vector: Union[tuple, list],
+def vec2latexmat(vector: tuple | list,
                  shape: tuple[int, int],
                  bracket: str = "[",
                  newline: str = "\n") -> str:

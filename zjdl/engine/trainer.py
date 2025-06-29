@@ -2,7 +2,6 @@ import logging
 import math
 import os
 from pathlib import Path
-from typing import Union
 
 import torch
 import yaml
@@ -64,7 +63,7 @@ class Trainer:
     def __init__(self,
                  model: nn.Module,
                  project: Path,
-                 hyp: Union[Path, dict]):
+                 hyp: Path | dict):
         self.project = project
         self.project.mkdir(parents=True, exist_ok=True)
         LOGGER.info(f"Logging results to {self.project}")
