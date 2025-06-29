@@ -137,9 +137,9 @@ def set_print_only():
 
 
 if __name__ == "__main__":
-    set_print_only()
+    # set_print_only()
 
     # PythonExtLibs.dump(["/opt/ros/noetic/lib/python3/dist-packages"])
     # PythonExtLibs.temp_disable()
-    CondaEnv.config()
-    # PythonEnv.install("aiohttp")
+    # CondaEnv.config()
+    PythonEnv.install("open_clip_torch")
