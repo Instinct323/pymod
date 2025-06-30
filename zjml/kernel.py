@@ -4,26 +4,26 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def kernel_select(img, k, s=1, d=1, pad_value=0, axis=0):
+def kernel_select(array, k, s=1, d=1, pad_value=0, axis=0):
     """
-    :param img: OpenCV 格式的图像 [h, w, c]
+    :param array: NumPy array to be processed
     :param k: kernel size
     :param s: stride
     :param d: dilation
-    :param pad_value: 边界填充常量
-    :param axis: 新维度的位置
+    :param pad_value: padding value
+    :param axis: position of the kernel in the array
     """
     assert k & 1, "The size of the kernel should be odd"
-    # 获取膨胀操作核
+    # Get the kernel coordinates
     coord = np.arange(- (k // 2), k // 2 + 1)
     kernel = np.stack(tuple(map(lambda x: x.T, np.meshgrid(coord, coord)[::-1])), axis=-1)
     kernel = kernel.reshape([-1, 2]) * d
     pad_width = kernel[0]
-    # 填充图像的边界
-    h, w = img.shape[:2]
-    img_pad = np.pad(img, constant_values=pad_value,
-                     pad_width=np.append(-pad_width, 0)[:, None].repeat(2, -1))
-    return np.stack([img_pad[y:y + h:s, x:x + w:s] for x, y in kernel - pad_width], axis=axis)
+    # Pad the array to ensure the kernel can be applied correctly
+    h, w = array.shape[:2]
+    array_pad = np.pad(array, constant_values=pad_value,
+                       pad_width=np.array(list(-pad_width) + [0] * (array.ndim - 2))[:, None].repeat(2, -1))
+    return np.stack([array_pad[y:y + h:s, x:x + w:s] for x, y in kernel - pad_width], axis=axis)
 
 
 def kernel_func(x1, x2=None, kernel="rbf", args=(1,)):
