@@ -94,8 +94,8 @@ class PythonEnv:
     @classmethod
     def config(cls):
         for k, v in (("timeout", 6000),
-                     ("index-url", "https://pypi.tuna.tsinghua.edu.cn/simple"),
-                     ("trusted-host", "pypi.tuna.tsinghua.edu.cn")):
+                     ("index-url", "https://mirrors.aliyun.com/pypi/simple/"),
+                     ("trusted-host", "mirrors.aliyun.com")):
             execute(f"{cls._pip} config set global.{k} {v}")
         PythonEnv.install("pip", upgrade=True)
 
@@ -122,10 +122,12 @@ class CondaEnv(PythonEnv):
     @classmethod
     def config(cls):
         super().config()
-        for p in ("--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/",
-                  "--add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/",
-                  "--set show_channel_urls yes"):
+        for p in ("--set show_channel_urls yes",):
             execute(f"{cls._conda} config {p}")
+
+        for ch in ("https://mirrors.ustc.edu.cn/anaconda/pkgs/free/",
+                   "https://mirrors.ustc.edu.cn/anaconda/pkgs/main/",):
+            execute(f"{cls._conda} config --add channels {ch}")
 
 
 def set_print_only():
@@ -141,5 +143,5 @@ if __name__ == "__main__":
     # PythonExtLibs.dump(["/opt/ros/noetic/lib/python3/dist-packages"])
     # print(PythonExtLibs.load())
 
-    # CondaEnv.config()
+    CondaEnv.config()
     # PythonEnv.install("aiohttp")
