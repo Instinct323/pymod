@@ -171,7 +171,8 @@ class YamlModel(nn.Module):
             # fan_in: 输入结点数
             # fan_out: 输出结点数
             if isinstance(m, nn.Linear):
-                nn.init.trunc_normal_(m.weight, std=.02)
+                # REF: Initialization is critical to whether transformers fit composite functions by reasoning or memorizing
+                nn.init.trunc_normal_(m.weight, std=1 / m.in_features)
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
             # LayerNorm
