@@ -8,7 +8,7 @@ class PositionalPID:
         self.reset()
 
     def reset(self, n=3):
-        # 历史误差 (最近 n 帧), 累积误差 (EMA)
+        # historical error (last n frames), cumulative error (EMA)
         self._lerror, self._serror = collections.deque(maxlen=n), 0.
 
     def update(self, measure, m=0.9):

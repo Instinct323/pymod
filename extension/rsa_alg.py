@@ -85,7 +85,6 @@ if __name__ == "__main__":
     bin_f = Path("msg.bin")
 
     if 1:
-        # 优先运行
         pri = PrivateKey()
         pub = pri.public_key().dump_pem(pub_f)
         print(pub.decode("utf-8"))

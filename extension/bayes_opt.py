@@ -5,21 +5,27 @@ from pathlib import Path
 import optuna
 
 
-class BayerOpt:
+class BayesOpt:
+    """
+    A simple wrapper for Optuna to perform Bayesian optimization.
+    :param file: file to save the trials
+    :param direction: optimization direction, either "minimize" or "maximize"
+    :param next_param: next parameters to enqueue for the optimization
+    """
     best = property(lambda self: self.study.best_trial)
 
     def __init__(self,
                  file: Path,
                  direction: str = "maximize",
-                 nextp: dict = None):
+                 next_param: dict = None):
         self.study = optuna.create_study(direction=direction)
         self.file = file
-        # 加载已完成的试验
+        # load trials from file
         if file.is_file():
             self.study.add_trials(pickle.loads(file.read_bytes()))
-        # 加载一组指定参数
-        if nextp: self.enqueue(nextp)
-        # 函数重命名
+        # next parameters
+        if next_param: self.enqueue(next_param)
+        # function to get the trials dataframe
         self.dataframe = partial(
             self.study.trials_dataframe,
             attrs=("datetime_start", "duration", "params", "value")
@@ -40,7 +46,6 @@ class BayerOpt:
                        len(self.study.trials) if n_trials is None else n_trials):
             self.study.optimize(func, 1)
             self.save()
-            # print("Automatically saved.")
 
 
 if __name__ == "__main__":
@@ -50,5 +55,5 @@ if __name__ == "__main__":
         return x ** 2 + y
 
 
-    opt = BayerOpt(Path("test.bin"))
+    opt = BayesOpt(Path("test.bin"))
     opt(obj, 10)
