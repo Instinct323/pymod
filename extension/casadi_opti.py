@@ -66,4 +66,4 @@ class CasADiOpti(casadi.Opti):
         except RuntimeError as e:
             if self.print_level > 0: print(f"Failed to optimize: {e}")
             vget = self.debug.value
-        return [vget(var) for var in self.__vars]
+        return [(v[:, None] if v.ndim == 1 else v) for v in (vget(var) for var in self.__vars)]
