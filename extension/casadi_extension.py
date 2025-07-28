@@ -3,6 +3,52 @@ import casadi
 import numpy as np
 
 
+def mean(mat: casadi.MX,
+         axis: int = None) -> casadi.MX:
+    if axis is None:
+        return casadi.sum(mat) / mat.numel()
+    elif axis == 0:
+        return casadi.sum1(mat) / mat.shape[0]
+    elif axis in (1, -1):
+        return casadi.sum2(mat) / mat.shape[1]
+    else:
+        raise NotImplementedError
+
+
+def variance(mat: casadi.MX,
+             axis: int = None) -> casadi.MX:
+    un_bias = mat - broadcast_to(mean(mat, axis=axis), mat.shape)
+    return mean(un_bias ** 2, axis=axis)
+
+
+def diff(mat: casadi.MX,
+         axis: int) -> casadi.MX:
+    if axis == 0:
+        return mat[1:, :] - mat[:-1, :]
+    elif axis == 1:
+        return mat[:, 1:] - mat[:, :-1]
+    else:
+        raise NotImplementedError
+
+
+def norm(mat: casadi.MX,
+         axis: int = None) -> casadi.MX:
+    if axis is None:
+        return casadi.norm_fro(mat)
+    elif axis == 0:
+        return casadi.hcat([casadi.norm_2(mat[:, i]) for i in range(mat.shape[1])])
+    elif axis in (1, -1):
+        return casadi.vcat([casadi.norm_2(mat[i, :]) for i in range(mat.shape[0])])
+    else:
+        raise NotImplementedError
+
+
+def broadcast_to(vec: casadi.MX,
+                 shape: tuple[int, int]) -> casadi.MX:
+    repeat = [(s if v == 1 else 1) for v, s in zip(vec.shape, shape)]
+    return casadi.repmat(vec, *repeat)
+
+
 class CasADiOpti(casadi.Opti):
 
     def __init__(self,
@@ -21,6 +67,7 @@ class CasADiOpti(casadi.Opti):
         self.__constraints = []
         self.__losses = []
         self.__weights = []
+        self.__ckpts = []
 
     def variable(self,
                  shape: tuple[int, int],
@@ -44,6 +91,11 @@ class CasADiOpti(casadi.Opti):
         self.__losses.append(loss)
         self.__weights.append(weight)
 
+    def add_ckpt(self,
+                 ckpt: casadi.MX):
+        """ Add a checkpoint to the optimization problem """
+        self.__ckpts.append(ckpt)
+
     def total_loss(self) -> casadi.MX:
         """ Calculate the total loss as a weighted sum of individual losses """
         assert len(self.__losses)
@@ -57,6 +109,9 @@ class CasADiOpti(casadi.Opti):
         """ Create a CasADi function for the losses """
         return casadi.Function(name, self.__vars, self.__losses + [self.total_loss()])
 
+    def func_ckpt(self, name: str = "ckpt"):
+        return casadi.Function(name, self.__vars, self.__ckpts)
+
     def optimize(self) -> list[np.ndarray]:
         """ Perform the optimization and return the optimized variable values """
         self.minimize(self.total_loss())
@@ -66,4 +121,10 @@ class CasADiOpti(casadi.Opti):
         except RuntimeError as e:
             if self.print_level > 0: print(f"Failed to optimize: {e}")
             vget = self.debug.value
-        return [vget(var) for var in self.__vars]
+        return [(v[:, None] if v.ndim == 1 else v) for v in (vget(var) for var in self.__vars)]
+
+
+if __name__ == '__main__':
+    a = casadi.DM(np.arange(12).reshape(3, 4))
+    print(a)
+    print(variance(a, axis=None))
