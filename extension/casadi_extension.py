@@ -31,16 +31,33 @@ def diff(mat: casadi.MX,
         raise NotImplementedError
 
 
-def norm(mat: casadi.MX,
-         axis: int = None) -> casadi.MX:
-    if axis is None:
-        return casadi.norm_fro(mat)
-    elif axis == 0:
-        return casadi.hcat([casadi.norm_2(mat[:, i]) for i in range(mat.shape[1])])
+def aggregate(mat: casadi.MX,
+              func: callable,
+              axis: int = None):
+    if axis == 0:
+        return casadi.hcat([func(mat[:, i]) for i in range(mat.shape[1])])
     elif axis in (1, -1):
-        return casadi.vcat([casadi.norm_2(mat[i, :]) for i in range(mat.shape[0])])
+        return casadi.vcat([func(mat[i, :]) for i in range(mat.shape[0])])
     else:
         raise NotImplementedError
+
+
+def max(mat: casadi.MX,
+        axis: int = None) -> casadi.MX:
+    return casadi.mmax(mat) if axis is None \
+        else aggregate(mat, casadi.mmax, axis=axis)
+
+
+def min(mat: casadi.MX,
+        axis: int = None) -> casadi.MX:
+    return casadi.mmax(mat) if axis is None \
+        else aggregate(mat, casadi.mmin, axis=axis)
+
+
+def norm(mat: casadi.MX,
+         axis: int = None) -> casadi.MX:
+    return casadi.norm_fro(mat) if axis is None \
+        else aggregate(mat, casadi.norm_2, axis=axis)
 
 
 def broadcast_to(vec: casadi.MX,
@@ -127,4 +144,4 @@ class CasADiOpti(casadi.Opti):
 if __name__ == '__main__':
     a = casadi.DM(np.arange(12).reshape(3, 4))
     print(a)
-    print(variance(a, axis=None))
+    print(max(a, axis=0), max(a, axis=1))
