@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
 from torchvision import transforms
 from torchvision.datasets import MNIST
+from tqdm import tqdm
 
 from engine.result import Result
 from engine.trainer import Trainer
