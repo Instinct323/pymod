@@ -61,6 +61,21 @@ class call_counter:
         return f"<function {self.__func.__name__} : call_cnt = {self.__cnt}>"
 
 
+def parse_seq(value: str) -> list[int]:
+    """
+    Parse a sequence string like "1-3,5,7-8" to a list of integers [1,2,3,5,7,8]
+    """
+    value = str(value).replace(" ", "").split(",")
+    ret = []
+    for p in filter(None, value):
+        if "-" in p:
+            s, e = map(int, p.split("-"))
+            ret.extend(range(s, e + 1))
+        else:
+            ret.append(int(p))
+    return ret
+
+
 def parse_txt_cfg(file, encoding="utf-8", comments="#"):
     """
     Supported syntax:
