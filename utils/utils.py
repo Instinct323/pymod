@@ -1,8 +1,5 @@
 import logging
-import os
 from functools import wraps
-
-from pymod.extension.path_extension import Path
 
 logging.basicConfig(format="[%(levelname)s] %(message)s", level=logging.INFO)
 LOGGER = logging.getLogger("utils")
@@ -61,40 +58,5 @@ class call_counter:
         return f"<function {self.__func.__name__} : call_cnt = {self.__cnt}>"
 
 
-def parse_seq(value: str) -> list[int]:
-    """
-    Parse a sequence string like "1-3,5,7-8" to a list of integers [1,2,3,5,7,8]
-    """
-    value = str(value).replace(" ", "").split(",")
-    ret = []
-    for p in filter(None, value):
-        if "-" in p:
-            s, e = map(int, p.split("-"))
-            ret.extend(range(s, e + 1))
-        else:
-            ret.append(int(p))
-    return ret
-
-
-def parse_txt_cfg(file, encoding="utf-8", comments="#"):
-    """
-    Supported syntax:
-        content     # comment
-    """
-    with open(file, encoding=encoding) as f:
-        for i_line in enumerate(s.split(comments)[0].strip() for s in f.read().splitlines()):
-            if i_line[1]: yield i_line
-
-
-def concat_txt(src: list[Path],
-               dst: Path,
-               encoding: str = "utf-8"):
-    with dst.open("w", encoding=encoding) as fo:
-        for p in src:
-            fo.write(p.read_text(encoding=encoding) + "\n")
-
-
 if __name__ == "__main__":
-    os.chdir(r"D:\Information\计算方法\hw")
-    concat_txt(sorted(Path().glob("hw*.md"), key=lambda x: int(x.stem[2:])),
-               Path("concat.md"))
+    pass

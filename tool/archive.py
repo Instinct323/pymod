@@ -7,9 +7,19 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from pymod.utils.utils import LOGGER, parse_txt_cfg
+from pymod.utils.utils import LOGGER
 
 to_2tuple = lambda x: x if x is None or isinstance(x, (list, tuple)) else (x,) * 2
+
+
+def parse_txt_cfg(file, encoding="utf-8", comments="#"):
+    """
+    Supported syntax:
+        content     # comment
+    """
+    with open(file, encoding=encoding) as f:
+        for i_line in enumerate(s.split(comments)[0].strip() for s in f.read().splitlines()):
+            if i_line[1]: yield i_line
 
 
 def make_blurred_border(src: np.ndarray,
