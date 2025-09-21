@@ -140,7 +140,7 @@ def set_print_only():
 
 if __name__ == "__main__":
     set_print_only()
-    # PythonExtLibs.dump(["/opt/ros/noetic/lib/python3/dist-packages"])
+    PythonExtLibs.dump(["/opt/ros/noetic/lib/python3/dist-packages"])
     # print(PythonExtLibs.load())
 
     CondaEnv.config()
