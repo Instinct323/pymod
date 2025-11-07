@@ -150,13 +150,13 @@ class VideoPlayer(QVBoxLayout):
         lay_h1.addWidget(self.frame_slider, 5)
 
     def increment_frame(self):
-        """ Increment frame by one. """
+        """ WHILE play: increment frame by one. """
         frame_id = self.play_state[0] + int((time.time() - self.play_state[1]) * self.fps)
         self.frame_slider.setValue(frame_id) if frame_id < self.frame_count else self.switch_state(play_state=False)
 
     def switch_state(self, event=None,
                      play_state: bool = None):
-        """ Switch play/pause state. """
+        """ INTERFACE: switch play/pause state. """
         self.play_state = not self.play_state if play_state is None else play_state
         self.play_btn.setIcon(self.play_icons[self.play_state])
 
@@ -165,7 +165,7 @@ class VideoPlayer(QVBoxLayout):
 
     def load_file(self,
                   file: str) -> str:
-        """ Load video file. """
+        """ INTERFACE: load video file. """
         self.video = cv2.VideoCapture(file)
         if not self.video.isOpened():
             return f"Cannot open video file: {file}"
@@ -179,7 +179,7 @@ class VideoPlayer(QVBoxLayout):
         self.refresh_frame()
 
     def refresh_frame(self, event=None):
-        """ Refresh the current frame. """
+        """ AUTO: refresh the current frame. """
         fid = self.frame_id
         self.play_btn.setText(f"{fid}/{self.frame_count - 1}")
 
@@ -217,7 +217,7 @@ class Window(QMainWindow):
 
         # setup layout, connect signals
         self._setup_layout()
-        file.triggered.connect(partial(select_file, print))
+        file.triggered.connect(partial(select_file, self.player.load_file))
 
     def message(self, msg):
         if msg: self.statusBar().showMessage(msg, int(1e8))
@@ -231,5 +231,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = Window("Test", (1080, 720))
     window.show()
-    window.player.load_file(r"D:\Workbench\assets\黑羽快斗.mp4")
+    window.player.load_file("../../assets/黑羽快斗.mp4")
     sys.exit(app.exec_())

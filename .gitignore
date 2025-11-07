@@ -4,6 +4,7 @@ __openvino_cache__
 .ipynb_checkpoints
 ~$*.*
 .~*.*
+*.egg-info
 
 # Environments
 desktop.ini
