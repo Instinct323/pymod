@@ -1,16 +1,20 @@
 import random
-from functools import partial
 
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import random_split
 from torchvision import transforms
 from torchvision.datasets import MNIST
 
 import engine.lit_extension as lite
 from model.model import YamlModel, Conv
 from pymod.extension.path_extension import Path
+
+CFG_MODEL = Path("config/mnist/model.yaml")
+CFG_TRAIN = Path("config/mnist/hyp.yaml")
+PROJECT = Path("runs")
+DATA = Path("runs")
 
 
 def random_dropout(x, p=0.4):
@@ -58,22 +62,19 @@ class MnistModule(lite.LitModule):
         # self.to_onnx(self.project / "best.onnx", input_sample=)
 
 
-CFG_MODEL = Path("config/cnn/mnist.yaml")
-CFG_TRAIN = Path("config/mnist.yaml")
-PROJECT = Path("runs")
-DATA = Path("runs")
-
 if __name__ == "__main__":
+    dataset = MNIST(root=DATA, train=True, download=True, transform=transforms.ToTensor())
+
     module = MnistModule(YamlModel(CFG_MODEL),
                          CFG_TRAIN,
                          PROJECT,
                          ckpt_callback=ckpt_callback,
                          disable_val_prog=True)
 
-    dl = partial(DataLoader, batch_size=module.batch_size, shuffle=True)
-    dataset = MNIST(root=DATA, train=True, download=True, transform=transforms.ToTensor())
-    trainset, valset = random_split(dataset, [50000, 10000], generator=torch.Generator().manual_seed(0))
-    trainset, valset = map(dl, (trainset, valset))
+    datamodule = pl.LightningDataModule.from_datasets(
+        *random_split(dataset, [50000, 10000], generator=torch.Generator().manual_seed(0)),
+        batch_size=module.batch_size
+    )
 
     trainer = pl.Trainer(**module.trainer_kwargs())
-    trainer.fit(module, trainset, valset)
+    trainer.fit(module, datamodule=datamodule)

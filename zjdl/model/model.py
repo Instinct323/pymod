@@ -21,15 +21,6 @@ def fstring(*args, length=10, decimals=2, axis=-1):
     return " ".join(fstr) % args
 
 
-def switch_branch(state_dict, branch="ema"):
-    branch += "."
-    # Switches to the weight of the specified branch
-    for k in tuple(state_dict.keys()):
-        if k.startswith(branch):
-            state_dict[k[len(branch):]] = state_dict.pop(k)
-    return state_dict
-
-
 def cfg_modify(yaml_cfg: dict, modify: tuple | list):
     yaml_cfg = copy.deepcopy(yaml_cfg)
     # 使用特定语法修改配置
@@ -66,19 +57,24 @@ class YamlModel(nn.Module):
         super().__init__()
         self.cfg = yaml_cfg if isinstance(yaml_cfg, dict) \
             else yaml.load(yaml_cfg.read_text(), Loader=yaml.Loader)
+
         # 缺省参数: 深度增益, 宽度增益
         self.cfg.setdefault("depth_multiple", 1.)
         self.cfg.setdefault("width_multiple", 1.)
+
         # 输入张量信息
         self.cfg.setdefault("in_channels", 3)
         img_size = self.cfg.setdefault("img_size", None)
         if img_size:
             self.cfg["img_size"] = to_2tuple(img_size)
+
         # 模型架构信息, 参数固定层信息
         assert self.cfg.get("architecture", None), "\"architecture\" is not defined"
         self.cfg["fixed_layers"] = [i % len(self.cfg["architecture"]) for i in self.cfg.get("fixed_layers", [])]
+
         # 解析架构信息
         self.main = nn.ModuleList(self.parse_architecture(ch_divisor))
+
         # 冻结层信息
         self.cfg.setdefault("freeze", [])
         assert isinstance(self.cfg["freeze"], list), "\"freeze\" should be a list of slicing expressions"
@@ -146,24 +142,6 @@ class YamlModel(nn.Module):
     def simplify(self, inplace=True):
         model = (self if inplace else copy.deepcopy(self)).eval()
         for f in (Conv.reparam, RepConv.reparam): f(model)
-        return model
-
-    def onnx(self, file, branch=None, x=None):
-        x = self.example_input().to(self.device) if x is None else x
-        m = getattr(self, branch) if branch else self
-        torch.onnx.export(m, (x,), file, opset_version=11)
-
-    def torchscript(self, x=None):
-        x = self.example_input() if x is None else x
-        model = torch.jit.trace(self, (x,))
-
-        def profile(x, repeat=5):
-            t0 = time.time()
-            for _ in range(repeat): model(x)
-            return (time.time() - t0) / repeat * 1e3
-
-        model.profile = profile
-        print("The runtime can be obtained using TorchScript's function <profile>")
         return model
 
     def init_param(self):

@@ -37,6 +37,7 @@ class LitModule(pl.LightningModule):
         super().__init__()
 
         self.model: nn.Module = model.train()
+        self.ema: EMA = None
         self.cfg: dict = cfg if isinstance(cfg, dict) \
             else yaml.load(cfg.read_text(), Loader=yaml.Loader)
         self.project: Path = project
@@ -45,8 +46,9 @@ class LitModule(pl.LightningModule):
         self.ckpt_callback: pl.callbacks.ModelCheckpoint = ckpt_callback
         self.disable_val_prog: bool = disable_val_prog
 
-        self.ema: EMA = None
-        if self.cfg.get("ema"):
+    def configure_model(self):
+        """ Configure models. """
+        if not self.ema and self.cfg.get("ema"):
             self.ema = EMA(self.model, **self.cfg["ema"], include_online_model=False)
 
     def configure_optimizers(self):
@@ -64,7 +66,7 @@ class LitModule(pl.LightningModule):
 
     def ema_mse(self, x, y) -> torch.Tensor:
         """ Calculate EMA MSE loss. """
-        if not self.ema:
+        if self.ema is None:
             warnings.warn("no EMA model found.")
             return 0
 
