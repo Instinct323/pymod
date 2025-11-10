@@ -1,2 +1,3 @@
 ema-pytorch
 lightning
+tensorboard

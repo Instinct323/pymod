@@ -11,6 +11,9 @@ import engine.lit_extension as lite
 from model.model import YamlModel, Conv
 from pymod.extension.path_extension import Path
 
+torch.set_float32_matmul_precision("medium")
+pl.seed_everything(seed=0, workers=True)
+
 CFG_MODEL = Path("config/mnist/model.yaml")
 CFG_TRAIN = Path("config/mnist/hyp.yaml")
 PROJECT = Path("runs")
@@ -24,9 +27,9 @@ def random_dropout(x, p=0.4):
 
 
 ckpt_callback = pl.callbacks.ModelCheckpoint(
+    **lite.model_ckpt_kwargs,
     monitor="val_acc",
     mode="max",
-    **lite.model_ckpt_kwargs
 )
 
 
