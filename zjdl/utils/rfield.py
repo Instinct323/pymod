@@ -10,11 +10,6 @@ to_2tuple = lambda x: x if isinstance(x, collections.abc.Iterable) and not isins
 
 
 class ReceptiveField:
-    """
-    :param model: 需要进行可视化的模型
-    :param tar_layer: 感兴趣的层, 其所输出特征图需有 4 个维度 [B, C, H, W]
-    :param img_size: 测试时使用的图像尺寸
-    """
 
     def make_input(self, n_sample):
         return torch.rand([n_sample, *self.img_size], requires_grad=True)
@@ -26,6 +21,11 @@ class ReceptiveField:
                  use_cuda: bool = False,
                  use_copy: bool = False,
                  n_channels: int = 3):
+        """
+        :param model: 需要进行可视化的模型
+        :param tar_layer: 感兴趣的层, 其所输出特征图需有 4 个维度 [B, C, H, W]
+        :param img_size: 测试时使用的图像尺寸
+        """
         self.img_size = n_channels, *to_2tuple(img_size)
         # 注册前向传播的挂钩
         self._fmap = None

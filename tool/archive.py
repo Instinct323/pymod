@@ -77,16 +77,16 @@ def make_blurred_border(src: np.ndarray,
 
 
 class FileArchiver:
-    """
-    文件有序归档管理器
-    :param file_fmt: 文件名格式, %i 序号, %n 文件名
-    """
 
     def __init__(self,
                  txt_cfg: str | Path,
                  dst: str | Path,
                  file_fmt: str = "%i-%n",
                  reverse: bool = False):
+        """
+        文件有序归档管理器
+        :param file_fmt: 文件名格式, %i 序号, %n 文件名
+        """
 
         txt_cfg = Path(txt_cfg)
         assert txt_cfg.is_file(), "Invalid configuration file."

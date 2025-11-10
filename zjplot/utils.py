@@ -295,12 +295,12 @@ def residplot(x: np.ndarray,
 
 
 class PltVideo(sv.VideoSink):
-    """ :param fig_id: plt.figure 的 id """
 
     def __init__(self,
                  target_path: str,
                  video_info: sv.VideoInfo,
                  fig_id: int):
+        """ :param fig_id: plt.figure 的 id """
         self.fig_id = fig_id
         super().__init__(target_path, video_info)
 

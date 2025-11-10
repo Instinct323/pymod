@@ -10,13 +10,6 @@ EPS = 1e-8
 
 
 class Scheduler:
-    """
-    优化参数调度器
-    :param dt: 单位时间
-    :param w_inertia: 惯性权重
-    :param w_self: 自身经验权重
-    :param w_other: 群体经验权重
-    """
     dt = property(lambda self: self.cur[0])
     w_inertia = property(lambda self: self.cur[1])
     w_self = property(lambda self: self.cur[2])
@@ -27,6 +20,13 @@ class Scheduler:
                  w_inertia: float = 1.2,
                  w_self: float = 2.,
                  w_other: float = 2.):
+        """
+        优化参数调度器
+        :param dt: 单位时间
+        :param w_inertia: 惯性权重
+        :param w_self: 自身经验权重
+        :param w_other: 群体经验权重
+        """
         self.org = np.array([dt, w_inertia, w_self, w_other], dtype=DTYPE)
         self.cur = self.org.copy()
 
@@ -45,12 +45,6 @@ class DecayScheduler(Scheduler):
 
 
 class ParticleSwarmOpt:
-    """
-    粒子群优化器 (reference: https://zhuanlan.zhihu.com/p/346355572)
-    :param n: 粒子群规模
-    :param elite_radio: 精英粒子百分比
-    :param best_unit: 已知最优个体
-    """
     b_rm_dup = True
     fig_id = 323
 
@@ -58,6 +52,12 @@ class ParticleSwarmOpt:
                  n: int,
                  elite_radio: float = 0.1,
                  best_unit: Optional[Sequence] = None):
+        """
+        粒子群优化器 (reference: https://zhuanlan.zhihu.com/p/346355572)
+        :param n: 粒子群规模
+        :param elite_radio: 精英粒子百分比
+        :param best_unit: 已知最优个体
+        """
         # 记录系统参数
         self._n = n
         self._elite_size = min(n - 1, max(2, round(n * elite_radio)))

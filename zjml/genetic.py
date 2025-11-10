@@ -25,13 +25,6 @@ class ChromosomeBase:
 
 
 class GeneticOpt:
-    """
-    遗传算法
-    :param cross_proba: 交叉概率
-    :param mut_proba: 变异概率
-    :param well_radio: 最优个体比例
-    :ivar group: 染色体群体
-    """
 
     def __init__(self,
                  chromosome: Type[ChromosomeBase],
@@ -40,6 +33,13 @@ class GeneticOpt:
                  mut_proba: float = 0.3,
                  well_radio: float = 0.2,
                  best_unit: ChromosomeBase = None):
+        """
+        遗传算法
+        :param cross_proba: 交叉概率
+        :param mut_proba: 变异概率
+        :param well_radio: 最优个体比例
+        :ivar group: 染色体群体
+        """
         self.chromosome = chromosome
         self.n_unit = n_unit
         self.group = self.new_unit(self.n_unit)

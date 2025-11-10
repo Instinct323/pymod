@@ -99,10 +99,12 @@ def adjusted_r_squared(pred, target, n_features):
 
 
 class MarkovChain:
-    """ 马尔科夫链
-        :param T: 转移概率矩阵"""
 
     def __init__(self, T, check=True):
+        """
+        马尔科夫链
+        :param T: 转移概率矩阵
+        """
         if check:
             assert np.all(T.shape == (len(T),) * 2), "Transitional matrix should be square"
             assert np.abs(T.sum(axis=0) - 1).sum() < 1e-6, "Sum of each row should be 1"
@@ -150,13 +152,15 @@ class PolyFit(PolyFun):
 
 
 class PCA:
-    """ 主成分分析
+
+    def __init__(self, x, thresh=0.90):
+        """
+        主成分分析
         :param x: 相关系数矩阵 (e.g., np.cov)
         :param thresh: 累积贡献率阈值
         :ivar contri: 各个主成分的贡献率
-        :ivar rota: 旋转降维矩阵"""
-
-    def __init__(self, x, thresh=0.90):
+        :ivar rota: 旋转降维矩阵
+        """
         assert 0. < thresh <= 1.
         lam, vec = np.linalg.eig(x)
         # 降序排序: 特征值、特征向量

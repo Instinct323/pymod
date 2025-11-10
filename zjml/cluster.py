@@ -14,21 +14,6 @@ def Eu_dist(data, center):
 
 
 class Dist_Cluster:
-    """
-    基于距离的聚类器
-    :param n_cluster: 簇中心数
-    :param dist_fun: 距离计算函数
-        :param data: 形如 [n_sample, n_feather] 的 tensor
-        :param center: 形如 [n_cluster, n_feature] 的 tensor
-        :return: 形如 [n_sample, n_cluster] 的 tensor
-    :param mode: 距离优化模式 ("max", "mean", "sum")
-    :param init: 初始簇中心
-    :param patience: 允许 loss 无进展的次数
-    :param lr: 中心点坐标学习率
-
-    :ivar cluster_centers: 聚类中心
-    :ivar labels: 聚类结果
-    """
 
     def __init__(self, n_cluster: int,
                  dist_fun: Callable[[torch.tensor, torch.tensor],
@@ -37,6 +22,21 @@ class Dist_Cluster:
                  init: Optional[Sequence[Sequence]] = None,
                  patience: int = 50,
                  lr: float = 0.08):
+        """
+        基于距离的聚类器
+        :param n_cluster: 簇中心数
+        :param dist_fun: 距离计算函数
+            :param data: 形如 [n_sample, n_feather] 的 tensor
+            :param center: 形如 [n_cluster, n_feature] 的 tensor
+            :return: 形如 [n_sample, n_cluster] 的 tensor
+        :param mode: 距离优化模式 ("max", "mean", "sum")
+        :param init: 初始簇中心
+        :param patience: 允许 loss 无进展的次数
+        :param lr: 中心点坐标学习率
+
+        :ivar cluster_centers: 聚类中心
+        :ivar labels: 聚类结果
+        """
         self._n_cluster = n_cluster
         self._dist_fun = dist_fun
         self._patience = patience

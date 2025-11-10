@@ -5,21 +5,6 @@ import numpy as np
 
 
 class RANSAC(dict):
-    """
-    Random Sample Consensus (RANSAC) algorithm
-    :param n: number of minimum samples
-    :param t: threshold value
-    :param k: number of iterations
-    :param w: probability of at least one sample is free from outliers
-    :param p: probability of success
-
-    Usage:
-
-    for i in RANSAC.index_sampler(len(DATA)):
-        MODEL.fit(DATA[i])
-        error = MODEL.error(DATA[i])
-        RANSAC.save_if_better(error, MODEL.export)
-    """
 
     def __init__(self,
                  n: int,
@@ -27,6 +12,21 @@ class RANSAC(dict):
                  k: Optional[int] = None,
                  w: Optional[float] = None,
                  p: Optional[float] = None):
+        """
+        Random Sample Consensus (RANSAC) algorithm
+        :param n: number of minimum samples
+        :param t: threshold value
+        :param k: number of iterations
+        :param w: probability of at least one sample is free from outliers
+        :param p: probability of success
+
+        Usage:
+
+        for i in RANSAC.index_sampler(len(DATA)):
+            MODEL.fit(DATA[i])
+            error = MODEL.error(DATA[i])
+            RANSAC.save_if_better(error, MODEL.export)
+        """
         self.n = n
         self.t = t
         self.k = k

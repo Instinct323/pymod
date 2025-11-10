@@ -6,15 +6,15 @@ import torch.nn.functional as F
 from torch.utils.data import random_split
 from torchvision import transforms
 from torchvision.datasets import MNIST
+from torch import nn
 
-import engine.lit_extension as lite
-from model.model import YamlModel, Conv
+import utils.lit_extension as lite
+from model.common import Conv2d, CspOSA
 from pymod.extension.path_extension import Path
 
 torch.set_float32_matmul_precision("medium")
 pl.seed_everything(seed=0, workers=True)
 
-CFG_MODEL = Path("config/mnist/model.yaml")
 CFG_TRAIN = Path("config/mnist/hyp.yaml")
 PROJECT = Path("runs")
 DATA = Path("runs")
@@ -31,6 +31,23 @@ ckpt_callback = pl.callbacks.ModelCheckpoint(
     monitor="val_acc",
     mode="max",
 )
+
+
+class SimpleCNN(nn.ModuleList):
+
+    def __init__(self):
+        super().__init__()
+        self.append(Conv2d(1, 8, k=3, s=2))
+        self.append(Conv2d(self[-1].c2, 16, k=3))
+        self.append(nn.MaxPool2d(2, 2))
+        self.append(CspOSA(self[-2].c2, 16, e=3, n=3))
+        self.append(nn.AdaptiveAvgPool2d(1))
+        self.append(nn.Conv2d(self[-2].c2, 10, kernel_size=1))
+        self.append(nn.Flatten())
+
+    def forward(self, x):
+        for m in self: x = m(x)
+        return x
 
 
 class MnistModule(lite.LitModule):
@@ -61,14 +78,14 @@ class MnistModule(lite.LitModule):
 
     def on_fit_end(self):
         self.load_best_ckpt()
-        Conv.reparam(self.model)
+        Conv2d.reparam(self.model)
         # self.to_onnx(self.project / "best.onnx", input_sample=)
 
 
 if __name__ == "__main__":
     dataset = MNIST(root=DATA, train=True, download=True, transform=transforms.ToTensor())
 
-    module = MnistModule(YamlModel(CFG_MODEL),
+    module = MnistModule(SimpleCNN(),
                          CFG_TRAIN,
                          PROJECT,
                          ckpt_callback=ckpt_callback,

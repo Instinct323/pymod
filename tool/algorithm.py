@@ -42,18 +42,18 @@ class DisjointSet:
 
 
 class SegmentTree:
-    """
-    :param oper: 二元运算函数
-    :param v0: 满足 oper(x, v0) = x 的值
-
-    :ivar index: 数组元素在二叉树的结点索引
-    :ivar tree: 以二叉树形式存储的聚合值
-    """
 
     def __init__(self,
                  arr: list,
                  oper: Callable = operator.add,
                  v0: int = 0):
+        """
+        :param oper: 二元运算函数
+        :param v0: 满足 oper(x, v0) = x 的值
+
+        :ivar index: 数组元素在二叉树的结点索引
+        :ivar tree: 以二叉树形式存储的聚合值
+        """
         self.arr = arr
         self.oper = oper
         self.v0 = v0
@@ -118,21 +118,21 @@ class SegmentTree:
 
 
 class PdrChecker:
-    """
-    hash 算法判断回文串
-    :param hashv: 字符串的 hash 值对应的列表
-    :param base: max(hashv) + 1
-
-    :example:
-    >>> hashv = [ord(c) - 97 for c in "racecar"]
-    >>> checker = PdrChecker(hashv, 26)
-    >>> checker[1:6]
-    True
-    """
 
     def __init__(self,
                  hashv: tuple[int],
                  base: int):
+        """
+        hash 算法判断回文串
+        :param hashv: 字符串的 hash 值对应的列表
+        :param base: max(hashv) + 1
+
+        :example:
+        >>> hashv = [ord(c) - 97 for c in "racecar"]
+        >>> checker = PdrChecker(hashv, 26)
+        >>> checker[1:6]
+        True
+        """
         self.base = base
         # 正/逆序 hash 序列
         self.hseq = self.get_seq(hashv)
@@ -289,8 +289,10 @@ def pollard_rho(n):
 
 
 class prime_factor(Counter):
-    """ 质因数分解
-        require: miller_rabin, pollard_rho"""
+    """
+    质因数分解
+    require: miller_rabin, pollard_rho
+    """
 
     def __init__(self, n):
         super().__init__()

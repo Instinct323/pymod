@@ -72,12 +72,6 @@ def check_imgfile(file: Path):
 
 
 class VideoSink(sv.VideoSink):
-    """
-    :param dst: 视频文件名称 (*.mp4)
-    :param width: 视频宽度
-    :param aspect_radio: 视频宽高比
-    :param fps: 视频帧率
-    """
 
     def __init__(self,
                  dst: str | Path,
@@ -85,6 +79,12 @@ class VideoSink(sv.VideoSink):
                  aspect_radio: float = 4 / 3,
                  fps: int = 30,
                  pad: int = 255):
+        """
+        :param dst: 视频文件名称 (*.mp4)
+        :param width: 视频宽度
+        :param aspect_radio: 视频宽高比
+        :param fps: 视频帧率
+        """
         super().__init__(str(dst), sv.VideoInfo(width=width, height=round(width / aspect_radio), fps=fps))
         self.pad = [pad] * 3
 

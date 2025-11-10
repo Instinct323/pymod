@@ -9,15 +9,17 @@ DTYPE = np.float16  # 矩阵使用的数据类型
 
 
 class Spot:
-    """ 闪烁斑点对象
-        :param xylim: xy 坐标区间, [[xmin, ymin], [xmax, ymax]]
-        :param n: 闪烁斑点的数量
-        :param r: 斑点的半径均值, 标准差为 r/2, 最小值为 r/4
-        :param delta: 斑点寿命的均值, 标准差为 delta, 最小值为 delta/10"""
     colors = [red, orange, yellow, green, cyan, blue, purple, pink]
 
     def __init__(self, xylim: np.ndarray, n: int,
                  r: float = .2, delta: float = 1., alpha: float = .7):
+        """
+        闪烁斑点对象
+        :param xylim: xy 坐标区间, [[xmin, ymin], [xmax, ymax]]
+        :param n: 闪烁斑点的数量
+        :param r: 斑点的半径均值, 标准差为 r/2, 最小值为 r/4
+        :param delta: 斑点寿命的均值, 标准差为 delta, 最小值为 delta/10
+        """
         # <群体属性>
         self.xylim = xylim
         self.n, self.r = n, r

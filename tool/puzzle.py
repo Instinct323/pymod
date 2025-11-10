@@ -44,13 +44,6 @@ class NumString:
 
 
 class Puzzle:
-    """
-    :param img: 前景图像文件
-    :param material: 隐藏图像素材包的路径
-    :param shape: 前景图像的目标分割形状
-    :param dpi: 前景图像的宽度
-    :param pad_width: 隐藏图像的侧边距
-    """
 
     def __init__(self,
                  img: Path,
@@ -59,6 +52,13 @@ class Puzzle:
                  dpi: int = 1280,
                  pad_width: float = 0.05,
                  pad_value: int = 255):
+        """
+        :param img: 前景图像文件
+        :param material: 隐藏图像素材包的路径
+        :param shape: 前景图像的目标分割形状
+        :param dpi: 前景图像的宽度
+        :param pad_width: 隐藏图像的侧边距
+        """
         # 对前景图像进行分割, 并读取隐藏图像的素材包
         self.stride = dpi
         self.cells = self.partition(img, shape)

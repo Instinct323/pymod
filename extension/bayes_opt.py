@@ -6,18 +6,18 @@ import optuna
 
 
 class BayesOpt:
-    """
-    A simple wrapper for Optuna to perform Bayesian optimization.
-    :param file: file to save the trials
-    :param direction: optimization direction, either "minimize" or "maximize"
-    :param next_param: next parameters to enqueue for the optimization
-    """
     best = property(lambda self: self.study.best_trial)
 
     def __init__(self,
                  file: Path,
                  direction: str = "maximize",
                  next_param: dict = None):
+        """
+        A simple wrapper for Optuna to perform Bayesian optimization.
+        :param file: file to save the trials
+        :param direction: optimization direction, either "minimize" or "maximize"
+        :param next_param: next parameters to enqueue for the optimization
+        """
         self.study = optuna.create_study(direction=direction)
         self.file = file
         # load trials from file

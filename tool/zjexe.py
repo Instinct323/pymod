@@ -21,18 +21,6 @@ def pyc2py(pyc):
 
 
 class Installer:
-    """
-    cite: https://blog.csdn.net/qq_55745968/article/details/135430884
-
-    :param main: 主程序文件
-    :param console: 是否显示控制台
-    :param icon: 图标文件
-    :param paths: 搜索路径 (非必需)
-    :param hiddenimports: 导入模块 (非必需)
-
-    :ivar opt_mode: 模式参数 (不适用于 spec)
-    :ivar opt_general: 通用的参数
-    """
     exe = Path(sys.executable).parent / "Scripts" / "pyinstaller"
 
     def __init__(self,
@@ -41,6 +29,18 @@ class Installer:
                  icon: Path = None,
                  paths: list = [],
                  hiddenimports: list = []):
+        """
+        cite: https://blog.csdn.net/qq_55745968/article/details/135430884
+
+        :param main: 主程序文件
+        :param console: 是否显示控制台
+        :param icon: 图标文件
+        :param paths: 搜索路径 (非必需)
+        :param hiddenimports: 导入模块 (非必需)
+
+        :ivar opt_mode: 模式参数 (不适用于 spec)
+        :ivar opt_general: 通用的参数
+        """
         # 生成工作目录
         wkdir = main.parent / "install"
         wkdir.mkdir(exist_ok=True)
