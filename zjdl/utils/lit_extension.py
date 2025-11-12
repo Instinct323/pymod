@@ -31,11 +31,9 @@ class LitModule(pl.LightningModule):
     def __init__(self,
                  model: nn.Module,
                  cfg: dict | Path,
-                 project: Path,
                  ckpt_callback: pl.callbacks.ModelCheckpoint,
                  disable_val_prog: bool = False):
         super().__init__()
-        print(f"To start tensorboard, run: `tensorboard --logdir={project.resolve()}`")
         assert ckpt_callback.save_last, "ckpt_callback must save last checkpoint."
 
         self.model: nn.Module = model.train()
@@ -44,7 +42,8 @@ class LitModule(pl.LightningModule):
 
         self.cfg: dict = cfg if isinstance(cfg, dict) \
             else yaml.load(cfg.read_text(), Loader=yaml.Loader)
-        self.project: Path = project
+        self.output: Path = Path(self.cfg["output"])
+        print(f"To start tensorboard, run: `tensorboard --logdir={self.output.resolve()}`")
 
         self.batch_size = self.cfg["batch_size"]
         self.disable_val_prog: bool = disable_val_prog
@@ -94,6 +93,6 @@ class LitModule(pl.LightningModule):
 
         return dict(
             max_epochs=self.cfg["epochs"],
-            default_root_dir=self.project, callbacks=callbacks,
+            default_root_dir=self.output, callbacks=callbacks,
             enable_checkpointing=True, enable_progress_bar=True, enable_model_summary=True
         )

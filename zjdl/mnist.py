@@ -9,14 +9,13 @@ from torchvision.datasets import MNIST
 from torch import nn
 
 import utils.lit_extension as lite
-from model.common import Conv2d, CspOSA
+from model import common
 from pymod.extension.path_extension import Path
 
 torch.set_float32_matmul_precision("medium")
 pl.seed_everything(seed=0, workers=True)
 
 CFG_TRAIN = Path("config/mnist/hyp.yaml")
-PROJECT = Path("runs")
 DATA = Path("runs")
 
 
@@ -37,10 +36,10 @@ class SimpleCNN(nn.ModuleList):
 
     def __init__(self):
         super().__init__()
-        self.append(Conv2d(1, 8, k=3, s=2))
-        self.append(Conv2d(self[-1].c2, 16, k=3))
+        self.append(common.ConvBnAct2d(1, 8, k=3, s=2))
+        self.append(common.ConvBnAct2d(self[-1].c2, 16, k=3))
         self.append(nn.MaxPool2d(2, 2))
-        self.append(CspOSA(self[-2].c2, 16, e=3, n=3))
+        self.append(common.CspOSA(self[-2].c2, 16, e=3, n=3))
         self.append(nn.AdaptiveAvgPool2d(1))
         self.append(nn.Conv2d(self[-2].c2, 10, kernel_size=1))
         self.append(nn.Flatten())
@@ -78,7 +77,8 @@ class MnistModule(lite.LitModule):
 
     def on_fit_end(self):
         self.load_best_ckpt()
-        Conv2d.reparam(self.model)
+        self.model.eval()
+        common.fuse_modules(self.model)
         # self.to_onnx(self.project / "best.onnx", input_sample=)
 
 
@@ -87,7 +87,6 @@ if __name__ == "__main__":
 
     module = MnistModule(SimpleCNN(),
                          CFG_TRAIN,
-                         PROJECT,
                          ckpt_callback=ckpt_callback,
                          disable_val_prog=True)
 

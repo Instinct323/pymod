@@ -2,9 +2,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from .common import Conv2d
+from . import common
 
 
 def pc_normalize(pc):
@@ -160,17 +159,24 @@ def sample_and_group_all(xyz, points):
 
 class PointNetSetAbstraction(nn.Module):
 
-    def __init__(self, npoint, radius, nsample, in_channel, mlp, group_all):
+    def __init__(self, in_channel, npoint, radius, nsample, mlp):
         super().__init__()
+        self.group_all = npoint == 1
+        assert not (self.group_all and any((radius, nsample)))
+
         self.npoint = npoint
         self.radius = radius
         self.nsample = nsample
-        self.mlp = nn.ModuleList()
+        self.mlp = nn.Sequential()
         last_channel = in_channel
         for out_channel in mlp:
-            self.mlp.append(Conv2d(last_channel, out_channel, k=1, act=nn.ReLU))
+            self.mlp.append(common.ConvBnAct2d(last_channel, out_channel, k=1, act=nn.ReLU))
             last_channel = out_channel
-        self.group_all = group_all
+
+    def extra_repr(self) -> str:
+        attr = {"n2": self.npoint}
+        if not self.group_all: attr.update({"r": self.radius, "k": self.nsample})
+        return ", ".join(f"{k}={v}" for k, v in attr.items())
 
     def forward(self, xyz, points):
         """
@@ -187,34 +193,38 @@ class PointNetSetAbstraction(nn.Module):
 
         if self.group_all:
             new_xyz, new_points = sample_and_group_all(xyz, points)
+            fps = None
         else:
-            new_xyz, new_points = sample_and_group(self.npoint, self.radius, self.nsample, xyz, points)
+            new_xyz, new_points, *_, fps = sample_and_group(self.npoint, self.radius, self.nsample, xyz, points, returnfps=True)
         # new_xyz: sampled points position data, [B, npoint, C]
         # new_points: sampled points data, [B, npoint, nsample, C+D]
         new_points = new_points.permute(0, 3, 2, 1)  # [B, C+D, nsample,npoint]
-        for mlp in self.mlp:
-            new_points = mlp(new_points)
+        new_points = self.mlp(new_points)
 
         new_points = torch.max(new_points, 2)[0]
         new_xyz = new_xyz.permute(0, 2, 1)
-        return new_xyz, new_points
+        return new_xyz, new_points, fps
 
 
 class PointNetSetAbstractionMsg(nn.Module):
 
-    def __init__(self, npoint, radius_list, nsample_list, in_channel, mlp_list):
+    def __init__(self, in_channel, npoint, radius_list, nsample_list, mlp_list):
         super().__init__()
         self.npoint = npoint
         self.radius_list = radius_list
         self.nsample_list = nsample_list
         self.mlp_blocks = nn.ModuleList()
         for i in range(len(mlp_list)):
-            mlp = nn.ModuleList()
+            mlp = nn.Sequential()
             last_channel = in_channel + 3
             for out_channel in mlp_list[i]:
-                mlp.append(Conv2d(last_channel, out_channel, k=1, act=nn.ReLU))
+                mlp.append(common.ConvBnAct2d(last_channel, out_channel, k=1, act=nn.ReLU))
                 last_channel = out_channel
             self.mlp_blocks.append(mlp)
+
+    def extra_repr(self) -> str:
+        attr = {"n2": self.npoint, "r": self.radius_list, "k": self.nsample_list}
+        return ", ".join(f"{k}={v}" for k, v in attr.items())
 
     def forward(self, xyz, points):
         """
@@ -231,7 +241,8 @@ class PointNetSetAbstractionMsg(nn.Module):
 
         B, N, C = xyz.shape
         S = self.npoint
-        new_xyz = index_points(xyz, farthest_point_sample(xyz, S))
+        fps = farthest_point_sample(xyz, S)
+        new_xyz = index_points(xyz, fps)
         new_points_list = []
         for i, radius in enumerate(self.radius_list):
             K = self.nsample_list[i]
@@ -245,26 +256,23 @@ class PointNetSetAbstractionMsg(nn.Module):
                 grouped_points = grouped_xyz
 
             grouped_points = grouped_points.permute(0, 3, 2, 1)  # [B, D, K, S]
-            for mlp in self.mlp_blocks[i]:
-                grouped_points = mlp(grouped_points)
+            grouped_points = self.mlp_blocks[i](grouped_points)
             new_points = torch.max(grouped_points, 2)[0]  # [B, D', S]
             new_points_list.append(new_points)
 
         new_xyz = new_xyz.permute(0, 2, 1)
         new_points_concat = torch.cat(new_points_list, dim=1)
-        return new_xyz, new_points_concat
+        return new_xyz, new_points_concat, fps
 
 
 class PointNetFeaturePropagation(nn.Module):
 
     def __init__(self, in_channel, mlp):
         super().__init__()
-        self.mlp_convs = nn.ModuleList()
-        self.mlp_bns = nn.ModuleList()
+        self.mlp = nn.Sequential()
         last_channel = in_channel
         for out_channel in mlp:
-            self.mlp_convs.append(nn.Conv1d(last_channel, out_channel, 1))
-            self.mlp_bns.append(nn.BatchNorm1d(out_channel))
+            self.mlp.append(common.ConvBnAct1d(last_channel, out_channel, k=1))
             last_channel = out_channel
 
     def forward(self, xyz1, xyz2, points1, points2):
@@ -303,7 +311,5 @@ class PointNetFeaturePropagation(nn.Module):
             new_points = interpolated_points
 
         new_points = new_points.permute(0, 2, 1)
-        for i, conv in enumerate(self.mlp_convs):
-            bn = self.mlp_bns[i]
-            new_points = F.relu(bn(conv(new_points)))
+        new_points = self.mlp(new_points)
         return new_points

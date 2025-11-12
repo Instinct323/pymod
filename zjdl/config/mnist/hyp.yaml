@@ -1,5 +1,6 @@
 epochs: 10
 batch_size: 1000
+output: runs
 
 ema:
   beta: 0.99
