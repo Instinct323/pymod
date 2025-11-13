@@ -11,7 +11,8 @@ optimizer:
   type: SGD
   lr0: 0.1  # initial learning rate (SGD=1E-2, Adam=1E-3)
   lrf: 0.01  # final OneCycleLR learning rate (lr0 * lrf)
-  weight_decay: 0.0001  # optimizer weight decay 5e-4
+  kwargs:
+    weight_decay: 0.0001  # optimizer weight decay 5e-4
 
 augment:
   hsv_h: 0.015  # image HSV-Hue augmentation (fraction)

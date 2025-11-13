@@ -1,5 +1,3 @@
-import logging
-from functools import partial
 from typing import Optional
 
 import numpy as np
@@ -7,11 +5,18 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-LOGGER = logging.getLogger("utils")
-
 sum_ = lambda x: sum(x[1:], x[0])
-BilinearResize = partial(F.interpolate, mode="bilinear", align_corners=False)
 make_divisible = lambda x, divisor=4: np.maximum(np.round(x / divisor).astype(np.int64), 1) * divisor
+
+
+def apply_width_multiplier(channels: list,
+                           w: float,
+                           divisor: int = 4) -> list:
+    """ Apply width multiplier to channels. """
+    return [
+        apply_width_multiplier(c, w, divisor) if isinstance(c, list) else make_divisible(c * w, divisor=4)
+        for c in channels
+    ]
 
 
 def fuse_modules(model: nn.Module):
@@ -51,6 +56,18 @@ class _ConvBnActNd(nn.Module):
 
     def forward(self, x):
         return self.act(self.bn(self.conv(x)))
+
+    @classmethod
+    def create_mlp(cls, c1, c2s, k=1, linear_output=False):
+        """ Create MLP. """
+        layers = nn.Sequential()
+        for c2 in (c2s[:-1] if linear_output else c2s):
+            layers.append(cls(c1, c2, k=k, s=1))
+            c1 = c2
+        if linear_output:
+            layers.append(cls.ConvType(c1, c2s[-1], kernel_size=1))
+        layers.c2 = c2s[-1]
+        return layers
 
 
 class ConvBnAct1d(_ConvBnActNd):
@@ -126,22 +143,6 @@ class Bottleneck(nn.Module):
         return self.act(self.downs(x) + self.btn3(self.btn2(self.btn1(x))))
 
 
-class Shortcut(nn.Module):
-
-    def forward(self, x):
-        return sum_(x)
-
-
-class Concat(nn.Module):
-    # Concatenate a list of tensors along dimension
-    def __init__(self, dim=1):
-        super().__init__()
-        self.dim = dim
-
-    def forward(self, x):
-        return torch.cat(x, self.dim)
-
-
 class SEReLU(nn.Module):
     """ Squeeze-and-Excitation Block"""
 
@@ -179,11 +180,6 @@ class GeM(nn.Module):
         return F.adaptive_avg_pool2d(x.clamp_min(1e-6).pow(self.p), 1).pow(1. / self.p)
 
 
-class AvgPool(nn.Module):
-
-    def __init__(self, dims):
-        super().__init__()
-        self.dims = dims
-
-    def forward(self, x):
-        return x.mean(dim=self.dims)
+if __name__ == '__main__':
+    m = ConvBnAct2d.create_mlp(3, [16, 32, 64], linear_output=True)
+    print(m)

@@ -167,11 +167,7 @@ class PointNetSetAbstraction(nn.Module):
         self.npoint = npoint
         self.radius = radius
         self.nsample = nsample
-        self.mlp = nn.Sequential()
-        last_channel = in_channel
-        for out_channel in mlp:
-            self.mlp.append(common.ConvBnAct2d(last_channel, out_channel, k=1, act=nn.ReLU))
-            last_channel = out_channel
+        self.mlp = common.ConvBnAct2d.create_mlp(in_channel, c2s=mlp)
 
     def extra_repr(self) -> str:
         attr = {"n2": self.npoint}
@@ -213,14 +209,10 @@ class PointNetSetAbstractionMsg(nn.Module):
         self.npoint = npoint
         self.radius_list = radius_list
         self.nsample_list = nsample_list
-        self.mlp_blocks = nn.ModuleList()
-        for i in range(len(mlp_list)):
-            mlp = nn.Sequential()
-            last_channel = in_channel + 3
-            for out_channel in mlp_list[i]:
-                mlp.append(common.ConvBnAct2d(last_channel, out_channel, k=1, act=nn.ReLU))
-                last_channel = out_channel
-            self.mlp_blocks.append(mlp)
+        self.mlp_blocks = nn.ModuleList([
+            common.ConvBnAct2d.create_mlp(in_channel + 3, c2s=mlp_list[i])
+            for i in range(len(mlp_list))
+        ])
 
     def extra_repr(self) -> str:
         attr = {"n2": self.npoint, "r": self.radius_list, "k": self.nsample_list}
@@ -269,11 +261,7 @@ class PointNetFeaturePropagation(nn.Module):
 
     def __init__(self, in_channel, mlp):
         super().__init__()
-        self.mlp = nn.Sequential()
-        last_channel = in_channel
-        for out_channel in mlp:
-            self.mlp.append(common.ConvBnAct1d(last_channel, out_channel, k=1))
-            last_channel = out_channel
+        self.mlp = common.ConvBnAct1d.create_mlp(in_channel, c2s=mlp)
 
     def forward(self, xyz1, xyz2, points1, points2):
         """

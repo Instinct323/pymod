@@ -3,10 +3,10 @@ import random
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
+from torch import nn
 from torch.utils.data import random_split
 from torchvision import transforms
 from torchvision.datasets import MNIST
-from torch import nn
 
 import utils.lit_extension as lite
 from model import common
@@ -15,7 +15,7 @@ from pymod.extension.path_extension import Path
 torch.set_float32_matmul_precision("medium")
 pl.seed_everything(seed=0, workers=True)
 
-CFG_TRAIN = Path("config/mnist/hyp.yaml")
+CFG_TRAIN = Path("config/mnist/hyp.yaml").yaml()
 DATA = Path("runs")
 
 
@@ -26,39 +26,36 @@ def random_dropout(x, p=0.4):
 
 
 ckpt_callback = pl.callbacks.ModelCheckpoint(
-    **lite.model_ckpt_kwargs,
-    monitor="val_acc",
-    mode="max",
+    filename="best", save_last=True,
+    monitor="val_acc", mode="max",
 )
 
 
-class SimpleCNN(nn.ModuleList):
+class MnistModule(lite.LitTopModule):
 
     def __init__(self):
-        super().__init__()
-        self.append(common.ConvBnAct2d(1, 8, k=3, s=2))
-        self.append(common.ConvBnAct2d(self[-1].c2, 16, k=3))
-        self.append(nn.MaxPool2d(2, 2))
-        self.append(common.CspOSA(self[-2].c2, 16, e=3, n=3))
-        self.append(nn.AdaptiveAvgPool2d(1))
-        self.append(nn.Conv2d(self[-2].c2, 10, kernel_size=1))
-        self.append(nn.Flatten())
+        super().__init__(CFG_TRAIN)
+        self.model = nn.ModuleList()
+        self.model.append(common.ConvBnAct2d(1, 8, k=3, s=2))
+        self.model.append(common.ConvBnAct2d(self.model[-1].c2, 16, k=3))
+        self.model.append(nn.MaxPool2d(2, 2))
+        self.model.append(common.CspOSA(self.model[-2].c2, 16, e=3, n=3))
+        self.model.append(nn.AdaptiveAvgPool2d(1))
+        self.model.append(nn.Conv2d(self.model[-2].c2, 10, kernel_size=1))
+        self.model.append(nn.Flatten())
 
     def forward(self, x):
-        for m in self: x = m(x)
+        for m in self.model: x = m(x)
         return x
-
-
-class MnistModule(lite.LitModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        pred = self.model(random_dropout(x))
+        pred = self(random_dropout(x))
         return F.cross_entropy(pred, y) + 0.05 * self.ema_mse(x, pred)
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        pred = self.model(x)
+        pred = self(x)
 
         self.log_dict({
             "count": len(y),
@@ -76,24 +73,20 @@ class MnistModule(lite.LitModule):
         print(f"Accuracy {acc:.4f}")
 
     def on_fit_end(self):
-        self.load_best_ckpt()
-        self.model.eval()
-        common.fuse_modules(self.model)
+        self.eval()
+        common.fuse_modules(self)
         # self.to_onnx(self.project / "best.onnx", input_sample=)
 
 
 if __name__ == "__main__":
     dataset = MNIST(root=DATA, train=True, download=True, transform=transforms.ToTensor())
 
-    module = MnistModule(SimpleCNN(),
-                         CFG_TRAIN,
-                         ckpt_callback=ckpt_callback,
-                         disable_val_prog=True)
+    module = MnistModule()
 
     datamodule = pl.LightningDataModule.from_datasets(
         *random_split(dataset, [50000, 10000], generator=torch.Generator().manual_seed(0)),
-        batch_size=module.batch_size
+        batch_size=module.config["batch_size"]
     )
 
-    trainer = pl.Trainer(**module.trainer_kwargs())
+    trainer = pl.Trainer(**module.trainer_kwargs(ckpt_callback=ckpt_callback, disable_val_prog=True))
     trainer.fit(module, datamodule=datamodule)

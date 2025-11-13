@@ -67,8 +67,9 @@ class PointNet2(nn.ModuleList):
                 B, _, N = self.xyz.shape
                 self.idx_prev = torch.arange(N, device=self.xyz.device)[None].repeat(B, 1)
 
-        def as_input(self):
-            return self.xyz, self.feature
+        def as_input(self, concat: bool = False):
+            args = self.xyz, self.feature
+            return torch.concat(args, dim=1) if concat else args
 
         @classmethod
         def from_tensor(cls,

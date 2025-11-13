@@ -5,12 +5,8 @@ from pathlib import Path
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-import yaml
 from ema_pytorch import EMA
-from torch import nn
 from tqdm import tqdm
-
-model_ckpt_kwargs = dict(filename="best", save_last=True)
 
 
 class TrainOnlyProgressBar(pl.callbacks.TQDMProgressBar):
@@ -26,41 +22,26 @@ class CosineLR(torch.optim.lr_scheduler.LambdaLR):
         super().__init__(optimizer, lr_lambda)
 
 
-class LitModule(pl.LightningModule):
+class LitTopModule(pl.LightningModule):
 
     def __init__(self,
-                 model: nn.Module,
-                 cfg: dict | Path,
-                 ckpt_callback: pl.callbacks.ModelCheckpoint,
-                 disable_val_prog: bool = False):
+                 config: dict):
         super().__init__()
-        assert ckpt_callback.save_last, "ckpt_callback must save last checkpoint."
-
-        self.model: nn.Module = model.train()
         self.ema: EMA = None
-        self.ckpt_callback: pl.callbacks.ModelCheckpoint = ckpt_callback
-
-        self.cfg: dict = cfg if isinstance(cfg, dict) \
-            else yaml.load(cfg.read_text(), Loader=yaml.Loader)
-        self.output: Path = Path(self.cfg["output"])
-        print(f"To start tensorboard, run: `tensorboard --logdir={self.output.resolve()}`")
-
-        self.batch_size = self.cfg["batch_size"]
-        self.disable_val_prog: bool = disable_val_prog
+        self.config: dict = config
 
     def configure_model(self):
         """ Configure models. """
-        if not self.ema and self.cfg.get("ema"):
-            self.ema = EMA(self.model, **self.cfg["ema"], include_online_model=False)
+        if not self.ema and self.config.get("ema"):
+            self.ema = EMA(self, **self.config["ema"], include_online_model=False)
 
     def configure_optimizers(self):
         """ Configure optimizers and learning rate schedulers. """
-        cfg = self.cfg["optimizer"]
-        optimizer = getattr(torch.optim, cfg["type"])(
-            self.model.parameters(), lr=cfg["lr0"], weight_decay=cfg["weight_decay"]
+        config = self.config["optimizer"]
+        optimizer = getattr(torch.optim, config["type"])(
+            self.parameters(), lr=config["lr0"], **config["kwargs"]
         )
-        lr_scheduler = CosineLR(optimizer, lrf=cfg["lrf"], epochs=self.trainer.max_epochs)
-
+        lr_scheduler = CosineLR(optimizer, lrf=config["lrf"], epochs=self.trainer.max_epochs)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {"scheduler": lr_scheduler, "interval": "epoch"}
@@ -75,24 +56,22 @@ class LitModule(pl.LightningModule):
         loss = F.mse_loss(self.ema.forward_eval(x), y)
         return loss - loss.detach()
 
-    def load_best_ckpt(self):
-        """ Load best checkpoint. """
-        p = self.ckpt_callback.best_model_path
-        assert p, "no best model found."
-        self.load_state_dict(torch.load(p, weights_only=True)["state_dict"])
-
     def on_after_backward(self):
         """ Update EMA model after each backward pass. """
         if self.ema: self.ema.update()
 
-    def trainer_kwargs(self) -> dict:
+    def trainer_kwargs(self,
+                       ckpt_callback: pl.callbacks.ModelCheckpoint,
+                       disable_val_prog: bool = False) -> dict:
         """ Get pl.Trainer keyword arguments. """
-        callbacks = []
-        if self.ckpt_callback: callbacks.append(self.ckpt_callback)
-        if self.disable_val_prog: callbacks.append(TrainOnlyProgressBar())
+        callbacks = [ckpt_callback]
+        if disable_val_prog: callbacks.append(TrainOnlyProgressBar())
+
+        output: Path = Path(self.config["output"])
+        print(f"To start tensorboard, run: `tensorboard --logdir={output.resolve()}`")
 
         return dict(
-            max_epochs=self.cfg["epochs"],
-            default_root_dir=self.output, callbacks=callbacks,
+            max_epochs=self.config["epochs"],
+            default_root_dir=output, callbacks=callbacks,
             enable_checkpointing=True, enable_progress_bar=True, enable_model_summary=True
         )
