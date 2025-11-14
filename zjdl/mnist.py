@@ -51,17 +51,21 @@ class MnistModule(lite.LitTopModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         pred = self(random_dropout(x))
-        return F.cross_entropy(pred, y) + 0.05 * self.ema_mse(x, pred)
+        loss = F.cross_entropy(pred, y)
+        self.log("loss_train", loss, prog_bar=True, on_step=False, on_epoch=True)
+        return loss + 0.05 * self.ema_mse(x, pred)
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         pred = self(x)
+        loss = F.cross_entropy(pred, y)
 
+        self.log("loss_val", loss, prog_bar=True, on_step=False, on_epoch=True)
         self.log_dict({
             "count": len(y),
-            "correct": (pred.argmax(dim=1) == y).sum().item()
+            "correct": (pred.argmax(dim=1) == y).sum().item(),
         }, on_epoch=True, reduce_fx=torch.sum)
-        return F.cross_entropy(pred, y)
+        return loss
 
     def on_validation_epoch_end(self):
         print()
