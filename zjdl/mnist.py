@@ -15,7 +15,7 @@ from pymod.extension.path_extension import Path
 torch.set_float32_matmul_precision("medium")
 pl.seed_everything(seed=0, workers=True)
 
-CFG_TRAIN = Path("config/mnist/hyp.yaml").yaml()
+CFG_TRAIN = Path("config/mnist/hyp.yaml")
 DATA = Path("runs")
 
 
@@ -27,7 +27,7 @@ def random_dropout(x, p=0.4):
 
 ckpt_callback = pl.callbacks.ModelCheckpoint(
     filename="best", save_last=True,
-    monitor="val_acc", mode="max",
+    monitor="acc_val", mode="max",
 )
 
 
@@ -61,19 +61,13 @@ class MnistModule(lite.LitTopModule):
         loss = F.cross_entropy(pred, y)
 
         self.log("loss_val", loss, prog_bar=True, on_step=False, on_epoch=True)
-        self.log_dict({
-            "count": len(y),
-            "correct": (pred.argmax(dim=1) == y).sum().item(),
-        }, on_epoch=True, reduce_fx=torch.sum)
+        self.log("acc_val", (pred.argmax(dim=1) == y).float().mean(), prog_bar=True, on_step=False, on_epoch=True)
         return loss
 
     def on_validation_epoch_end(self):
         print()
         metrics = self.trainer.callback_metrics
-        count, correct = metrics["count"].item(), metrics["correct"].item()
-        acc = correct / count if count > 0 else 0.
-
-        self.log("val_acc", acc, prog_bar=True)
+        acc = metrics["val_acc"]
         print(f"Accuracy {acc:.4f}")
 
     def on_fit_end(self):
@@ -89,7 +83,7 @@ if __name__ == "__main__":
 
     datamodule = pl.LightningDataModule.from_datasets(
         *random_split(dataset, [50000, 10000], generator=torch.Generator().manual_seed(0)),
-        batch_size=module.config["batch_size"]
+        batch_size=module.config["train"]["batch_size"]
     )
 
     trainer = pl.Trainer(**module.trainer_kwargs(ckpt_callback=ckpt_callback, disable_val_prog=True))

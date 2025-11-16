@@ -1,18 +1,21 @@
-epochs: 10
-batch_size: 1000
-output: runs
+train:
+  seed: 0
+  epochs: 10
+  batch_size: 1000
+  output: runs
 
-ema:
-  beta: 0.99
-  update_after_step: 0
-  update_every: 20
+  ema:
+    beta: 0.99
+    update_after_step: 0
+    update_every: 20
 
-optimizer:
-  type: SGD
-  lr0: 0.1  # initial learning rate (SGD=1E-2, Adam=1E-3)
-  lrf: 0.01  # final OneCycleLR learning rate (lr0 * lrf)
-  kwargs:
-    weight_decay: 0.0001  # optimizer weight decay 5e-4
+  optimizer:
+    type: SGD
+    lr0: 0.1  # initial learning rate
+    lrf: 0.01  # final OneCycleLR learning rate (lr0 * lrf)
+    kwargs:
+      weight_decay: 0.0001  # optimizer weight decay
+
 
 augment:
   hsv_h: 0.015  # image HSV-Hue augmentation (fraction)

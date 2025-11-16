@@ -180,6 +180,46 @@ class GeM(nn.Module):
         return F.adaptive_avg_pool2d(x.clamp_min(1e-6).pow(self.p), 1).pow(1. / self.p)
 
 
+class CossimBce(nn.Module):
+
+    def __init__(self,
+                 s: float = 10.):
+        super().__init__()
+        s = torch.tensor(s, dtype=torch.float32)
+        self.t = nn.Parameter(s)
+        self.b = nn.Parameter(-s)
+
+    def example_label(self, B, G) -> torch.Tensor:
+        z = torch.full([G] * 2, -1, dtype=torch.int64)
+        z.fill_diagonal_(1)
+        return z[None].repeat(B, 1, 1).to(self.b.device)
+
+    def extra_repr(self) -> str:
+        return "t=%.2f, b=%.2f" % (self.t.item(), self.b.item())
+
+    def forward(self, z, x1, x2=None):
+        """
+        :param z: [B, N, M] labels, {1, 0, -1}
+        :param x1: [B, N, C]
+        :param x2: [B, M, C]
+        """
+        if x2 is None: x2 = x1
+        cos_sim = torch.cosine_similarity(x1.unsqueeze(-2), x2.unsqueeze(-3), dim=-1)
+        y = z.to(torch.float32) * (self.t * cos_sim - self.b)  # [B, N, M]
+        mask = z != 0
+        loss = - F.logsigmoid(y)[mask].mean()
+        return dict(loss=loss, cos_sim=cos_sim, mask=mask)
+
+
 if __name__ == '__main__':
-    m = ConvBnAct2d.create_mlp(3, [16, 32, 64], linear_output=True)
-    print(m)
+    torch.set_printoptions(precision=4, sci_mode=False)
+
+    loss_fn = CossimBce().cuda()
+    print(loss_fn)
+    x1 = torch.randn(2, 3, 8).cuda()
+    x2 = torch.randn(2, 3, 8).cuda()
+    y = torch.eye(3).cuda()[None].repeat(2, 1, 1)
+    y[y == 0] = -1
+
+    loss = loss_fn(y, x1, x2)
+    print(loss)

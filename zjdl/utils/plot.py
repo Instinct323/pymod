@@ -177,3 +177,14 @@ class CombinedCost:
             plt.xlim([0, limit + 1]), plt.ylim(ymin, ymax)
             plt.grid(), plt.tight_layout()
             plt.show() if show else (plt.savefig(project / f"{name}{i}.png"), plt.close())
+
+
+if __name__ == '__main__':
+    from pathlib import Path
+
+    root = Path("/media/tongzj/Data/Workbench/Lab/PartGrasp/runs/lightning_logs/version_27")
+
+    state_dict = torch.load(root / "checkpoints/last.ckpt")["state_dict"]
+
+    CombinedCost.parse(state_dict, project=root / "combined_cost", group_lv=2, limit=10,
+                       filt=lambda s: s.startswith("pcd_encoder"))

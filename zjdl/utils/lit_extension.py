@@ -1,11 +1,13 @@
-import math
+import shutil
 import warnings
 from pathlib import Path
 
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
+import yaml
 from ema_pytorch import EMA
+from torch import nn
 from tqdm import tqdm
 
 
@@ -15,36 +17,37 @@ class TrainOnlyProgressBar(pl.callbacks.TQDMProgressBar):
         return tqdm(disable=True)
 
 
-class CosineLR(torch.optim.lr_scheduler.LambdaLR):
-
-    def __init__(self, optimizer, lrf, epochs):
-        lr_lambda = lambda x: lrf + (1 + math.cos(math.pi * x / epochs)) / 2 * (1 - lrf)
-        super().__init__(optimizer, lr_lambda)
-
-
 class LitTopModule(pl.LightningModule):
 
     def __init__(self,
-                 config: dict):
+                 config_file: Path,
+                 ema_model: nn.Module = None):
         super().__init__()
-        self.ema: EMA = None
-        self.config: dict = config
+        self.ema: EMA = ema_model
+        self.config_file: Path = config_file.resolve()
+        self.config: dict = yaml.load(self.config_file.read_text(), Loader=yaml.Loader)
+        pl.seed_everything(seed=self.config["train"].get("seed"))
 
     def configure_model(self):
         """ Configure models. """
-        if not self.ema and self.config.get("ema"):
-            self.ema = EMA(self, **self.config["ema"], include_online_model=False)
+        ema_param = self.config["train"].get("ema")
+        if not isinstance(self.ema, EMA) and ema_param:
+            self.ema = EMA(self.ema or self, **ema_param, include_online_model=False)
 
     def configure_optimizers(self):
         """ Configure optimizers and learning rate schedulers. """
-        config = self.config["optimizer"]
+        config = self.config["train"]["optimizer"]
         optimizer = getattr(torch.optim, config["type"])(
             self.parameters(), lr=config["lr0"], **config["kwargs"]
         )
-        lr_scheduler = CosineLR(optimizer, lrf=config["lrf"], epochs=self.trainer.max_epochs)
         return {
             "optimizer": optimizer,
-            "lr_scheduler": {"scheduler": lr_scheduler, "interval": "epoch"}
+            "lr_scheduler": {"scheduler": torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=self.trainer.max_epochs,
+                eta_min=config["lr0"] * config["lrf"],
+                last_epoch=self.trainer.current_epoch - 1
+            ), "interval": "epoch"}
         }
 
     def ema_mse(self, x, y) -> torch.Tensor:
@@ -55,6 +58,10 @@ class LitTopModule(pl.LightningModule):
 
         loss = F.mse_loss(self.ema.forward_eval(x), y)
         return loss - loss.detach()
+
+    def on_fit_start(self):
+        dst = Path(self.trainer.log_dir).resolve() / "module.yaml"
+        shutil.copy(self.config_file, dst)
 
     def on_after_backward(self):
         """ Update EMA model after each backward pass. """
@@ -67,11 +74,11 @@ class LitTopModule(pl.LightningModule):
         callbacks = [ckpt_callback]
         if disable_val_prog: callbacks.append(TrainOnlyProgressBar())
 
-        output: Path = Path(self.config["output"])
+        output: Path = Path(self.config["train"]["output"])
         print(f"To start tensorboard, run: `tensorboard --logdir={output.resolve()}`")
 
         return dict(
-            max_epochs=self.config["epochs"],
+            max_epochs=self.config["train"]["epochs"],
             default_root_dir=output, callbacks=callbacks,
             enable_checkpointing=True, enable_progress_bar=True, enable_model_summary=True
         )

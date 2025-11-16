@@ -1,4 +1,6 @@
 # FROM: https://github.com/yanx27/Pointnet_Pointnet2_pytorch
+from dataclasses import dataclass, field
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -96,17 +98,58 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
     device = xyz.device
     B, N, C = xyz.shape
     _, S, _ = new_xyz.shape
+
+    # [B, S, N]
     group_idx = torch.arange(N, dtype=torch.long).to(device).view(1, 1, N).repeat([B, S, 1])
     sqrdists = square_distance(new_xyz, xyz)
     group_idx[sqrdists > radius ** 2] = N
+
     group_idx = group_idx.sort(dim=-1)[0][:, :, :nsample]
-    group_first = group_idx[:, :, 0].view(B, S, 1).repeat([1, 1, nsample])
+    group_first = sqrdists.argmin(dim=-1, keepdim=True).repeat([1, 1, nsample])
+    # group_first = group_idx[:, :, 0].view(B, S, 1).repeat([1, 1, nsample])
     mask = group_idx == N
     group_idx[mask] = group_first[mask]
     return group_idx
 
 
-def sample_and_group(npoint, radius, nsample, xyz, points, returnfps=False):
+@dataclass
+class Latent:
+    xyz: torch.Tensor  # [B, N, 3]
+    feature: torch.Tensor = None  # [B, N, C]
+    idx_prev: torch.Tensor = None  # [B, N]
+
+    latent_prev: 'Latent' = field(default=None, repr=False)
+
+    def __getitem__(self, item):
+        return Latent(
+            xyz=index_points(self.xyz, item),
+            feature=index_points(self.feature, item) if self.feature is not None else None,
+            idx_prev=item
+        )
+
+    def as_input(self):
+        args = self.xyz, self.feature
+        return args[0] if args[1] is None else torch.concat(args, dim=-1)
+
+    @classmethod
+    def from_tensor(cls,
+                    xyz_feat: torch.Tensor):
+        args = (xyz_feat,) if xyz_feat.shape[-1] == 3 else (xyz_feat[..., :3], xyz_feat[..., 3:])
+        return cls(*args)
+
+    @property
+    def idx_source(self) -> torch.Tensor:
+        idx = self.idx_prev
+        if idx is None:
+            B, N, C = self.xyz.shape
+            idx = torch.arange(N, device=self.xyz.device)[None].repeat(B, 1)
+
+        if self.latent_prev:
+            idx = torch.gather(self.latent_prev.idx_source, dim=1, index=idx)
+        return idx
+
+
+def sample_and_group(latent, npoint, radius, nsample):
     """
     Input:
         npoint:
@@ -118,26 +161,23 @@ def sample_and_group(npoint, radius, nsample, xyz, points, returnfps=False):
         new_xyz: sampled points position data, [B, npoint, nsample, 3]
         new_points: sampled points data, [B, npoint, nsample, 3+D]
     """
-    B, N, C = xyz.shape
+    B, N, C = latent.xyz.shape
     S = npoint
-    fps_idx = farthest_point_sample(xyz, npoint)  # [B, npoint, C]
-    new_xyz = index_points(xyz, fps_idx)
-    idx = query_ball_point(radius, nsample, xyz, new_xyz)
-    grouped_xyz = index_points(xyz, idx)  # [B, npoint, nsample, C]
+    fps_idx = farthest_point_sample(latent.xyz, npoint)  # [B, npoint, C]
+    new_xyz = index_points(latent.xyz, fps_idx)
+    idx = query_ball_point(radius, nsample, latent.xyz, new_xyz)
+    grouped_xyz = index_points(latent.xyz, idx)  # [B, npoint, nsample, C]
     grouped_xyz_norm = grouped_xyz - new_xyz.view(B, S, 1, C)
 
-    if points is not None:
-        grouped_points = index_points(points, idx)
+    if latent.feature is not None:
+        grouped_points = index_points(latent.feature, idx)
         new_points = torch.cat([grouped_xyz_norm, grouped_points], dim=-1)  # [B, npoint, nsample, C+D]
     else:
         new_points = grouped_xyz_norm
-    if returnfps:
-        return new_xyz, new_points, grouped_xyz, fps_idx
-    else:
-        return new_xyz, new_points
+    return dict(xyz=new_xyz, feature=new_points, idx_prev=fps_idx)
 
 
-def sample_and_group_all(xyz, points):
+def sample_and_group_all(latent):
     """
     Input:
         xyz: input points position data, [B, N, 3]
@@ -146,15 +186,15 @@ def sample_and_group_all(xyz, points):
         new_xyz: sampled points position data, [B, 1, 3]
         new_points: sampled points data, [B, 1, N, 3+D]
     """
-    device = xyz.device
-    B, N, C = xyz.shape
-    new_xyz = torch.zeros(B, 1, C).to(device)
-    grouped_xyz = xyz.view(B, 1, N, C)
-    if points is not None:
-        new_points = torch.cat([grouped_xyz, points.view(B, 1, N, -1)], dim=-1)
+    B, N, C = latent.xyz.shape
+    new_xyz = torch.zeros(B, 1, C).to(latent.xyz.device)
+    grouped_xyz = latent.xyz.view(B, 1, N, C)
+
+    if latent.feature is not None:
+        new_points = torch.cat([grouped_xyz, latent.feature.view(B, 1, N, -1)], dim=-1)
     else:
         new_points = grouped_xyz
-    return new_xyz, new_points
+    return dict(xyz=new_xyz, feature=new_points, idx_prev=None)
 
 
 class PointNetSetAbstraction(nn.Module):
@@ -174,32 +214,12 @@ class PointNetSetAbstraction(nn.Module):
         if not self.group_all: attr.update({"r": self.radius, "k": self.nsample})
         return ", ".join(f"{k}={v}" for k, v in attr.items())
 
-    def forward(self, xyz, points):
-        """
-        Input:
-            xyz: input points position data, [B, C, N]
-            points: input points data, [B, D, N]
-        Return:
-            new_xyz: sampled points position data, [B, C, S]
-            new_points_concat: sample points feature data, [B, D', S]
-        """
-        xyz = xyz.permute(0, 2, 1)
-        if points is not None:
-            points = points.permute(0, 2, 1)
-
-        if self.group_all:
-            new_xyz, new_points = sample_and_group_all(xyz, points)
-            fps = None
-        else:
-            new_xyz, new_points, *_, fps = sample_and_group(self.npoint, self.radius, self.nsample, xyz, points, returnfps=True)
-        # new_xyz: sampled points position data, [B, npoint, C]
-        # new_points: sampled points data, [B, npoint, nsample, C+D]
-        new_points = new_points.permute(0, 3, 2, 1)  # [B, C+D, nsample,npoint]
-        new_points = self.mlp(new_points)
-
-        new_points = torch.max(new_points, 2)[0]
-        new_xyz = new_xyz.permute(0, 2, 1)
-        return new_xyz, new_points, fps
+    def forward(self, latent: Latent):
+        ret = sample_and_group_all(latent) if self.group_all \
+            else sample_and_group(latent, self.npoint, self.radius, self.nsample)
+        # feat: [B, N, K, C] -> [B, C, N, K] -> [B, C', N] -> [B, N, C']
+        ret["feature"] = self.mlp(ret["feature"].permute(0, 3, 1, 2)).max(dim=-1)[0].permute(0, 2, 1)
+        return Latent(**ret, latent_prev=latent)
 
 
 class PointNetSetAbstractionMsg(nn.Module):
@@ -218,43 +238,27 @@ class PointNetSetAbstractionMsg(nn.Module):
         attr = {"n2": self.npoint, "r": self.radius_list, "k": self.nsample_list}
         return ", ".join(f"{k}={v}" for k, v in attr.items())
 
-    def forward(self, xyz, points):
-        """
-        Input:
-            xyz: input points position data, [B, C, N]
-            points: input points data, [B, D, N]
-        Return:
-            new_xyz: sampled points position data, [B, C, S]
-            new_points_concat: sample points feature data, [B, D', S]
-        """
-        xyz = xyz.permute(0, 2, 1)
-        if points is not None:
-            points = points.permute(0, 2, 1)
-
-        B, N, C = xyz.shape
+    def forward(self, latent: Latent):
+        B, N, *_ = latent.xyz.shape
         S = self.npoint
-        fps = farthest_point_sample(xyz, S)
-        new_xyz = index_points(xyz, fps)
+
+        fps = farthest_point_sample(latent.xyz, S)
+        ret = dict(xyz=index_points(latent.xyz, fps), idx_prev=fps)
+
         new_points_list = []
-        for i, radius in enumerate(self.radius_list):
-            K = self.nsample_list[i]
-            group_idx = query_ball_point(radius, K, xyz, new_xyz)
-            grouped_xyz = index_points(xyz, group_idx)
-            grouped_xyz -= new_xyz.view(B, S, 1, C)
-            if points is not None:
-                grouped_points = index_points(points, group_idx)
-                grouped_points = torch.cat([grouped_points, grouped_xyz], dim=-1)
-            else:
-                grouped_points = grouped_xyz
+        for i, (radius, K) in enumerate(zip(self.radius_list, self.nsample_list)):
+            # [B, S, K, ...]
+            group_latent = latent[query_ball_point(radius, K, latent.xyz, ret["xyz"])]
+            group_latent.xyz -= ret["xyz"].view(B, S, 1, -1)
 
-            grouped_points = grouped_points.permute(0, 3, 2, 1)  # [B, D, K, S]
+            grouped_points = group_latent.as_input().permute(0, 3, 1, 2)  # [B, C, S, K]
             grouped_points = self.mlp_blocks[i](grouped_points)
-            new_points = torch.max(grouped_points, 2)[0]  # [B, D', S]
-            new_points_list.append(new_points)
 
-        new_xyz = new_xyz.permute(0, 2, 1)
-        new_points_concat = torch.cat(new_points_list, dim=1)
-        return new_xyz, new_points_concat, fps
+            new_points_list.append(grouped_points.max(dim=-1)[0])
+
+        # feat: [B, C', N] -> [B, N, C']
+        ret["feature"] = torch.cat(new_points_list, dim=1).permute(0, 2, 1)
+        return Latent(**ret, latent_prev=latent)
 
 
 class PointNetFeaturePropagation(nn.Module):
@@ -263,41 +267,34 @@ class PointNetFeaturePropagation(nn.Module):
         super().__init__()
         self.mlp = common.ConvBnAct1d.create_mlp(in_channel, c2s=mlp)
 
-    def forward(self, xyz1, xyz2, points1, points2):
+    def forward(self,
+                latent1: Latent,
+                latent2: Latent) -> Latent:
         """
-        Input:
-            xyz1: input points position data, [B, C, N]
-            xyz2: sampled input points position data, [B, C, S]
-            points1: input points data, [B, D, N]
-            points2: input points data, [B, D, S]
-        Return:
-            new_points: upsampled points data, [B, D', N]
+        :param latent1: input points data
+        :param latent2: sampled input points data
+        :return: upsampled points data
         """
-        xyz1 = xyz1.permute(0, 2, 1)
-        xyz2 = xyz2.permute(0, 2, 1)
-
-        points2 = points2.permute(0, 2, 1)
-        B, N, C = xyz1.shape
-        _, S, _ = xyz2.shape
+        B, N, C = latent1.xyz.shape
+        _, S, _ = latent2.xyz.shape
 
         if S == 1:
-            interpolated_points = points2.repeat(1, N, 1)
+            interpolated_points = latent2.feature.repeat(1, N, 1)
         else:
-            dists = square_distance(xyz1, xyz2)
+            dists = square_distance(latent1.xyz, latent2.xyz)
             dists, idx = dists.sort(dim=-1)
             dists, idx = dists[:, :, :3], idx[:, :, :3]  # [B, N, 3]
 
             dist_recip = 1.0 / (dists + 1e-8)
             norm = torch.sum(dist_recip, dim=2, keepdim=True)
             weight = dist_recip / norm
-            interpolated_points = torch.sum(index_points(points2, idx) * weight.view(B, N, 3, 1), dim=2)
+            interpolated_points = torch.sum(index_points(latent2.feature, idx) * weight.view(B, N, 3, 1), dim=2)
 
-        if points1 is not None:
-            points1 = points1.permute(0, 2, 1)
-            new_points = torch.cat([points1, interpolated_points], dim=-1)
+        if latent1.feature is not None:
+            new_points = torch.cat([latent1.feature, interpolated_points], dim=-1)
         else:
             new_points = interpolated_points
 
         new_points = new_points.permute(0, 2, 1)
         new_points = self.mlp(new_points)
-        return new_points
+        return Latent(xyz=latent1.xyz, feature=new_points.permute(0, 2, 1))

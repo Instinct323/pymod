@@ -1,7 +1,7 @@
-from dataclasses import dataclass, field
-
 import torch
 from torch import nn
+
+from . import pointnet2_utils as pnu
 
 
 class PointNet2(nn.ModuleList):
@@ -30,9 +30,6 @@ class PointNet2(nn.ModuleList):
         super().__init__()
         assert c1 >= 3, "Input channel must be at least 3 (xyz)."
 
-        from . import pointnet2_utils as pnu
-        self.utils = pnu
-
         self.c2s = [c1 - 3]
         for args in zip(n2_list, r_list, k_list, c2s_list):
             c2 = args[-1]
@@ -43,57 +40,21 @@ class PointNet2(nn.ModuleList):
                 self.append(pnu.PointNetSetAbstraction(3 + self.c2s[-1], *args))
                 self.c2s.append(c2[-1])
 
-    def forward(self, xyz_feat) -> "Latent":
-        """
-        :param xyz_feat: [B, C1, N]
-        :return: (xyz[B, 3, N'], feat[B, C2, N'], fps[B, N']) list
-        """
+    def forward(self, xyz_feat) -> pnu.Latent:
+        # xyz_feat: [B, N, C]
         B, _, N = xyz_feat.shape
-        latent = self.Latent.from_tensor(xyz_feat)
-        for sa in self:
-            latent = self.Latent(*sa(*latent.as_input()), latent_prev=latent)
+        latent = pnu.Latent.from_tensor(xyz_feat)
+        for sa in self: latent = sa(latent)
         return latent
-
-    @dataclass
-    class Latent:
-        xyz: torch.Tensor  # [B, 3, N]
-        feature: torch.Tensor = None  # [B, C, N]
-        idx_prev: torch.Tensor = None  # [B, N]
-
-        latent_prev: 'PointNet2.Latent' = field(default=None, repr=False)
-
-        def __post_init__(self):
-            if self.idx_prev is None:
-                B, _, N = self.xyz.shape
-                self.idx_prev = torch.arange(N, device=self.xyz.device)[None].repeat(B, 1)
-
-        def as_input(self, concat: bool = False):
-            args = self.xyz, self.feature
-            return torch.concat(args, dim=1) if concat else args
-
-        @classmethod
-        def from_tensor(cls,
-                        xyz_feat: torch.Tensor):
-            args = (xyz_feat,) if xyz_feat.shape[1] == 3 else (xyz_feat[:, :3, :], xyz_feat[:, 3:, :])
-            return cls(*args)
-
-        @property
-        def idx_source(self) -> torch.Tensor:
-            idx = self.idx_prev
-            if self.latent_prev:
-                idx = torch.gather(self.latent_prev.idx_source, dim=1, index=idx)
-            return idx
 
 
 if __name__ == '__main__':
     c1 = 3
-    x = torch.rand([2, c1, 1024])
+    x = torch.rand([2, 1024, c1])
 
     model = PointNet2(c1, **PointNet2.msg_config)
-    model.pop(-1)
 
     out = model(x)
-    idx = out.idx_source
-    mse = torch.square(out.xyz.permute(0, 2, 1) -
-                       model.utils.index_points(x[:, :3].permute(0, 2, 1), idx)).sum()
+    idx = out.latent_prev.idx_source
+    mse = torch.square(out.latent_prev.xyz - pnu.index_points(x[..., :3], idx)).sum()
     print(mse)
