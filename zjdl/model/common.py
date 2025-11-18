@@ -14,7 +14,7 @@ def apply_width_multiplier(channels: list,
                            divisor: int = 4) -> list:
     """ Apply width multiplier to channels. """
     return [
-        apply_width_multiplier(c, w, divisor) if isinstance(c, list) else make_divisible(c * w, divisor=4)
+        apply_width_multiplier(c, w, divisor) if isinstance(c, list) else make_divisible(c * w, divisor=divisor)
         for c in channels
     ]
 
@@ -41,10 +41,6 @@ class _ConvBnActNd(nn.Module):
         super().__init__()
         self.c2 = c2
         assert k & 1, "The convolution kernel size must be odd"
-        # depthwise separable convolution
-        if g == "dw":
-            g = c1
-            assert c1 == c2, "Failed to create DWConv"
         padding = self.auto_pad(k, s if ctrpad else 1, d)
         # kwargs of nn.ConvNd
         self.conv = self.ConvType(
@@ -58,11 +54,11 @@ class _ConvBnActNd(nn.Module):
         return self.act(self.bn(self.conv(x)))
 
     @classmethod
-    def create_mlp(cls, c1, c2s, k=1, linear_output=False):
+    def create_mlp(cls, c1, c2s, k=1, linear_output=False, **kwargs):
         """ Create MLP. """
         layers = nn.Sequential()
         for c2 in (c2s[:-1] if linear_output else c2s):
-            layers.append(cls(c1, c2, k=k, s=1))
+            layers.append(cls(c1, c2, k=k, s=1, **kwargs))
             c1 = c2
         if linear_output:
             layers.append(cls.ConvType(c1, c2s[-1], kernel_size=1))
@@ -85,99 +81,23 @@ class ConvBnAct3d(_ConvBnActNd):
     BnType = nn.BatchNorm3d
 
 
-class ELA(nn.Module):
+class GroupAvgPool1d(nn.Module):
 
-    def __init__(self, c1, c2, e=0.5, n=3):
+    def __init__(self, g):
         super().__init__()
-        self.c2 = c2
-        c_ = make_divisible(c2 * e, divisor=4)
-        self.ela1 = ConvBnAct2d(c1, c_, 1)
-        self.ela2 = ConvBnAct2d(c1, c_, 1)
-        self.elan = nn.ModuleList(
-            nn.Sequential(ConvBnAct2d(c_, c_, 3),
-                          ConvBnAct2d(c_, c_, 3)) for _ in range(n)
-        )
-        self.elap = ConvBnAct2d(c_ * (n + 2), c2, 1)
+        self.g = g
 
-    def forward(self, x):
-        y = [self.ela1(x), self.ela2(x)]
-        for m in self.elan: y.append(m(y[-1]))
-        return self.elap(torch.cat(y, 1))
-
-
-class CspOSA(nn.Module):
-
-    def __init__(self, c1, c2, e=0.5, n=4):
-        super().__init__()
-        self.c2 = c2
-        c_ = make_divisible(c2 * e, divisor=4)
-        n = max(2, n)
-        self.osa1 = ConvBnAct2d(c1, c_ * 2, 1)
-        self.osa2 = ConvBnAct2d(c1, c_ * 2, 1)
-        self.osa3 = ConvBnAct2d(c_ * 2, c_, 3)
-        self.osan = nn.ModuleList(
-            ConvBnAct2d(c_, c_, 3) for _ in range(n - 1)
-        )
-        self.osap = ConvBnAct2d(c_ * (n + 4), c2, 1)
-
-    def forward(self, x):
-        y = [self.osa1(x), self.osa2(x)]
-        y.append(self.osa3(y[-1]))
-        for m in self.osan: y.append(m(y[-1]))
-        return self.osap(torch.cat(y, 1))
-
-
-class Bottleneck(nn.Module):
-
-    def __init__(self, c1, c2, s=1, g=1, d=1, e=0.25):
-        super().__init__()
-        self.c2 = c2
-        c_ = make_divisible(c2 * e, divisor=4)
-        self.btn1 = ConvBnAct2d(c1, c_, 1)
-        self.btn2 = ConvBnAct2d(c_, c_, 3, s, g, d)
-        self.btn3 = ConvBnAct2d(c_, c2, 1, act=None)
-        self.downs = nn.Identity() if c1 == c2 and s == 1 else ConvBnAct2d(c1, c2, 1, s, act=None)
-        self.act = self.btn1.act
-
-    def forward(self, x):
-        return self.act(self.downs(x) + self.btn3(self.btn2(self.btn1(x))))
-
-
-class SEReLU(nn.Module):
-    """ Squeeze-and-Excitation Block"""
-
-    def __init__(self, c1, r=16):
-        super().__init__()
-        self.c2 = c1
-        c_ = max(4, c1 // r)
-        self.se = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(c1, c_, 1, bias=True),
-            nn.ReLU(),
-            nn.Conv2d(c_, c1, 1, bias=True),
-            nn.Sigmoid()
-        )
-        self.act = nn.ReLU()
-
-    def forward(self, x):
-        return self.act(x * self.se(x))
-
-
-class Upsample(nn.Upsample):
-
-    def __init__(self, s=2, mode="nearest"):
-        super().__init__(scale_factor=s, mode=mode)
-
-
-class GeM(nn.Module):
-    """ Generalized-Mean Pooling"""
-
-    def __init__(self):
-        super().__init__()
-        self.p = nn.Parameter(torch.tensor(3.0))
-
-    def forward(self, x):
-        return F.adaptive_avg_pool2d(x.clamp_min(1e-6).pow(self.p), 1).pow(1. / self.p)
+    def forward(self, x, y) -> dict[str, torch.Tensor]:
+        """
+        :param x: [B, N, C]
+        :param y: [B, N]
+        :returns: feature[B, G, C], mask[B, G]
+        """
+        y = y.clone()
+        y[y < 0] = self.g
+        x = x.unsqueeze(-2)     # [B, N, 1, C]
+        one_hot = F.one_hot(y)[..., :-1].to(x.device).unsqueeze(-1)  # [B, N, G, 1]
+        return dict(feature=(x * one_hot).mean(dim=1), mask=torch.any(one_hot, dim=(1, 3)))
 
 
 class CossimBce(nn.Module):
@@ -197,7 +117,7 @@ class CossimBce(nn.Module):
     def extra_repr(self) -> str:
         return "t=%.2f, b=%.2f" % (self.t.item(), self.b.item())
 
-    def forward(self, z, x1, x2=None):
+    def forward(self, z, x1, x2=None) -> dict[str, torch.Tensor]:
         """
         :param z: [B, N, M] labels, {1, 0, -1}
         :param x1: [B, N, C]
@@ -212,14 +132,11 @@ class CossimBce(nn.Module):
 
 
 if __name__ == '__main__':
-    torch.set_printoptions(precision=4, sci_mode=False)
+    B, N, g = 4, 10, 8
 
-    loss_fn = CossimBce().cuda()
-    print(loss_fn)
-    x1 = torch.randn(2, 3, 8).cuda()
-    x2 = torch.randn(2, 3, 8).cuda()
-    y = torch.eye(3).cuda()[None].repeat(2, 1, 1)
-    y[y == 0] = -1
+    x = torch.rand([B, 16, N])
+    y = torch.randint(-1, g, [B, N])
 
-    loss = loss_fn(y, x1, x2)
-    print(loss)
+    pool = GroupAvgPool1d(g)
+    ret = pool(x, y)
+    print(ret)

@@ -97,7 +97,7 @@ class CombinedCost:
             # y = np.linalg.svd(weight)[1]
             # y /= y[0]
             info["score"] = cls._round(np.sort(score))
-            return info
+            if info["score"]: return info
 
     @classmethod
     def parse(cls, model_or_sdit, **export_kwd):
@@ -182,9 +182,9 @@ class CombinedCost:
 if __name__ == '__main__':
     from pathlib import Path
 
-    root = Path("/media/tongzj/Data/Workbench/Lab/PartGrasp/runs/lightning_logs/version_27")
+    root = Path("/media/tongzj/Data/Workbench/Lab/PartGrasp/runs/lightning_logs/version_0")
 
     state_dict = torch.load(root / "checkpoints/last.ckpt")["state_dict"]
 
-    CombinedCost.parse(state_dict, project=root / "combined_cost", group_lv=2, limit=10,
-                       filt=lambda s: s.startswith("pcd_encoder"))
+    CombinedCost.parse(state_dict, project=root / "combined_cost", group_lv=1, limit=20,
+                       filt=lambda s: not s.startswith("ema"))
