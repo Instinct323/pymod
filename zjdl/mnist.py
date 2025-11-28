@@ -67,7 +67,7 @@ class MnistModule(lite.LitTopModule):
     def on_validation_epoch_end(self):
         print()
         metrics = self.trainer.callback_metrics
-        acc = metrics["val_acc"]
+        acc = metrics["acc_val"]
         print(f"Accuracy {acc:.4f}")
 
     def on_fit_end(self):

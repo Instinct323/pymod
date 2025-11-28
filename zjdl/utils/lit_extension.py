@@ -26,7 +26,7 @@ class LitTopModule(pl.LightningModule):
         self.ema: EMA = ema_model
         self.config_file: Path = config_file.resolve()
         self.config: dict = yaml.load(self.config_file.read_text(), Loader=yaml.Loader)
-        pl.seed_everything(seed=self.config["train"].get("seed"))
+        pl.seed_everything(seed=self.config["train"].get("seed"), workers=True)
 
     def configure_model(self):
         """ Configure models. """
@@ -79,6 +79,7 @@ class LitTopModule(pl.LightningModule):
 
         return dict(
             max_epochs=self.config["train"]["epochs"],
+            accumulate_grad_batches=self.config["train"].get("accum_grad", 1),
             default_root_dir=output, callbacks=callbacks,
             enable_checkpointing=True, enable_progress_bar=True, enable_model_summary=True
         )
