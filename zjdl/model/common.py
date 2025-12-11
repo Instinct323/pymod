@@ -176,7 +176,7 @@ class GeM(nn.Module):
         return F.adaptive_avg_pool2d(x.clamp_min(1e-6).pow(self.p), 1).pow(1. / self.p)
 
 
-class CossimBce(nn.Module):
+class CossimBCE(nn.Module):
 
     def __init__(self,
                  s: float = 10.):
@@ -210,7 +210,7 @@ class CossimBce(nn.Module):
 if __name__ == '__main__':
     torch.set_printoptions(precision=4, sci_mode=False)
 
-    loss_fn = CossimBce().cuda()
+    loss_fn = CossimBCE().cuda()
     print(loss_fn)
     x1 = torch.randn(2, 3, 8).cuda()
     x2 = torch.randn(2, 3, 8).cuda()
