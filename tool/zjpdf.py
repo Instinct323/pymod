@@ -81,5 +81,4 @@ def pdf2img(file: Path, suffix=".png", root="Project", blowup=15):
 
 if __name__ == "__main__":
     # pdf2img(r"D:\Information\Lib\童赞嘉.pdf")
-    ROOT = Path(r"D:\Downloads\gradebook_CS112-30023448-2025SP_lab204_2025-03-17-12-56-02")
-    merge_pdf(ROOT.iterdir(), ROOT.parent / "merge.pdf")
+    pdf2img(Path(r"D:\Downloads\Project_1.pdf"))
