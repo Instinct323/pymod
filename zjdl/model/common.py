@@ -81,6 +81,33 @@ class ConvBnAct3d(_ConvBnActNd):
     BnType = nn.BatchNorm3d
 
 
+class LinearBnAct(nn.Module):
+    """ Linear - BN - Act """
+
+    def __init__(self, c1, c2,
+                 act: Optional[nn.Module] = nn.ReLU):
+        super().__init__()
+        self.c2 = c2
+        self.linear = nn.Linear(c1, c2, bias=False)
+        self.bn = nn.BatchNorm1d(c2)
+        self.act = act() if act else nn.Identity()
+
+    def forward(self, x):
+        return self.act(self.bn(self.linear(x)))
+
+    @classmethod
+    def create_mlp(cls, c1, c2s, linear_output=False, **kwargs):
+        """ Create MLP. """
+        layers = nn.Sequential()
+        for c2 in (c2s[:-1] if linear_output else c2s):
+            layers.append(cls(c1, c2, **kwargs))
+            c1 = c2
+        if linear_output:
+            layers.append(nn.Linear(c1, c2s[-1]))
+        layers.c2 = c2s[-1]
+        return layers
+
+
 class ELA(nn.Module):
 
     def __init__(self, c1, c2, e=0.5, n=3):
