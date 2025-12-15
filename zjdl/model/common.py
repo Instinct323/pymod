@@ -20,76 +20,21 @@ def apply_width_multiplier(channels: list,
 
 
 def fuse_modules(model: nn.Module):
-    for m in filter(lambda m: isinstance(m, _ConvBnActNd) and not m.deploy, model.modules()):
-        torch.ao.quantization.fuse_modules(m, ["conv", "bn"], inplace=True)
-
-
-class _ConvBnActNd(nn.Module):
-    """ Conv - BN - Act """
-    deploy = property(lambda self: isinstance(self.bn, nn.Identity))
-    ConvType = None
-    BnType = None
-
-    @staticmethod
-    def auto_pad(k, s=1, d=1):
-        # (k - 1) // 2 * d: 1st-center -> [0, 0]
-        # (s - 1) // 2: 1st-center -> [s/2, s/2]
-        return max(0, (k - 1) // 2 * d - (s - 1) // 2)
-
-    def __init__(self, c1, c2, k=3, s=1, g=1, d=1,
-                 act: Optional[nn.Module] = nn.ReLU, ctrpad=True):
-        super().__init__()
-        self.c2 = c2
-        assert k & 1, "The convolution kernel size must be odd"
-        padding = self.auto_pad(k, s if ctrpad else 1, d)
-        # kwargs of nn.ConvNd
-        self.conv = self.ConvType(
-            in_channels=c1, out_channels=c2, kernel_size=k,
-            stride=s, padding=padding, groups=g, dilation=d, bias=False,
-        )
-        self.bn = self.BnType(c2)
-        self.act = act() if act else nn.Identity()
-
-    def forward(self, x):
-        return self.act(self.bn(self.conv(x)))
-
-    @classmethod
-    def create_mlp(cls, c1, c2s, k=1, linear_output=False, **kwargs):
-        """ Create MLP. """
-        layers = nn.Sequential()
-        for c2 in (c2s[:-1] if linear_output else c2s):
-            layers.append(cls(c1, c2, k=k, s=1, **kwargs))
-            c1 = c2
-        if linear_output:
-            layers.append(cls.ConvType(c1, c2s[-1], kernel_size=1))
-        layers.c2 = c2s[-1]
-        return layers
-
-
-class ConvBnAct1d(_ConvBnActNd):
-    ConvType = nn.Conv1d
-    BnType = nn.BatchNorm1d
-
-
-class ConvBnAct2d(_ConvBnActNd):
-    ConvType = nn.Conv2d
-    BnType = nn.BatchNorm2d
-
-
-class ConvBnAct3d(_ConvBnActNd):
-    ConvType = nn.Conv3d
-    BnType = nn.BatchNorm3d
+    for m in filter(lambda m: isinstance(m, LinearBnAct) and not m.deploy, model.modules()):
+        torch.ao.quantization.fuse_modules(m, ["linear", "bn"], inplace=True)
 
 
 class LinearBnAct(nn.Module):
     """ Linear - BN - Act """
+    deploy = property(lambda self: isinstance(self.bn, nn.Identity))
+    LinearType = nn.Linear
+    BnType = nn.BatchNorm1d
 
-    def __init__(self, c1, c2,
-                 act: Optional[nn.Module] = nn.ReLU):
+    def __init__(self, c1, c2, act: Optional[nn.Module] = nn.ReLU, **linear_kwargs):
         super().__init__()
         self.c2 = c2
-        self.linear = nn.Linear(c1, c2, bias=False)
-        self.bn = nn.BatchNorm1d(c2)
+        self.linear = self.LinearType(c1, c2, bias=False, **linear_kwargs)
+        self.bn = self.BnType(c2)
         self.act = act() if act else nn.Identity()
 
     def forward(self, x):
@@ -99,13 +44,44 @@ class LinearBnAct(nn.Module):
     def create_mlp(cls, c1, c2s, linear_output=False, **kwargs):
         """ Create MLP. """
         layers = nn.Sequential()
-        for c2 in (c2s[:-1] if linear_output else c2s):
+        for c2 in c2s:
             layers.append(cls(c1, c2, **kwargs))
             c1 = c2
-        if linear_output:
-            layers.append(nn.Linear(c1, c2s[-1]))
+        if linear_output: layers[-1].act = nn.Identity()
         layers.c2 = c2s[-1]
         return layers
+
+
+class _ConvBnActNd(LinearBnAct):
+    """ Conv - BN - Act """
+
+    @staticmethod
+    def auto_pad(k, s=1, d=1):
+        # (k - 1) // 2 * d: 1st-center -> [0, 0]
+        # (s - 1) // 2: 1st-center -> [s/2, s/2]
+        return max(0, (k - 1) // 2 * d - (s - 1) // 2)
+
+    def __init__(self, c1, c2, k=3, s=1, g=1, d=1,
+                 act: Optional[nn.Module] = nn.ReLU, ctrpad=True):
+        assert k & 1, "The convolution kernel size must be odd"
+        padding = self.auto_pad(k, s if ctrpad else 1, d)
+        super().__init__(c1, c2, act=act,
+                         kernel_size=k, stride=s, padding=padding, groups=g, dilation=d)
+
+
+class ConvBnAct1d(_ConvBnActNd):
+    LinearType = nn.Conv1d
+    BnType = nn.BatchNorm1d
+
+
+class ConvBnAct2d(_ConvBnActNd):
+    LinearType = nn.Conv2d
+    BnType = nn.BatchNorm2d
+
+
+class ConvBnAct3d(_ConvBnActNd):
+    LinearType = nn.Conv3d
+    BnType = nn.BatchNorm3d
 
 
 class ELA(nn.Module):
@@ -237,12 +213,11 @@ class CossimBCE(nn.Module):
 if __name__ == '__main__':
     torch.set_printoptions(precision=4, sci_mode=False)
 
-    loss_fn = CossimBCE().cuda()
-    print(loss_fn)
-    x1 = torch.randn(2, 3, 8).cuda()
-    x2 = torch.randn(2, 3, 8).cuda()
-    y = torch.eye(3).cuda()[None].repeat(2, 1, 1)
-    y[y == 0] = -1
+    x = torch.randn(2, 3)
+    model = LinearBnAct.create_mlp(3, [16, 32, 64], linear_output=True).eval()
+    print(model)
+    fuse_modules(model)
+    print(model)
 
-    loss = loss_fn(y, x1, x2)
-    print(loss)
+    y = model(x)
+    print(y.shape)
