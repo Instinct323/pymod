@@ -8,8 +8,8 @@ class PointNet2(nn.ModuleList):
     ssg_config = dict(
         c2s_list=[[64, 64, 128], [128, 128, 256], [256, 512, 1024]],
         n2_list=[512, 128, 1],
-        r_list=[0.2, 0.4, None],
-        k_list=[32, 64, None]
+        r_list=[0.2, 0.4, 0],
+        k_list=[32, 64, 0]
     )
 
     msg_config = dict(
@@ -17,8 +17,8 @@ class PointNet2(nn.ModuleList):
                   [[64, 64, 128], [128, 128, 256], [128, 128, 256]],
                   [256, 512, 1024]],
         n2_list=[512, 128, 1],
-        r_list=[[0.1, 0.2, 0.4], [0.2, 0.4, 0.8], None],
-        k_list=[[16, 32, 128], [32, 64, 128], None]
+        r_list=[[0.1, 0.2, 0.4], [0.2, 0.4, 0.8], 0],
+        k_list=[[16, 32, 128], [32, 64, 128], 0]
     )
 
     def __init__(self,

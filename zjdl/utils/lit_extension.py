@@ -60,7 +60,7 @@ class LitTopModule(pl.LightningModule):
         return loss - loss.detach()
 
     def on_fit_start(self):
-        dst = Path(self.trainer.log_dir).resolve() / "module.yaml"
+        dst = Path(self.trainer.log_dir).resolve() / self.config_file.name
         shutil.copy(self.config_file, dst)
 
     def on_after_backward(self):
@@ -83,3 +83,17 @@ class LitTopModule(pl.LightningModule):
             default_root_dir=output, callbacks=callbacks,
             enable_checkpointing=True, enable_progress_bar=True, enable_model_summary=True
         )
+
+    def _shared_step(self, stage, batch, batch_idx):
+        raise NotImplementedError
+
+    def training_step(self, batch, batch_idx):
+        return self._shared_step("train", batch, batch_idx)
+
+    def validation_step(self, batch, batch_idx):
+        with torch.no_grad():
+            return self._shared_step("val", batch, batch_idx)
+
+    def test_step(self, batch, batch_idx):
+        with torch.no_grad():
+            return self._shared_step("test", batch, batch_idx)

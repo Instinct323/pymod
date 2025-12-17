@@ -33,6 +33,7 @@ class LinearBnAct(nn.Module):
     def __init__(self, c1, c2, act: Optional[nn.Module] = nn.ReLU, **linear_kwargs):
         super().__init__()
         self.c2 = c2
+        self.linear_kwargs = linear_kwargs
         self.linear = self.LinearType(c1, c2, bias=False, **linear_kwargs)
         self.bn = self.BnType(c2)
         self.act = act() if act else nn.Identity()
@@ -44,10 +45,11 @@ class LinearBnAct(nn.Module):
     def create_mlp(cls, c1, c2s, linear_output=False, **kwargs):
         """ Create MLP. """
         layers = nn.Sequential()
-        for c2 in c2s:
+        for c2 in (c2s[:-1] if linear_output else c2s):
             layers.append(cls(c1, c2, **kwargs))
             c1 = c2
-        if linear_output: layers[-1].act = nn.Identity()
+        if linear_output:
+            layers.append(cls.LinearType(c1, c2s[-1], bias=True, **layers[-1].linear_kwargs))
         layers.c2 = c2s[-1]
         return layers
 
@@ -203,18 +205,27 @@ class CossimBCE(nn.Module):
         :param x2: [B, M, C]
         """
         if x2 is None: x2 = x1
+        # require at least one positive and one negative sample
+        B_mask = torch.any(z == -1, dim=(1, 2)) & torch.any(z == 1, dim=(1, 2))
+        z, x1, x2 = z[B_mask], x1[B_mask], x2[B_mask]
+        B = z.shape[0]
+
         cos_sim = torch.cosine_similarity(x1.unsqueeze(-2), x2.unsqueeze(-3), dim=-1)
         y = z.to(torch.float32) * (self.t * cos_sim - self.b)  # [B, N, M]
-        mask = z != 0
-        loss = - F.logsigmoid(y)[mask].mean()
-        return dict(loss=loss, cos_sim=cos_sim, mask=mask)
+        loss = - F.logsigmoid(y)[z != 0].mean()
+
+        ret = {"loss": loss, "batch_size": B}
+        if not self.training:
+            mask_pos, mask_neg = z == 1, z == -1
+            ret["cos_diff"] = sum(cos_sim[b][mask_pos[b]].mean() - cos_sim[b][mask_neg[b]].mean() for b in range(B)) / B
+        return ret
 
 
 if __name__ == '__main__':
     torch.set_printoptions(precision=4, sci_mode=False)
 
-    x = torch.randn(2, 3)
-    model = LinearBnAct.create_mlp(3, [16, 32, 64], linear_output=True).eval()
+    x = torch.randn(2, 3, 2)
+    model = ConvBnAct1d.create_mlp(3, [16, 32, 64], linear_output=True).eval()
     print(model)
     fuse_modules(model)
     print(model)

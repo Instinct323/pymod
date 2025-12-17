@@ -9,12 +9,8 @@ from . import common
 
 
 def pc_normalize(pc):
-    l = pc.shape[0]
-    centroid = np.mean(pc, axis=0)
-    pc = pc - centroid
-    m = np.max(np.sqrt(np.sum(pc ** 2, axis=1)))
-    pc = pc / m
-    return pc
+    pc = pc - np.mean(pc, axis=0)
+    return pc / np.sqrt(np.square(pc).sum(axis=1)).max()
 
 
 def square_distance(src, dst):
@@ -85,13 +81,13 @@ def farthest_point_sample(xyz, npoint):
     return centroids
 
 
-def query_ball_point(radius, nsample, xyz, new_xyz):
+def query_ball_point(xyz, new_xyz, nsample, radius):
     """
     Input:
-        radius: local region radius
-        nsample: max sample number in local region
         xyz: all points, [B, N, 3]
         new_xyz: query points, [B, S, 3]
+        nsample: max sample number in local region
+        radius: local region radius
     Return:
         group_idx: grouped points index, [B, S, nsample]
     """
@@ -112,6 +108,20 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
     return group_idx
 
 
+def query_knn_point(xyz, new_xyz, nsample):
+    """
+    Input:
+        xyz: all points, [B, N, 3]
+        new_xyz: query points, [B, S, 3]
+        nsample: max sample number in local region
+    Return:
+        group_idx: grouped points index, [B, S, nsample]
+    """
+    sqrdists = square_distance(new_xyz, xyz)
+    _, group_idx = torch.topk(sqrdists, nsample, dim=-1, largest=False, sorted=True)
+    return group_idx
+
+
 @dataclass
 class Latent:
     xyz: torch.Tensor  # [B, N, 3]
@@ -124,7 +134,8 @@ class Latent:
         return Latent(
             xyz=index_points(self.xyz, item),
             feature=index_points(self.feature, item) if self.feature is not None else None,
-            idx_prev=item
+            idx_prev=item,
+            latent_prev=self
         )
 
     def as_input(self):
@@ -165,7 +176,7 @@ def sample_and_group(latent, npoint, radius, nsample):
     S = npoint
     fps_idx = farthest_point_sample(latent.xyz, npoint)  # [B, npoint, C]
     new_xyz = index_points(latent.xyz, fps_idx)
-    idx = query_ball_point(radius, nsample, latent.xyz, new_xyz)
+    idx = query_ball_point(latent.xyz, new_xyz, nsample, radius)
     grouped_xyz = index_points(latent.xyz, idx)  # [B, npoint, nsample, C]
     grouped_xyz_norm = grouped_xyz - new_xyz.view(B, S, 1, C)
 
@@ -207,7 +218,7 @@ class PointNetSetAbstraction(nn.Module):
         self.npoint = npoint
         self.radius = radius
         self.nsample = nsample
-        self.mlp = common.ConvBnAct2d.create_mlp(in_channel, c2s=mlp)
+        self.mlp = common.ConvBnAct2d.create_mlp(in_channel, c2s=mlp, k=1)
 
     def extra_repr(self) -> str:
         attr = {"n2": self.npoint}
@@ -230,7 +241,7 @@ class PointNetSetAbstractionMsg(nn.Module):
         self.radius_list = radius_list
         self.nsample_list = nsample_list
         self.mlp_blocks = nn.ModuleList([
-            common.ConvBnAct2d.create_mlp(in_channel + 3, c2s=mlp_list[i])
+            common.ConvBnAct2d.create_mlp(in_channel + 3, c2s=mlp_list[i], k=1)
             for i in range(len(mlp_list))
         ])
 
@@ -248,7 +259,7 @@ class PointNetSetAbstractionMsg(nn.Module):
         new_points_list = []
         for i, (radius, K) in enumerate(zip(self.radius_list, self.nsample_list)):
             # [B, S, K, ...]
-            group_latent = latent[query_ball_point(radius, K, latent.xyz, ret["xyz"])]
+            group_latent = latent[query_ball_point(latent.xyz, ret["xyz"], K, radius)]
             group_latent.xyz -= ret["xyz"].view(B, S, 1, -1)
 
             grouped_points = group_latent.as_input().permute(0, 3, 1, 2)  # [B, C, S, K]
@@ -265,7 +276,7 @@ class PointNetFeaturePropagation(nn.Module):
 
     def __init__(self, in_channel, mlp):
         super().__init__()
-        self.mlp = common.ConvBnAct1d.create_mlp(in_channel, c2s=mlp)
+        self.mlp = common.ConvBnAct1d.create_mlp(in_channel, c2s=mlp, k=1)
 
     def forward(self,
                 latent1: Latent,
