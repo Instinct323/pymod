@@ -2,7 +2,6 @@
 import copy
 from dataclasses import dataclass, field
 
-import numpy as np
 import torch
 import torch.nn as nn
 
@@ -17,8 +16,8 @@ def square_distance(src: torch.Tensor,
     :return: squared distance, [B, N, M]
     """
     dist = -2 * src @ dst.permute(0, 2, 1)
-    dist += np.square(src).sum(dim=-1, keepdim=True)
-    dist += np.square(dst).sum(dim=-1)[:, None]
+    dist += torch.square(src).sum(dim=-1, keepdim=True)
+    dist += torch.square(dst).sum(dim=-1)[:, None]
     return dist
 
 
@@ -53,7 +52,7 @@ def farthest_point_sample(xyz: torch.Tensor,
     for i in range(n2):
         centroids[:, i] = farthest
         centroid = xyz[bi, farthest][:, None]
-        dist = np.square(xyz - centroid).sum(dim=-1)
+        dist = torch.square(xyz - centroid).sum(dim=-1)
         mask = dist < distance
         distance[mask] = dist[mask]
         farthest = distance.max(dim=-1)[1]
@@ -150,22 +149,63 @@ def sample_ops(src: Latent, n2: int):
         return Latent(xyz=index_points(src.xyz, fps), idx_prev=fps, latent_prev=src)
 
 
-def group_ops(src: Latent, dst: Latent, k: int, r: float, mlp: nn.Module):
+def group_ops(src: Latent, dst: Latent, mlp: nn.Module, k: int, group_type: str, **kwargs):
     assert dst.feature is None
     # group all
-    if not all((k, r)):
+    if k == 0:
         dst.feature = src.as_input()[:, None]
     else:
-        group_latent = src[query_ball_point(src.xyz, dst.xyz, k=k, r=r)]
+        group_type = {"ball": query_ball_point, "knn": query_knn_point}[group_type]
+        group_latent = src[group_type(src.xyz, dst.xyz, k=k, **kwargs)]
         group_latent.xyz -= dst.xyz.unsqueeze(2)
         dst.feature = group_latent.as_input()
     dst.feature = mlp(dst.feature.permute(0, 3, 1, 2)).max(dim=-1)[0].permute(0, 2, 1)
     return dst
 
 
+class ColorPointCloudAugmentation(nn.Module):
+
+    def __init__(self,
+                 hyp: dict = {
+                     "xyz_jitter": {"std": 0.005, "clip": 0.02},
+                     "color_jitter": {"brightness": .2, "contrast": .2, "saturation": .2, "hue": .05},
+                     "color_drop": .2,
+                 }):
+        super().__init__()
+        self.hyp = hyp
+
+        if "color_jitter" in hyp:
+            import torchvision.transforms as vtf
+            hyp["color_jitter"] = vtf.ColorJitter(**hyp["color_jitter"])
+
+    def xyz_jitter(self, latent: Latent):
+        hyp = self.hyp["xyz_jitter"]
+        noise = torch.randn_like(latent.xyz) * hyp["std"]
+        noise = noise.clamp(-hyp["clip"], hyp["clip"])
+        latent.xyz += noise
+        return latent
+
+    def color_drop(self, latent: Latent):
+        latent.feature = nn.functional.dropout(latent.feature, p=self.hyp["color_drop"])
+        return latent
+
+    def color_jitter(self, latent: Latent):
+        latent.feature = self.hyp["color_jitter"](
+            latent.feature.permute(2, 0, 1)[None]
+        )[0].permute(1, 2, 0)
+        return latent
+
+    def forward(self, latent: Latent):
+        if self.training:
+            latent = copy.copy(latent)
+            for k in self.hyp:
+                latent = getattr(self, k)(latent)
+        return latent
+
+
 class PointNetSetAbstraction(nn.Module):
 
-    def __init__(self, c1, c2s, n2, k, r):
+    def __init__(self, c1, c2s, n2, k, r, drop=0.):
         super().__init__()
         self.group_all = n2 == 1
         assert not (self.group_all and any((k, r)))
@@ -175,6 +215,7 @@ class PointNetSetAbstraction(nn.Module):
         self.k = k
         self.r = r
         self.mlp = common.ConvBnAct2d.create_mlp(c1 + 3, c2s=c2s, k=1)
+        self.drop = nn.Dropout(drop)
 
     def extra_repr(self) -> str:
         attr = {"n2": self.n2}
@@ -183,13 +224,14 @@ class PointNetSetAbstraction(nn.Module):
 
     def forward(self, latent: Latent):
         ret = sample_ops(latent, n2=self.n2)
-        ret = group_ops(latent, ret, k=self.k, r=self.r, mlp=self.mlp)
+        ret = group_ops(latent, ret, mlp=self.mlp, k=self.k, r=self.r, group_type="ball")
+        ret.feature = self.drop(ret.feature)
         return ret
 
 
 class PointNetSetAbstractionMsg(nn.Module):
 
-    def __init__(self, c1, c2s_list, n2, k_list, r_list):
+    def __init__(self, c1, c2s_list, n2, k_list, r_list, drop=0.):
         super().__init__()
         self.c2 = sum(c[-1] for c in c2s_list)
         self.n2 = n2
@@ -198,6 +240,7 @@ class PointNetSetAbstractionMsg(nn.Module):
         self.mlp_blocks = nn.ModuleList([
             common.ConvBnAct2d.create_mlp(c1 + 3, c2s=c2s_list[i], k=1) for i in range(len(c2s_list))
         ])
+        self.drop = nn.Dropout(drop)
 
     def extra_repr(self) -> str:
         attr = {"n2": self.n2, "k": self.k_list, "r": self.r_list}
@@ -207,20 +250,22 @@ class PointNetSetAbstractionMsg(nn.Module):
         ret = sample_ops(latent, n2=self.n2)
         feature_list = []
         for i, (k, r, mlp) in enumerate(zip(self.k_list, self.r_list, self.mlp_blocks)):
-            feature_list.append(group_ops(latent, ret, k=k, r=r, mlp=mlp).feature)
+            feature_list.append(group_ops(latent, ret, mlp=mlp, k=k, r=r, group_type="ball").feature)
             ret.feature = None
 
         ret.feature = torch.cat(feature_list, dim=-1)
+        ret.feature = self.drop(ret.feature)
         return ret
 
 
 class PointNetFeaturePropagation(nn.Module):
 
-    def __init__(self, c11, c12, c2s, k=3):
+    def __init__(self, c11, c12, c2s, k=3, drop=0.):
         super().__init__()
         self.c2 = c2s[-1]
         self.k = k
         self.mlp = common.ConvBnAct1d.create_mlp(c11 + c12, c2s=c2s, k=1)
+        self.drop = nn.Dropout(drop)
 
     def forward(self,
                 src: Latent,
@@ -247,4 +292,5 @@ class PointNetFeaturePropagation(nn.Module):
             ret.feature = torch.cat([dst.feature, ret.feature], dim=-1)
 
         ret.feature = self.mlp(ret.feature.permute(0, 2, 1)).permute(0, 2, 1)
+        ret.feature = self.drop(ret.feature)
         return ret

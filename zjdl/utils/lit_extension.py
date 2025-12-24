@@ -8,13 +8,21 @@ import torch.nn.functional as F
 import yaml
 from ema_pytorch import EMA
 from torch import nn
-from tqdm import tqdm
 
 
-class TrainOnlyProgressBar(pl.callbacks.TQDMProgressBar):
+def wait_for_cuda(processes: list[str],
+                  sleep: float = 10.):
+    import nvitop, time
 
-    def init_validation_tqdm(self):
-        return tqdm(disable=True)
+    devices = nvitop.Device.all()
+    while True:
+        wait = False
+        for dev in devices:
+            for process in dev.processes().values():
+                wait |= process.host.name() in processes
+        if not wait: break
+        print(f"Waiting for CUDA devices to be free...")
+        time.sleep(sleep)
 
 
 class LitTopModule(pl.LightningModule):
@@ -50,29 +58,48 @@ class LitTopModule(pl.LightningModule):
             ), "interval": "epoch"}
         }
 
-    def ema_mse(self, x, y) -> torch.Tensor:
-        """ Calculate EMA MSE loss. """
+    def copy_into_project(self, file: Path):
+        file = Path(file)
+        shutil.copy(file, self.project / file.name)
+
+    @property
+    def ema_forward(self):
         if self.ema is None:
             warnings.warn("no EMA model found.")
-            return 0
+        elif self.ema.initted.item():
+            return self.ema.forward_eval
 
-        loss = F.mse_loss(self.ema.forward_eval(x), y)
+    def ema_mse(self, x, y) -> torch.Tensor:
+        """ Calculate EMA MSE loss. """
+        func = self.ema_forward
+        if not func: return 0.
+
+        loss = F.mse_loss(func(x), y)
         return loss - loss.detach()
 
     def on_fit_start(self):
-        dst = Path(self.trainer.log_dir).resolve() / self.config_file.name
-        shutil.copy(self.config_file, dst)
+        self.copy_into_project(self.config_file)
 
     def on_after_backward(self):
         """ Update EMA model after each backward pass. """
         if self.ema: self.ema.update()
 
+    @property
+    def project(self) -> Path:
+        return Path(self.trainer.log_dir).resolve()
+
     def trainer_kwargs(self,
-                       ckpt_callback: pl.callbacks.ModelCheckpoint,
-                       disable_val_prog: bool = False) -> dict:
+                       callbacks: list[pl.callbacks.Callback] = None) -> dict:
         """ Get pl.Trainer keyword arguments. """
-        callbacks = [ckpt_callback]
-        if disable_val_prog: callbacks.append(TrainOnlyProgressBar())
+        callbacks = callbacks or []
+
+        config_metric = self.config.get("metric")
+        if config_metric:
+            monitor_kwargs = dict(monitor=config_metric["monitor"], mode=config_metric["mode"])
+            callbacks.append(pl.callbacks.ModelCheckpoint(**monitor_kwargs, filename="best", save_last=True))
+
+            if config_metric.get("patience"):
+                callbacks.append(pl.callbacks.EarlyStopping(**monitor_kwargs, patience=config_metric["patience"], verbose=True))
 
         output: Path = Path(self.config["train"]["output"])
         print(f"To start tensorboard, run: `tensorboard --logdir={output.resolve()}`")
@@ -90,10 +117,10 @@ class LitTopModule(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         return self._shared_step("train", batch, batch_idx)
 
+    @torch.no_grad()
     def validation_step(self, batch, batch_idx):
-        with torch.no_grad():
-            return self._shared_step("val", batch, batch_idx)
+        return self._shared_step("val", batch, batch_idx)
 
+    @torch.no_grad()
     def test_step(self, batch, batch_idx):
-        with torch.no_grad():
-            return self._shared_step("test", batch, batch_idx)
+        return self._shared_step("test", batch, batch_idx)

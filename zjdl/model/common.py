@@ -181,6 +181,23 @@ class GeM(nn.Module):
         return F.adaptive_avg_pool2d(x.clamp_min(1e-6).pow(self.p), 1).pow(1. / self.p)
 
 
+class FocalWeight(nn.Module):
+
+    def __init__(self,
+                 alpha: float = .5,
+                 gamma: float = 2.):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.scale = 2 / .5 ** self.gamma
+
+    def forward(self, y_score, y_true):
+        with torch.no_grad():
+            alpha_t = self.alpha * y_true + (1 - self.alpha) * (1 - y_true)
+            gamma_t = ((1 - y_score) * y_true + y_score * (1 - y_true)) ** self.gamma
+            return self.scale * alpha_t * gamma_t
+
+
 class CossimBCE(nn.Module):
 
     def __init__(self,

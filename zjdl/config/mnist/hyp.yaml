@@ -4,6 +4,11 @@ train:
   batch_size: 1000
   output: runs
 
+  metric:
+    monitor: acc_val
+    mode: max
+    patience: 5
+
   ema:
     beta: 0.99
     update_after_step: 0

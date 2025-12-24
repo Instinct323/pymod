@@ -1,11 +1,9 @@
-from collections import OrderedDict
-
 import cv2
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from torch import nn
 from tqdm import tqdm
 
 
@@ -101,42 +99,22 @@ class CombinedCost:
 
     @classmethod
     def parse(cls, model_or_sdit, **export_kwd):
-        result = {}
-
-        if isinstance(model_or_sdit, nn.Module):
-            def solve(model, path):
-                # 如果有属性 weight 则计算合并成本
-                if hasattr(model, "weight"):
-                    info = cls._parse_weight(model.weight.data)
-                    if info: result[path[1:]] = info
-                # 递归搜索
-                else:
-                    for k, m in model._modules.items(): solve(m, f"{path}.{k}[{type(m).__name__}]")
-
-            solve(model_or_sdit, "")
-
-        elif isinstance(model_or_sdit, OrderedDict):
-            suffix = ".weight"
-            for k, v in model_or_sdit.items():
-                if k.endswith(suffix):
-                    info = cls._parse_weight(v)
-                    if info: result[k.rstrip(suffix)] = info
-
-        else:
-            raise TypeError(f"Incorrect argument type {type(model_or_sdit).__name__}")
+        result, suffix = {}, ".weight"
+        for k, v in model_or_sdit.items():
+            if k.endswith(suffix):
+                info = cls._parse_weight(v)
+                if info: result[k] = info
 
         result = pd.DataFrame(result).T
         cls.export(result, **export_kwd)
         return result
 
     @classmethod
-    def export(cls, result, project, filt=None, show=False, group_lv=1, sep=".", limit=25, **vplot_kwd):
+    def export(cls, result, project, group_i, show=False, limit=25, **vplot_kwd):
         """
         :param result: parse 方法输出的结果 / 文件路径
         :param project: 项目目录
-        :param filt: 过滤器, 筛选输出的 module
         :param show: 是否显示图像
-        :param group_lv: module 进行分组的层级
         :param vplot_kwd: violinplot 的参数
         """
         from pymod.zjplot import violinplot, rand_colors
@@ -153,13 +131,8 @@ class CombinedCost:
                 if str(result[k].dtype) == "object":
                     result[k] = result[k].apply(trans)
         # 对神经网络中的层进行分组
-        k2i = lambda k: sep.join(k.split(sep)[:group_lv + 1])
-        groups = list(map(k2i, result.index))
-        for i in range(len(groups) - 1, 0, -1):
-            if groups[i] == groups[i - 1]: groups.pop(i)
-        colors = rand_colors(len(groups))
+        colors = rand_colors(len(set(group_i.values())))
         # 绘图相关参数设定
-        if filt: result = result.loc[filter(filt, result.index)]
         limit = limit if limit else len(result)
         plt.rcParams["figure.dpi"] = 300
         plt.rcParams["figure.figsize"] = [.8 + 0.46 * (limit + 1), 6.4]
@@ -172,7 +145,7 @@ class CombinedCost:
             plt.ylabel("score")
             # 根据分组分配颜色
             violinplot(tmp["score"], labels=list(tmp.index),
-                       colors=[colors[groups.index(k2i(k))] for k in tmp.index], xrotate=90, **vplot_kwd)
+                       colors=[colors[group_i[k]] for k in tmp.index], xrotate=90, **vplot_kwd)
             # 设置上下限, 布局优化
             plt.xlim([0, limit + 1]), plt.ylim(ymin, ymax)
             plt.grid(), plt.tight_layout()
@@ -180,11 +153,13 @@ class CombinedCost:
 
 
 if __name__ == '__main__':
+    import ckpt_tool
     from pathlib import Path
 
-    root = Path("/media/tongzj/Data/Workbench/Lab/PartGrasp/runs/lightning_logs/version_0")
+    root = Path("/media/tongzj/Data/Workbench/Lab/AnaGrasp/runs/__past__/ft_obj")
 
-    state_dict = torch.load(root / "checkpoints/last.ckpt")["state_dict"]
+    state_dict = torch.load(root / "checkpoints/best.ckpt")["state_dict"]
+    state_dict = ckpt_tool.simplify_state_dict(state_dict, filt=lambda s: not s.startswith("ema"))
+    g_i = ckpt_tool.group_idx(state_dict, depth=2)
 
-    CombinedCost.parse(state_dict, project=root / "combined_cost", group_lv=1, limit=20,
-                       filt=lambda s: not s.startswith("ema"))
+    CombinedCost.parse(state_dict, project=root / "combined_cost", group_i=g_i, limit=20)

@@ -46,30 +46,33 @@ class PointNet2(nn.ModuleList):
                  n2_list: list[int],
                  k_list: list[int | list[int]],
                  r_list: list[float | list[float]],
-                 c2s_list_neck: list[list[int]] = None):
+                 drop_list: list[float] = None,
+                 c2s_list_neck: list[list[int]] = None,
+                 drop_list_neck: list[int] = None):
         super().__init__()
         assert c1 >= 3, "Input channel must be at least 3 (xyz)."
-
         self.c2s = [c1 - 3]
-        for args in zip(c2s_list, n2_list, k_list, r_list):
+
+        if drop_list is None: drop_list = [0.] * len(c2s_list)
+        for args in zip(c2s_list, n2_list, k_list, r_list, drop_list):
             c2 = args[0]
-            if isinstance(c2[0], list):
-                self.append(pnu.PointNetSetAbstractionMsg(self.c2s[-1], *args))
-            else:
-                self.append(pnu.PointNetSetAbstraction(self.c2s[-1], *args))
+            SAtype = pnu.PointNetSetAbstractionMsg if isinstance(c2[0], list) else pnu.PointNetSetAbstraction
+            self.append(SAtype(self.c2s[-1], *args))
             self.c2s.append(self[-1].c2)
 
         if c2s_list_neck is not None:
+            if drop_list_neck is None: drop_list_neck = [0.] * len(c2s_list_neck)
             n_sa = len(self)
             for i in range(len(c2s_list_neck)):
                 self.append(
-                    pnu.PointNetFeaturePropagation(c11=self.c2s[-1], c12=self.c2s[n_sa - i - 1], c2s=c2s_list_neck[i])
+                    pnu.PointNetFeaturePropagation(c11=self.c2s[-1], c12=self.c2s[n_sa - i - 1],
+                                                   c2s=c2s_list_neck[i], drop=drop_list_neck[i])
                 )
                 self.c2s.append(self[-1].c2)
 
     def forward(self, xyz_feat) -> pnu.Latent:
         # xyz_feat: [B, N, C]
-        latent = pnu.Latent.from_tensor(xyz_feat)
+        latent = pnu.Latent.from_tensor(xyz_feat) if isinstance(xyz_feat, torch.Tensor) else xyz_feat
         for sa in self: latent = sa(latent)
         return latent
 

@@ -25,12 +25,6 @@ def random_dropout(x, p=0.4):
     return x * mask
 
 
-ckpt_callback = pl.callbacks.ModelCheckpoint(
-    filename="best", save_last=True,
-    monitor="acc_val", mode="max",
-)
-
-
 class MnistModule(lite.LitTopModule):
 
     def __init__(self):
@@ -86,5 +80,5 @@ if __name__ == "__main__":
         batch_size=module.config["train"]["batch_size"]
     )
 
-    trainer = pl.Trainer(**module.trainer_kwargs(ckpt_callback=ckpt_callback, disable_val_prog=True))
+    trainer = pl.Trainer(**module.trainer_kwargs())
     trainer.fit(module, datamodule=datamodule)
