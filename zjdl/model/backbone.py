@@ -1,3 +1,5 @@
+from typing import List, Union
+
 import torch
 from torch import nn
 
@@ -42,13 +44,13 @@ class PointNet2(nn.ModuleList):
 
     def __init__(self,
                  c1: int,
-                 c2s_list: list[list[int | list[int]]],
-                 n2_list: list[int],
-                 k_list: list[int | list[int]],
-                 r_list: list[float | list[float]],
-                 drop_list: list[float] = None,
-                 c2s_list_neck: list[list[int]] = None,
-                 drop_list_neck: list[int] = None):
+                 c2s_list: List[List[Union[int, List[int]]]],
+                 n2_list: List[int],
+                 k_list: List[Union[int, List[int]]],
+                 r_list: List[Union[float, List[float]]],
+                 drop_list: List[float] = None,
+                 c2s_list_neck: List[List[int]] = None,
+                 drop_list_neck: List[int] = None):
         super().__init__()
         assert c1 >= 3, "Input channel must be at least 3 (xyz)."
         self.c2s = [c1 - 3]

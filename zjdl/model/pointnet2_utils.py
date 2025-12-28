@@ -1,11 +1,31 @@
 # FROM: https://github.com/yanx27/Pointnet_Pointnet2_pytorch
 import copy
-from dataclasses import dataclass, field
+import re
 
 import torch
 import torch.nn as nn
+from dataclasses import dataclass, field
 
 from . import common
+
+
+def migrate_pointnet2_state_dict(state_dict: dict) -> dict:
+    """
+    TODO: PointNetFeaturePropagation
+    :param state_dict: https://github.com/erikwijmans/Pointnet2_PyTorch style state dict
+    """
+    ret = copy.copy(state_dict)
+    for k in state_dict:
+        rfind = re.search(r"(mlps\.[0-9]+)\.([0-9]+)\.(\w+$)", k)
+
+        if rfind:
+            stem = k.replace(rfind.group(), "").rstrip(".")
+            mid = int(rfind.group(2))
+            mname = f"{mid // 3}." + ["linear", "bn"][mid % 3]
+
+            knew = ".".join([stem, rfind.group(1), mname, rfind.group(3)])
+            ret[knew] = ret.pop(k)
+    return ret
 
 
 def square_distance(src: torch.Tensor,
@@ -16,8 +36,8 @@ def square_distance(src: torch.Tensor,
     :return: squared distance, [B, N, M]
     """
     dist = -2 * src @ dst.permute(0, 2, 1)
-    dist += torch.square(src).sum(dim=-1, keepdim=True)
-    dist += torch.square(dst).sum(dim=-1)[:, None]
+    dist += (src ** 2).sum(dim=-1, keepdim=True)
+    dist += (dst ** 2).sum(dim=-1)[:, None]
     return dist
 
 
@@ -30,7 +50,7 @@ def index_points(points: torch.Tensor,
     """
     B, *idx_shape = idx.shape
     bi = torch.arange(B, dtype=torch.long).to(points.device).view([B] + [1] * len(idx_shape))
-    bi = torch.broadcast_to(bi, idx.shape)
+    bi, idx = torch.broadcast_tensors(bi, idx)
     return points[bi, idx, :]
 
 
@@ -52,7 +72,7 @@ def farthest_point_sample(xyz: torch.Tensor,
     for i in range(n2):
         centroids[:, i] = farthest
         centroid = xyz[bi, farthest][:, None]
-        dist = torch.square(xyz - centroid).sum(dim=-1)
+        dist = ((xyz - centroid) ** 2).sum(dim=-1)
         mask = dist < distance
         distance[mask] = dist[mask]
         farthest = distance.max(dim=-1)[1]
@@ -119,7 +139,7 @@ class Latent:
 
     def as_input(self):
         args = self.xyz, self.feature
-        return args[0] if args[1] is None else torch.concat(args, dim=-1)
+        return args[0] if args[1] is None else torch.cat(args, dim=-1)
 
     @classmethod
     def from_tensor(cls,
@@ -203,32 +223,6 @@ class ColorPointCloudAugmentation(nn.Module):
         return latent
 
 
-class PointNetSetAbstraction(nn.Module):
-
-    def __init__(self, c1, c2s, n2, k, r, drop=0.):
-        super().__init__()
-        self.group_all = n2 == 1
-        assert not (self.group_all and any((k, r)))
-
-        self.c2 = c2s[-1]
-        self.n2 = n2
-        self.k = k
-        self.r = r
-        self.mlp = common.ConvBnAct2d.create_mlp(c1 + 3, c2s=c2s, k=1)
-        self.drop = nn.Dropout(drop)
-
-    def extra_repr(self) -> str:
-        attr = {"n2": self.n2}
-        if not self.group_all: attr.update({"k": self.k, "r": self.r})
-        return ", ".join(f"{k}={v}" for k, v in attr.items())
-
-    def forward(self, latent: Latent):
-        ret = sample_ops(latent, n2=self.n2)
-        ret = group_ops(latent, ret, mlp=self.mlp, k=self.k, r=self.r, group_type="ball")
-        ret.feature = self.drop(ret.feature)
-        return ret
-
-
 class PointNetSetAbstractionMsg(nn.Module):
 
     def __init__(self, c1, c2s_list, n2, k_list, r_list, drop=0.):
@@ -237,7 +231,7 @@ class PointNetSetAbstractionMsg(nn.Module):
         self.n2 = n2
         self.k_list = k_list
         self.r_list = r_list
-        self.mlp_blocks = nn.ModuleList([
+        self.mlps = nn.ModuleList([
             common.ConvBnAct2d.create_mlp(c1 + 3, c2s=c2s_list[i], k=1) for i in range(len(c2s_list))
         ])
         self.drop = nn.Dropout(drop)
@@ -249,13 +243,26 @@ class PointNetSetAbstractionMsg(nn.Module):
     def forward(self, latent: Latent):
         ret = sample_ops(latent, n2=self.n2)
         feature_list = []
-        for i, (k, r, mlp) in enumerate(zip(self.k_list, self.r_list, self.mlp_blocks)):
+        for i, (k, r, mlp) in enumerate(zip(self.k_list, self.r_list, self.mlps)):
             feature_list.append(group_ops(latent, ret, mlp=mlp, k=k, r=r, group_type="ball").feature)
             ret.feature = None
 
         ret.feature = torch.cat(feature_list, dim=-1)
         ret.feature = self.drop(ret.feature)
         return ret
+
+
+class PointNetSetAbstraction(PointNetSetAbstractionMsg):
+
+    def __init__(self, c1, c2s, n2, k, r, drop=0.):
+        super().__init__(c1, [c2s], n2, [k], [r], drop)
+        self.group_all = n2 == 1
+        assert not (self.group_all and any((k, r)))
+
+    def extra_repr(self) -> str:
+        attr = {"n2": self.n2}
+        if not self.group_all: attr.update({"k": self.k, "r": self.r})
+        return ", ".join(f"{k}={v}" for k, v in attr.items())
 
 
 class PointNetFeaturePropagation(nn.Module):
