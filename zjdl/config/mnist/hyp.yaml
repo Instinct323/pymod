@@ -2,6 +2,7 @@ train:
   seed: 0
   epochs: 10
   batch_size: 1000
+  # accum_grad: 1
   output: runs
 
   metric:

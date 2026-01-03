@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 import yaml
 from ema_pytorch import EMA
+from pytorch_lightning import utilities
 from torch import nn
 
 
@@ -31,10 +32,17 @@ class LitTopModule(pl.LightningModule):
                  config_file: Path,
                  ema_model: nn.Module = None):
         super().__init__()
-        self.ema: EMA = ema_model
+        self.info = utilities.rank_zero_info
+        self.warn = utilities.rank_zero_warn
+
         self.config_file: Path = config_file.resolve()
         self.config: dict = yaml.load(self.config_file.read_text(), Loader=yaml.Loader)
         pl.seed_everything(seed=self.config["train"].get("seed"), workers=True)
+
+        if not self.config["train"].get("ema") and ema_model:
+            ema_model = None
+            self.warn("No EMA configured, ignoring EMA model")
+        self.ema: EMA = ema_model
 
     def configure_model(self):
         """ Configure models. """
@@ -77,12 +85,15 @@ class LitTopModule(pl.LightningModule):
         loss = F.mse_loss(func(x), y)
         return loss - loss.detach()
 
-    def on_fit_start(self):
-        self.copy_into_project(self.config_file)
-
     def on_after_backward(self):
         """ Update EMA model after each backward pass. """
         if self.ema: self.ema.update()
+
+    def on_fit_start(self):
+        self.copy_into_project(self.config_file)
+
+    def on_test_start(self):
+        pl.seed_everything(seed=self.config["train"].get("seed"), workers=True)
 
     @property
     def project(self) -> Path:
@@ -93,16 +104,21 @@ class LitTopModule(pl.LightningModule):
         """ Get pl.Trainer keyword arguments. """
         callbacks = callbacks or []
 
-        config_metric = self.config.get("metric")
+        config_metric = self.config["train"].get("metric")
         if config_metric:
             monitor_kwargs = dict(monitor=config_metric["monitor"], mode=config_metric["mode"])
-            callbacks.append(pl.callbacks.ModelCheckpoint(**monitor_kwargs, filename="best", save_last=True))
 
+            # model checkpoint
+            callbacks.append(pl.callbacks.ModelCheckpoint(**monitor_kwargs, filename="best", save_last=True))
+            self.info("Add model checkpoint callback.")
+
+            # early stopping
             if config_metric.get("patience"):
                 callbacks.append(pl.callbacks.EarlyStopping(**monitor_kwargs, patience=config_metric["patience"], verbose=True))
+                self.info("Add early stopping callback.")
 
         output: Path = Path(self.config["train"]["output"])
-        print(f"To start tensorboard, run: `tensorboard --logdir={output.resolve()}`")
+        self.info(f"To start tensorboard, run: `tensorboard --logdir={output.resolve()}`")
 
         return dict(
             max_epochs=self.config["train"]["epochs"],
@@ -117,10 +133,10 @@ class LitTopModule(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         return self._shared_step("train", batch, batch_idx)
 
-    @torch.no_grad()
     def validation_step(self, batch, batch_idx):
-        return self._shared_step("val", batch, batch_idx)
+        with torch.no_grad():
+            return self._shared_step("val", batch, batch_idx)
 
-    @torch.no_grad()
     def test_step(self, batch, batch_idx):
-        return self._shared_step("test", batch, batch_idx)
+        with torch.no_grad():
+            return self._shared_step("test", batch, batch_idx)

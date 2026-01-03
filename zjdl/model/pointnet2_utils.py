@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from . import common
 
 
-def migrate_pointnet2_state_dict(state_dict: dict) -> dict:
+def align_pointnet2_state_dict(state_dict: dict) -> dict:
     """
     TODO: PointNetFeaturePropagation
     :param state_dict: https://github.com/erikwijmans/Pointnet2_PyTorch style state dict
@@ -175,7 +175,7 @@ def group_ops(src: Latent, dst: Latent, mlp: nn.Module, k: int, group_type: str,
     if k == 0:
         dst.feature = src.as_input()[:, None]
     else:
-        group_type = {"ball": query_ball_point, "knn": query_knn_point}[group_type]
+        group_type = {"ball": query_ball_point, "knn": query_knn_point}.get(group_type, group_type)
         group_latent = src[group_type(src.xyz, dst.xyz, k=k, **kwargs)]
         group_latent.xyz -= dst.xyz.unsqueeze(2)
         dst.feature = group_latent.as_input()
