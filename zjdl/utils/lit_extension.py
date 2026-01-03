@@ -1,10 +1,12 @@
 import shutil
 import warnings
+from functools import cached_property
 from pathlib import Path
 
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
+import torch.utils.data
 import yaml
 from ema_pytorch import EMA
 from pytorch_lightning import utilities
@@ -26,15 +28,47 @@ def wait_for_cuda(processes: list[str],
         time.sleep(sleep)
 
 
+class LazyDataModule(pl.LightningDataModule):
+
+    def __init__(self,
+                 trainset_getter,
+                 valset_getter,
+                 testset_getter,
+                 batch_size: int = 1,
+                 num_workers: int = 0):
+        super().__init__()
+        self.dataset_getters = [trainset_getter, valset_getter, testset_getter]
+        self.kwargs = dict(batch_size=batch_size, num_workers=num_workers, pin_memory=True)
+
+    @cached_property
+    def trainset(self):
+        return self.dataset_getters[0]()
+
+    @cached_property
+    def valset(self):
+        return self.dataset_getters[1]()
+
+    @cached_property
+    def testset(self):
+        return self.dataset_getters[2]()
+
+    def train_dataloader(self):
+        return torch.utils.data.DataLoader(self.trainset, shuffle=True, **self.kwargs)
+
+    def val_dataloader(self):
+        return torch.utils.data.DataLoader(self.valset, shuffle=False, **self.kwargs)
+
+    def test_dataloader(self):
+        return torch.utils.data.DataLoader(self.testset, shuffle=False, **self.kwargs)
+
+
 class LitTopModule(pl.LightningModule):
+    warn = utilities.rank_zero_warn
 
     def __init__(self,
                  config_file: Path,
                  ema_model: nn.Module = None):
         super().__init__()
-        self.info = utilities.rank_zero_info
-        self.warn = utilities.rank_zero_warn
-
         self.config_file: Path = config_file.resolve()
         self.config: dict = yaml.load(self.config_file.read_text(), Loader=yaml.Loader)
         pl.seed_everything(seed=self.config["train"].get("seed"), workers=True)
@@ -110,15 +144,15 @@ class LitTopModule(pl.LightningModule):
 
             # model checkpoint
             callbacks.append(pl.callbacks.ModelCheckpoint(**monitor_kwargs, filename="best", save_last=True))
-            self.info("Add model checkpoint callback.")
+            print("Add model checkpoint callback.")
 
             # early stopping
             if config_metric.get("patience"):
                 callbacks.append(pl.callbacks.EarlyStopping(**monitor_kwargs, patience=config_metric["patience"], verbose=True))
-                self.info("Add early stopping callback.")
+                print("Add early stopping callback.")
 
         output: Path = Path(self.config["train"]["output"])
-        self.info(f"To start tensorboard, run: `tensorboard --logdir={output.resolve()}`")
+        print(f"To start tensorboard, run: `tensorboard --logdir={output.resolve()}`")
 
         return dict(
             max_epochs=self.config["train"]["epochs"],
@@ -134,9 +168,19 @@ class LitTopModule(pl.LightningModule):
         return self._shared_step("train", batch, batch_idx)
 
     def validation_step(self, batch, batch_idx):
-        with torch.no_grad():
-            return self._shared_step("val", batch, batch_idx)
+        return self._shared_step("val", batch, batch_idx)
 
     def test_step(self, batch, batch_idx):
-        with torch.no_grad():
-            return self._shared_step("test", batch, batch_idx)
+        return self._shared_step("test", batch, batch_idx)
+
+    def _on_shared_epoch_end(self, stage):
+        raise NotImplementedError
+
+    def on_train_epoch_end(self):
+        self._on_shared_epoch_end("train")
+
+    def on_validation_epoch_end(self):
+        self._on_shared_epoch_end("val")
+
+    def on_test_epoch_end(self):
+        self._on_shared_epoch_end("test")

@@ -8,7 +8,7 @@ train:
   metric:
     monitor: acc_val
     mode: max
-    patience: 5
+    patience: 10
 
   ema:
     beta: 0.99

@@ -11,6 +11,7 @@ from torchvision.datasets import MNIST
 import utils.lit_extension as lite
 from model import common
 from pymod.extension.path_extension import Path
+from utils.item_stack import ItemStack
 
 torch.set_float32_matmul_precision("medium")
 pl.seed_everything(seed=0, workers=True)
@@ -19,7 +20,9 @@ CFG_TRAIN = Path("config/mnist/hyp.yaml")
 DATA = Path("runs")
 
 
-def random_dropout(x, p=0.4):
+def random_dropout(x, p=0.4, training=True):
+    if not training: return x
+
     p = 1 - random.uniform(0, p)
     mask = torch.bernoulli((x > 0) * p)
     return x * mask
@@ -28,41 +31,41 @@ def random_dropout(x, p=0.4):
 class MnistModule(lite.LitTopModule):
 
     def __init__(self):
-        super().__init__(CFG_TRAIN)
-        self.model = nn.ModuleList()
-        self.model.append(common.ConvBnAct2d(1, 8, k=3, s=2))
-        self.model.append(common.ConvBnAct2d(self.model[-1].c2, 16, k=3))
-        self.model.append(nn.MaxPool2d(2, 2))
-        self.model.append(common.CspOSA(self.model[-2].c2, 16, e=3, n=3))
-        self.model.append(nn.AdaptiveAvgPool2d(1))
-        self.model.append(nn.Conv2d(self.model[-2].c2, 10, kernel_size=1))
-        self.model.append(nn.Flatten())
+        m = nn.Sequential()
+        m.append(common.ConvBnAct2d(1, 8, k=3, s=2))
+        m.append(common.ConvBnAct2d(m[-1].c2, 16, k=3))
+        m.append(nn.MaxPool2d(2, 2))
+        m.append(common.CspOSA(m[-2].c2, 16, e=3, n=3))
+        m.append(nn.AdaptiveAvgPool2d(1))
+        m.append(nn.Conv2d(m[-2].c2, 10, kernel_size=1))
+        m.append(nn.Flatten())
 
-    def forward(self, x):
-        for m in self.model: x = m(x)
-        return x
+        super().__init__(CFG_TRAIN, ema_model=m)
+        self.model = m
+        self.item_stack = {stage: ItemStack() for stage in ["train", "val"]}
 
-    def training_step(self, batch, batch_idx):
+    def forward(self, stage, batch):
         x, y = batch
-        pred = self(random_dropout(x))
-        loss = F.cross_entropy(pred, y)
-        self.log("loss_train", loss, prog_bar=True, on_step=False, on_epoch=True)
-        return loss + 0.05 * self.ema_mse(x, pred)
+        logits = self.model(random_dropout(x, training=self.training))
 
-    def validation_step(self, batch, batch_idx):
-        x, y = batch
-        pred = self(x)
-        loss = F.cross_entropy(pred, y)
+        items = torch.stack([y, logits.argmax(dim=1)], dim=-1)
+        self.item_stack[stage].push(items)
 
-        self.log("loss_val", loss, prog_bar=True, on_step=False, on_epoch=True)
-        self.log("acc_val", (pred.argmax(dim=1) == y).float().mean(), prog_bar=True, on_step=False, on_epoch=True)
-        return loss
+        loss = F.cross_entropy(logits, y)
+        if self.training:
+            loss += 0.05 * self.ema_mse(x, logits)
 
-    def on_validation_epoch_end(self):
-        print()
-        metrics = self.trainer.callback_metrics
-        acc = metrics["acc_val"]
-        print(f"Accuracy {acc:.4f}")
+        return {"logits": logits, "loss": loss}
+
+    def _on_shared_epoch_end(self, stage):
+        data = self.item_stack[stage].pop(self.all_gather)
+        acc = (data[:, 0] == data[:, 1]).float().mean()
+        self.log(f"acc_{stage}", acc, prog_bar=True, on_step=False, on_epoch=True)
+
+    def _shared_step(self, stage, batch, batch_idx):
+        ret = self(stage, batch)
+        self.log(f"loss_{stage}", ret["loss"], prog_bar=self.training, on_step=False, on_epoch=True)
+        return ret["loss"]
 
     def on_fit_end(self):
         self.eval()

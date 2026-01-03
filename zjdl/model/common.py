@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from torch import nn
 
 sum_ = lambda x: sum(x[1:], x[0])
-make_divisible = lambda x, divisor=4: np.maximum(np.round(x / divisor).astype(np.int), 1) * divisor
+make_divisible = lambda x, divisor=4: np.maximum(np.round(x / divisor).astype(int), 1) * divisor
 
 
 def apply_width_multiplier(channels: list,
