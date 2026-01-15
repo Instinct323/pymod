@@ -11,7 +11,7 @@ from torchvision.datasets import MNIST
 import utils.lit_extension as lite
 from model import common
 from pymod.extension.path_extension import Path
-from utils.item_stack import ItemStack
+from utils.functools import ItemStack
 
 torch.set_float32_matmul_precision("medium")
 pl.seed_everything(seed=0, workers=True)
@@ -28,7 +28,7 @@ def random_dropout(x, p=0.4, training=True):
     return x * mask
 
 
-class MnistModule(lite.LitTopModule):
+class MnistModule(lite.SemiSupervisedModule):
 
     def __init__(self):
         m = nn.Sequential()
@@ -60,11 +60,11 @@ class MnistModule(lite.LitTopModule):
     def _on_shared_epoch_end(self, stage):
         data = self.item_stack[stage].pop(self.all_gather)
         acc = (data[:, 0] == data[:, 1]).float().mean()
-        self.log(f"acc_{stage}", acc, prog_bar=True, on_step=False, on_epoch=True)
+        self.log("/".join([stage, "acc"]), acc, prog_bar=True, on_step=False, on_epoch=True)
 
     def _shared_step(self, stage, batch, batch_idx):
         ret = self(stage, batch)
-        self.log(f"loss_{stage}", ret["loss"], prog_bar=self.training, on_step=False, on_epoch=True)
+        self.log("/".join([stage, "loss"]), ret["loss"], prog_bar=self.training, on_step=False, on_epoch=True)
         return ret["loss"]
 
     def on_fit_end(self):

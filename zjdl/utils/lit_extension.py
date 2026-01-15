@@ -1,7 +1,6 @@
 import shutil
 import warnings
 from functools import cached_property
-from pathlib import Path
 
 import pytorch_lightning as pl
 import torch
@@ -9,23 +8,8 @@ import torch.nn.functional as F
 import torch.utils.data
 import yaml
 from ema_pytorch import EMA
-from pytorch_lightning import utilities
+from pathlib import Path
 from torch import nn
-
-
-def wait_for_cuda(processes: list[str],
-                  sleep: float = 10.):
-    import nvitop, time
-
-    devices = nvitop.Device.all()
-    while True:
-        wait = False
-        for dev in devices:
-            for process in dev.processes().values():
-                wait |= process.host.name() in processes
-        if not wait: break
-        print(f"Waiting for CUDA devices to be free...")
-        time.sleep(sleep)
 
 
 class LazyDataModule(pl.LightningDataModule):
@@ -62,27 +46,14 @@ class LazyDataModule(pl.LightningDataModule):
         return torch.utils.data.DataLoader(self.testset, shuffle=False, **self.kwargs)
 
 
-class LitTopModule(pl.LightningModule):
-    warn = utilities.rank_zero_warn
+class VanillaModule(pl.LightningModule):
 
     def __init__(self,
-                 config_file: Path,
-                 ema_model: nn.Module = None):
+                 config_file: Path):
         super().__init__()
         self.config_file: Path = config_file.resolve()
         self.config: dict = yaml.load(self.config_file.read_text(), Loader=yaml.Loader)
         pl.seed_everything(seed=self.config["train"].get("seed"), workers=True)
-
-        if not self.config["train"].get("ema") and ema_model:
-            ema_model = None
-            self.warn("No EMA configured, ignoring EMA model")
-        self.ema: EMA = ema_model
-
-    def configure_model(self):
-        """ Configure models. """
-        ema_param = self.config["train"].get("ema")
-        if not isinstance(self.ema, EMA) and ema_param:
-            self.ema = EMA(self.ema or self, **ema_param, include_online_model=False)
 
     def configure_optimizers(self):
         """ Configure optimizers and learning rate schedulers. """
@@ -103,25 +74,6 @@ class LitTopModule(pl.LightningModule):
     def copy_into_project(self, file: Path):
         file = Path(file)
         shutil.copy(file, self.project / file.name)
-
-    @property
-    def ema_forward(self):
-        if self.ema is None:
-            warnings.warn("no EMA model found.")
-        elif self.ema.initted.item():
-            return self.ema.forward_eval
-
-    def ema_mse(self, x, y) -> torch.Tensor:
-        """ Calculate EMA MSE loss. """
-        func = self.ema_forward
-        if not func: return 0.
-
-        loss = F.mse_loss(func(x), y)
-        return loss - loss.detach()
-
-    def on_after_backward(self):
-        """ Update EMA model after each backward pass. """
-        if self.ema: self.ema.update()
 
     def on_fit_start(self):
         self.copy_into_project(self.config_file)
@@ -144,12 +96,12 @@ class LitTopModule(pl.LightningModule):
 
             # model checkpoint
             callbacks.append(pl.callbacks.ModelCheckpoint(**monitor_kwargs, filename="best", save_last=True))
-            print("Add model checkpoint callback.")
 
             # early stopping
             if config_metric.get("patience"):
                 callbacks.append(pl.callbacks.EarlyStopping(**monitor_kwargs, patience=config_metric["patience"], verbose=True))
-                print("Add early stopping callback.")
+
+        print("Trainer callbacks:", callbacks)
 
         output: Path = Path(self.config["train"]["output"])
         print(f"To start tensorboard, run: `tensorboard --logdir={output.resolve()}`")
@@ -160,6 +112,18 @@ class LitTopModule(pl.LightningModule):
             default_root_dir=output, callbacks=callbacks,
             enable_checkpointing=True, enable_progress_bar=True, enable_model_summary=True
         )
+
+    def _on_shared_epoch_end(self, stage):
+        raise NotImplementedError
+
+    def on_train_epoch_end(self):
+        self._on_shared_epoch_end("train")
+
+    def on_validation_epoch_end(self):
+        self._on_shared_epoch_end("val")
+
+    def on_test_epoch_end(self):
+        self._on_shared_epoch_end("test")
 
     def _shared_step(self, stage, batch, batch_idx):
         raise NotImplementedError
@@ -173,14 +137,41 @@ class LitTopModule(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         return self._shared_step("test", batch, batch_idx)
 
-    def _on_shared_epoch_end(self, stage):
-        raise NotImplementedError
 
-    def on_train_epoch_end(self):
-        self._on_shared_epoch_end("train")
+class SemiSupervisedModule(VanillaModule):
 
-    def on_validation_epoch_end(self):
-        self._on_shared_epoch_end("val")
+    def __init__(self,
+                 config_file: Path,
+                 ema_model: nn.Module = None):
+        super().__init__(config_file)
+        if not self.config["train"].get("ema") and ema_model:
+            ema_model = None
+            warnings.warn("No EMA configured, ignoring EMA model")
+        self.ema: EMA = ema_model
 
-    def on_test_epoch_end(self):
-        self._on_shared_epoch_end("test")
+    def configure_model(self):
+        """ Configure models. """
+        super().configure_model()
+        ema_param = self.config["train"].get("ema")
+        if not isinstance(self.ema, EMA) and ema_param:
+            self.ema = EMA(self.ema or self, **ema_param, include_online_model=False)
+
+    @property
+    def ema_forward(self):
+        if self.ema is None:
+            warnings.warn("no EMA model found.")
+        elif self.ema.step.item() > self.ema.update_after_step:
+            return self.ema.forward_eval
+
+    def ema_mse(self, x, y) -> torch.Tensor:
+        """ Calculate EMA MSE loss. """
+        func = self.ema_forward
+        if not func: return 0.
+
+        loss = F.mse_loss(func(x), y)
+        return loss - loss.detach()
+
+    def on_after_backward(self):
+        """ Update EMA model after each backward pass. """
+        super().on_after_backward()
+        if self.ema: self.ema.update()

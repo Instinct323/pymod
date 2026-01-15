@@ -179,7 +179,7 @@ def group_ops(src: Latent, dst: Latent, mlp: nn.Module, k: int, group_type: str,
         group_latent = src[group_type(src.xyz, dst.xyz, k=k, **kwargs)]
         group_latent.xyz -= dst.xyz.unsqueeze(2)
         dst.feature = group_latent.as_input()
-    dst.feature = mlp(dst.feature.permute(0, 3, 1, 2)).max(dim=-1)[0].permute(0, 2, 1)
+    dst.feature = mlp(dst.feature.permute(0, 3, 1, 2).contiguous()).max(dim=-1)[0].permute(0, 2, 1)
     return dst
 
 

@@ -6,7 +6,7 @@ train:
   output: runs
 
   metric:
-    monitor: acc_val
+    monitor: val/acc
     mode: max
     patience: 10
 
