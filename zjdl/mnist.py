@@ -11,7 +11,7 @@ from torchvision.datasets import MNIST
 import utils.lit_extension as lite
 from model import common
 from pymod.extension.path_extension import Path
-from utils.functools import ItemStack
+from utils.functional import ItemStack
 
 torch.set_float32_matmul_precision("medium")
 pl.seed_everything(seed=0, workers=True)

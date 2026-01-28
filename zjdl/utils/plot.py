@@ -156,7 +156,7 @@ if __name__ == '__main__':
     import ckpt_tool
     from pathlib import Path
 
-    root = Path("/media/tongzj/Data/Workbench/Lab/AnaGrasp/runs/__past__/ft_obj")
+    root = Path("/Lab/GCNGrasp-v2/runs/__past__/ft_obj")
 
     state_dict = torch.load(root / "checkpoints/best.ckpt")["state_dict"]
     state_dict = ckpt_tool.simplify_state_dict(state_dict, filt=lambda s: not s.startswith("ema"))

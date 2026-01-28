@@ -1,6 +1,18 @@
 import torch
 
 
+def gpu_time(func, *args, **kwargs) -> float:
+    t0 = torch.cuda.Event(enable_timing=True)
+    t1 = torch.cuda.Event(enable_timing=True)
+
+    t0.record()
+    func(*args, **kwargs)
+    t1.record()
+
+    torch.cuda.synchronize()
+    return t0.elapsed_time(t1) / 1e3
+
+
 def info_batch(batch) -> dict:
     if isinstance(batch, dict):
         kv_iter = batch.items()
@@ -24,16 +36,17 @@ def is_main_process() -> bool:
     return int(os.environ.get("LOCAL_RANK", "0")) == 0
 
 
-def wait_for_cuda(sleep: float = 10.):
+def wait_for_cuda(devices: list[int] = None,
+                  sleep: float = 10.):
     if not is_main_process(): return
     import nvitop, time
 
-    devices = nvitop.Device.all()
+    devices = nvitop.Device.all() if devices is None else nvitop.Device.from_indices(devices)
     while True:
         wait = False
         for dev in devices:
             for process in dev.processes().values():
-                wait |= process.command().startswith("python")
+                wait |= "python" in process.command()
 
         if not wait: return
         print(f"Waiting for CUDA devices to be free...")

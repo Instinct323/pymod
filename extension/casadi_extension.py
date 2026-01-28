@@ -1,6 +1,48 @@
-import casadi
+from typing import Callable
 
+import casadi
 import numpy as np
+
+
+def aggregate(mat: casadi.MX,
+              func: Callable,
+              axis: int = None):
+    if axis == 0:
+        return casadi.hcat([func(mat[:, i]) for i in range(mat.shape[1])])
+    elif axis in (1, -1):
+        return casadi.vcat([func(mat[i, :]) for i in range(mat.shape[0])])
+    else:
+        raise NotImplementedError
+
+
+def broadcast_to(vec: casadi.MX,
+                 shape: tuple[int, int]) -> casadi.MX:
+    repeat = [(s if v == 1 else 1) for v, s in zip(vec.shape, shape)]
+    return casadi.repmat(vec, *repeat)
+
+
+def diff(mat: casadi.MX,
+         axis: int) -> casadi.MX:
+    if axis == 0:
+        return mat[1:, :] - mat[:-1, :]
+    elif axis == 1:
+        return mat[:, 1:] - mat[:, :-1]
+    else:
+        raise NotImplementedError
+
+
+def dist2(mat1: casadi.MX,
+          mat2: casadi.MX) -> casadi.MX:
+    ret = -2 * mat1 @ mat2.T
+    ret += casadi.sum2(mat1 ** 2)
+    ret += broadcast_to(casadi.sum2(mat2 ** 2).T, ret.shape)
+    return ret
+
+
+def max(mat: casadi.MX,
+        axis: int = None) -> casadi.MX:
+    return casadi.mmax(mat) if axis is None \
+        else aggregate(mat, casadi.mmax, axis=axis)
 
 
 def mean(mat: casadi.MX,
@@ -15,39 +57,6 @@ def mean(mat: casadi.MX,
         raise NotImplementedError
 
 
-def variance(mat: casadi.MX,
-             axis: int = None) -> casadi.MX:
-    un_bias = mat - broadcast_to(mean(mat, axis=axis), mat.shape)
-    return mean(un_bias ** 2, axis=axis)
-
-
-def diff(mat: casadi.MX,
-         axis: int) -> casadi.MX:
-    if axis == 0:
-        return mat[1:, :] - mat[:-1, :]
-    elif axis == 1:
-        return mat[:, 1:] - mat[:, :-1]
-    else:
-        raise NotImplementedError
-
-
-def aggregate(mat: casadi.MX,
-              func: callable,
-              axis: int = None):
-    if axis == 0:
-        return casadi.hcat([func(mat[:, i]) for i in range(mat.shape[1])])
-    elif axis in (1, -1):
-        return casadi.vcat([func(mat[i, :]) for i in range(mat.shape[0])])
-    else:
-        raise NotImplementedError
-
-
-def max(mat: casadi.MX,
-        axis: int = None) -> casadi.MX:
-    return casadi.mmax(mat) if axis is None \
-        else aggregate(mat, casadi.mmax, axis=axis)
-
-
 def min(mat: casadi.MX,
         axis: int = None) -> casadi.MX:
     return casadi.mmax(mat) if axis is None \
@@ -60,10 +69,10 @@ def norm(mat: casadi.MX,
         else aggregate(mat, casadi.norm_2, axis=axis)
 
 
-def broadcast_to(vec: casadi.MX,
-                 shape: tuple[int, int]) -> casadi.MX:
-    repeat = [(s if v == 1 else 1) for v, s in zip(vec.shape, shape)]
-    return casadi.repmat(vec, *repeat)
+def variance(mat: casadi.MX,
+             axis: int = None) -> casadi.MX:
+    un_bias = mat - broadcast_to(mean(mat, axis=axis), mat.shape)
+    return mean(un_bias ** 2, axis=axis)
 
 
 class CasADiOpti(casadi.Opti):
@@ -74,10 +83,10 @@ class CasADiOpti(casadi.Opti):
                  print_level: int = 5,
                  print_time: bool = True):
         super().__init__()
-        assert (max_iter + 1) % 10 == 0
+        assert max_iter % 10 == 0
         self.print_level = print_level
         self.solver("ipopt", {
-            "ipopt.max_iter": max_iter, "ipopt.tol": tol,
+            "ipopt.max_iter": max_iter - 1, "ipopt.tol": tol,
             "ipopt.print_level": print_level, "print_time": print_time
         })
         self.__vars = []
@@ -96,10 +105,12 @@ class CasADiOpti(casadi.Opti):
         return var
 
     def add_constraint(self,
-                       constraint: casadi.MX):
+                       constraint: casadi.MX,
+                       ckpt: bool = False):
         """ Add a constraint to the optimization problem """
         self.__constraints.append(constraint)
         self.subject_to(constraint)
+        if ckpt: self.add_ckpt(constraint)
 
     def add_loss(self,
                  loss: casadi.MX,
@@ -142,6 +153,7 @@ class CasADiOpti(casadi.Opti):
 
 
 if __name__ == '__main__':
-    a = casadi.DM(np.arange(12).reshape(3, 4))
+    a = casadi.DM(np.arange(12).reshape(4, 3))
+    b = casadi.DM(np.arange(15).reshape(5, 3))
     print(a)
-    print(max(a, axis=0), max(a, axis=1))
+    print(dist2(a, b))

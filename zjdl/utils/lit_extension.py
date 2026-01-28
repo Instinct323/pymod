@@ -110,7 +110,7 @@ class VanillaModule(pl.LightningModule):
             max_epochs=self.config["train"]["epochs"],
             accumulate_grad_batches=self.config["train"].get("accum_grad", 1),
             default_root_dir=output, callbacks=callbacks,
-            enable_checkpointing=True, enable_progress_bar=True, enable_model_summary=True
+            enable_checkpointing=True, enable_progress_bar=self.config.get("progress_bar", True), enable_model_summary=True
         )
 
     def _on_shared_epoch_end(self, stage):

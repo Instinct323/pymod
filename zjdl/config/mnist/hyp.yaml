@@ -16,8 +16,8 @@ train:
     update_every: 20
 
   optimizer:
-    type: SGD
-    lr0: 0.1  # initial learning rate
+    type: AdamW
+    lr0: 0.01  # initial learning rate
     lrf: 0.01  # final OneCycleLR learning rate (lr0 * lrf)
     kwargs:
       weight_decay: 0.0001  # optimizer weight decay

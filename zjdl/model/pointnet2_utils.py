@@ -1,12 +1,21 @@
 # FROM: https://github.com/yanx27/Pointnet_Pointnet2_pytorch
 import copy
+import os
 import re
+from dataclasses import dataclass, field
 
 import torch
 import torch.nn as nn
-from dataclasses import dataclass, field
 
 from . import common
+
+PN_BACKEND = os.getenv("PN_BACKEND", "torch_cluster")
+PN_BACKEND = ["torch_cluster", "pytorch3d"].index(PN_BACKEND)
+
+if PN_BACKEND == 0:
+    import torch_cluster
+elif PN_BACKEND == 1:
+    import pytorch3d.ops
 
 
 def align_pointnet2_state_dict(state_dict: dict) -> dict:
@@ -61,62 +70,62 @@ def farthest_point_sample(xyz: torch.Tensor,
     :param n2: number of samples
     :return: sampled point index, [B, n2]
     """
-    device = xyz.device
-    B, N, _ = xyz.shape
+    if PN_BACKEND == 0:
+        B, N, _ = xyz.shape
+        bi = torch.arange(B).to(xyz.device)
+        idx = torch_cluster.fps(xyz.flatten(0, 1), batch=bi.repeat_interleave(N), ratio=n2 / N).view(B, -1)
+        return idx - bi[:, None] * N
 
-    centroids = torch.zeros(B, n2, dtype=torch.long).to(device)
-    distance = torch.ones(B, N).to(device) * 1e10
-    farthest = torch.randint(0, N, (B,), dtype=torch.long).to(device)
-
-    bi = torch.arange(B, dtype=torch.long).to(device)
-    for i in range(n2):
-        centroids[:, i] = farthest
-        centroid = xyz[bi, farthest][:, None]
-        dist = ((xyz - centroid) ** 2).sum(dim=-1)
-        mask = dist < distance
-        distance[mask] = dist[mask]
-        farthest = distance.max(dim=-1)[1]
-    return centroids
+    elif PN_BACKEND == 1:
+        return pytorch3d.ops.sample_farthest_points(xyz, K=n2, random_start_point=True)[1]
 
 
-def query_ball_point(xyz1: torch.Tensor,
-                     xyz2: torch.Tensor,
+def query_ball_point(src: torch.Tensor,
+                     dst: torch.Tensor,
                      k: int,
-                     r: float) -> torch.Tensor:
+                     r: float,
+                     improved: bool = False) -> torch.Tensor:
     """
-    :param xyz1: all points, [B, N, 3]
-    :param xyz2: query points, [B, S, 3]
+    :param src: all points, [B, N, 3]
+    :param dst: query points, [B, S, 3]
     :param k: max sample number in local region
     :param r: local region radius
     :return: grouped points index, [B, S, k]
     """
-    B, N, _ = xyz1.shape
-    _, S, _ = xyz2.shape
+    N = src.shape[1]
 
-    # [B, S, N]
-    mask_invalid = square_distance(xyz2, xyz1) > r ** 2
-    new_idx = torch.arange(N, N + S).to(xyz1.device).view(1, -1, 1).repeat([B, 1, N])
-    group_idx = torch.arange(N).to(new_idx).view(1, 1, -1).repeat([B, S, 1])
-    group_idx[mask_invalid] = new_idx[mask_invalid]
+    if improved:
+        group_idx = pytorch3d.ops.ball_query(dst, src, radius=r, K=k, return_nn=False).idx
+        mask = group_idx < 0
 
-    # [B, S, k]
-    group_idx = torch.topk(group_idx, k=k, dim=-1, largest=False).values
+    else:
+        B, S, _ = dst.shape
+
+        # [B, S, N]
+        mask_invalid = square_distance(dst, src) > r ** 2
+        new_idx = torch.arange(N, N + S).to(src.device).view(1, -1, 1).repeat([B, 1, N])
+        group_idx = torch.arange(N).to(new_idx).view(1, 1, -1).repeat([B, S, 1])
+        group_idx[mask_invalid] = new_idx[mask_invalid]
+
+        # [B, S, k]
+        group_idx = torch.topk(group_idx, k=k, dim=-1, largest=False).values
+        mask = group_idx >= N
+
     group_first = group_idx[:, :, :1].repeat([1, 1, k])
-    mask = group_idx >= N
     group_idx[mask] = group_first[mask]
     return group_idx
 
 
-def query_knn_point(xyz1: torch.Tensor,
-                    xyz2: torch.Tensor,
+def query_knn_point(src: torch.Tensor,
+                    dst: torch.Tensor,
                     k: int) -> torch.Tensor:
     """
-    :param xyz1: all points, [B, N, 3]
-    :param xyz2: query points, [B, S, 3]
+    :param src: all points, [B, N, 3]
+    :param dst: query points, [B, S, 3]
     :param k: max sample number in local region
     :return: grouped points index, [B, S, k]
     """
-    sqrdists = square_distance(xyz2, xyz1)
+    sqrdists = square_distance(dst, src)
     group_idx = torch.topk(sqrdists, k=k, dim=-1, largest=False, sorted=False).indices
     return group_idx
 

@@ -56,6 +56,12 @@ def group_idx(state_dict: dict,
     return ret
 
 
+def pl_ckpt_info(ckpt: str) -> dict:
+    ckpt = torch.load(ckpt, map_location="cpu")
+    for k in ("loops", "optimizer_states", "state_dict"): ckpt.pop(k)
+    return ckpt
+
+
 def simplify_state_dict(state_dict: dict,
                         prefix: str = None,
                         filt: Callable = None) -> dict:
@@ -74,9 +80,6 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from pathlib import Path
 
-    root = Path("/media/tongzj/Data/Workbench/Lab/ecg/runs/lightning_logs/4B-r8/checkpoints/epoch=13")
-    ret = analyse_lora(root, group_depth=2)
-
-    plt.grid()
-    plt.show()
-    # plt.xticks(range(len(ret)), ret.keys(), rotation=90)
+    for ckpt in Path("/media/tongzj/Data/Workbench/Lab/GCNGrasp-v2/runs/train").rglob("best.ckpt"):
+        ret = pl_ckpt_info(ckpt)
+        print(ckpt.parent.parent.name, ret)

@@ -39,6 +39,7 @@ class LogitsProcessor:
             "pred": (logits.argmax(dim) if self.mode == 1 else (logits > 0).long()).detach()
         }
         if target is not None:
+            target = target.float() if self.mode == 0 else target
             ret["loss"] = (F.cross_entropy if self.mode == 1 else F.binary_cross_entropy_with_logits)(logits, target)
         return ret
 

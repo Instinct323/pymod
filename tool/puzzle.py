@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 
 import cv2
@@ -27,20 +28,14 @@ class AsciiArt:
             return "\n".join(stream)
 
 
+@dataclass
 class NumString:
-
-    def __init__(self,
-                 length: int = 8,
-                 step: int = 5):
-        self.length = length
-        self.step = step
+    length: int = 8
+    step: int = 5
 
     def __iter__(self):
-        def generator():
-            for i in range(0, 10 ** self.length, self.step):
-                yield str(i).zfill(self.length)
-
-        return generator()
+        for i in range(0, 10 ** self.length, self.step):
+            yield str(i).zfill(self.length)
 
 
 class Puzzle:

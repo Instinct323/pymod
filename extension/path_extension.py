@@ -13,7 +13,7 @@ class Path(pathlib.WindowsPath if os.name == "nt" else pathlib.PosixPath, pathli
     def f_load_dump(self) -> Callable:
         return {
             "yaml": self.yaml, "yml": self.yaml,  # yaml
-            "json": self.json, "csv": self.csv,  # others
+            "json": self.json, "csv": self.csv, "npy": self.numpy,  # others
         }.get(self.suffix[1:], self.binary)
 
     def fsize(self, unit: str = "B"):
@@ -46,6 +46,15 @@ class Path(pathlib.WindowsPath if os.name == "nt" else pathlib.PosixPath, pathli
         import json
         return json.loads(self.read_text(), **kwargs) \
             if data is None else self.write_text(json.dumps(data, indent=4, **kwargs))
+
+    def numpy(self, data=None, **kwargs):
+        import numpy as np
+        if data is None:
+            f_load = {"npy": np.load, "txt": np.loadtxt}[self.suffix[1:]]
+            return f_load(self, **kwargs)
+        else:
+            f_dump = {"npy": np.save, "txt": np.savetxt}[self.suffix[1:]]
+            return f_dump(self, data, **kwargs)
 
     def yaml(self, data=None, **kwargs):
         import yaml
