@@ -37,16 +37,17 @@ def is_main_process() -> bool:
 
 
 def wait_for_cuda(devices: list[int] = None,
-                  sleep: float = 10.):
+                  sleep: float = 10.,
+                  re_pattern: str = "python"):
     if not is_main_process(): return
-    import nvitop, time
+    import nvitop, re, time
 
     devices = nvitop.Device.all() if devices is None else nvitop.Device.from_indices(devices)
     while True:
         wait = False
         for dev in devices:
             for process in dev.processes().values():
-                wait |= "python" in process.command()
+                wait |= bool(re.search(re_pattern, process.command()))
 
         if not wait: return
         print(f"Waiting for CUDA devices to be free...")

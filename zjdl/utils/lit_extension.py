@@ -1,6 +1,7 @@
 import shutil
 import warnings
 from functools import cached_property
+from pathlib import Path
 
 import pytorch_lightning as pl
 import torch
@@ -8,7 +9,6 @@ import torch.nn.functional as F
 import torch.utils.data
 import yaml
 from ema_pytorch import EMA
-from pathlib import Path
 from torch import nn
 
 
@@ -140,27 +140,9 @@ class VanillaModule(pl.LightningModule):
 
 class SemiSupervisedModule(VanillaModule):
 
-    def __init__(self,
-                 config_file: Path,
-                 ema_model: nn.Module = None):
-        super().__init__(config_file)
-        if not self.config["train"].get("ema") and ema_model:
-            ema_model = None
-            warnings.warn("No EMA configured, ignoring EMA model")
-        self.ema: EMA = ema_model
-
-    def configure_model(self):
-        """ Configure models. """
-        super().configure_model()
-        ema_param = self.config["train"].get("ema")
-        if not isinstance(self.ema, EMA) and ema_param:
-            self.ema = EMA(self.ema or self, **ema_param, include_online_model=False)
-
     @property
     def ema_forward(self):
-        if self.ema is None:
-            warnings.warn("no EMA model found.")
-        elif self.ema.step.item() > self.ema.update_after_step:
+        if self.ema.step.item() > self.ema.update_after_step:
             return self.ema.forward_eval
 
     def ema_mse(self, x, y) -> torch.Tensor:
@@ -171,7 +153,16 @@ class SemiSupervisedModule(VanillaModule):
         loss = F.mse_loss(func(x), y)
         return loss - loss.detach()
 
+    def has_ema(self) -> bool:
+        return hasattr(self, "ema")
+
+    def init_ema(self, model: nn.Module):
+        param = self.config["train"].get("ema")
+        if not param:
+            return warnings.warn("No EMA configured, ignoring EMA model")
+        self.ema = EMA(model, **param, include_online_model=False)
+
     def on_after_backward(self):
         """ Update EMA model after each backward pass. """
         super().on_after_backward()
-        if self.ema: self.ema.update()
+        if self.has_ema(): self.ema.update()

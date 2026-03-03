@@ -111,8 +111,8 @@ def query_ball_point(src: torch.Tensor,
         group_idx = torch.topk(group_idx, k=k, dim=-1, largest=False).values
         mask = group_idx >= N
 
-    group_first = group_idx[:, :, :1].repeat([1, 1, k])
-    group_idx[mask] = group_first[mask]
+    group_first = group_idx[:, :, :1]
+    group_idx[mask] = group_first.repeat([1, 1, k])[mask]
     return group_idx
 
 
@@ -178,7 +178,8 @@ def sample_ops(src: Latent, n2: int):
         return Latent(xyz=index_points(src.xyz, fps), idx_prev=fps, latent_prev=src)
 
 
-def group_ops(src: Latent, dst: Latent, mlp: nn.Module, k: int, group_type: str, **kwargs):
+def group_ops(src: Latent, dst: Latent, mlp: nn.Module, k: int, group_type: str,
+              concat_bias: bool = True, **kwargs):
     assert dst.feature is None
     # group all
     if k == 0:
@@ -186,8 +187,13 @@ def group_ops(src: Latent, dst: Latent, mlp: nn.Module, k: int, group_type: str,
     else:
         group_type = {"ball": query_ball_point, "knn": query_knn_point}.get(group_type, group_type)
         group_latent = src[group_type(src.xyz, dst.xyz, k=k, **kwargs)]
-        group_latent.xyz -= dst.xyz.unsqueeze(2)
-        dst.feature = group_latent.as_input()
+
+        if concat_bias:
+            group_latent.xyz -= dst.xyz.unsqueeze(2)
+            dst.feature = group_latent.as_input()
+        else:
+            dst.feature = group_latent.feature
+
     dst.feature = mlp(dst.feature.permute(0, 3, 1, 2).contiguous()).max(dim=-1)[0].permute(0, 2, 1)
     return dst
 

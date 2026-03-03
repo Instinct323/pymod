@@ -31,6 +31,7 @@ def random_dropout(x, p=0.4, training=True):
 class MnistModule(lite.SemiSupervisedModule):
 
     def __init__(self):
+        super().__init__(CFG_TRAIN)
         m = nn.Sequential()
         m.append(common.ConvBnAct2d(1, 8, k=3, s=2))
         m.append(common.ConvBnAct2d(m[-1].c2, 16, k=3))
@@ -40,8 +41,8 @@ class MnistModule(lite.SemiSupervisedModule):
         m.append(nn.Conv2d(m[-2].c2, 10, kernel_size=1))
         m.append(nn.Flatten())
 
-        super().__init__(CFG_TRAIN, ema_model=m)
         self.model = m
+        self.init_ema(self.model)
         self.item_stack = {stage: ItemStack() for stage in ["train", "val"]}
 
     def forward(self, stage, batch):
