@@ -52,5 +52,5 @@ git-filter-repo
 nvitop
 
 # --- ROS ---
-catkin-tools
-rospkg
+# catkin-tools
+# rospkg
