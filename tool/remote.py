@@ -41,7 +41,9 @@ class GitRepo:
         return self
 
     def add(self, *files):
-        execute(f"git add " + (" ".join(files) if files else "."))
+        cmd = f"git add " + (" ".join(files) if files else ".")
+        execute(cmd)
+        execute(cmd + " --renormalize")
         return self
 
     def commit(self, msg):
